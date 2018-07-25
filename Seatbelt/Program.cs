@@ -1364,6 +1364,7 @@ namespace Seatbelt
                         files.AddRange(FindFiles(directory, pattern));
                 }
                 catch (UnauthorizedAccessException) { }
+                catch (PathTooLongException) { }
             }
 
             return files;

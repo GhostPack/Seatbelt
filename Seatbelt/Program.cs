@@ -4903,7 +4903,7 @@ namespace Seatbelt
                             string userChromeHistoryPath = String.Format("{0}\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\History", dir);
                             if (System.IO.File.Exists(userChromeHistoryPath))
                             {
-                                Console.WriteLine("  [*] Chrome history file exists at {0} , run the 'Triagechrome' command", userChromeHistoryPath);
+                                Console.WriteLine("  [*] Chrome history file exists at {0} , run the 'TriageChrome' command", userChromeHistoryPath);
                             }
                         }
                     }
@@ -4914,7 +4914,7 @@ namespace Seatbelt
                     string userChromeHistoryPath = String.Format("{0}\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\History", System.Environment.GetEnvironmentVariable("USERPROFILE"));
                     if (System.IO.File.Exists(userChromeHistoryPath))
                     {
-                        Console.WriteLine("  [*] Chrome history file exists at {0} , run the 'Triagechrome' command", userChromeHistoryPath);
+                        Console.WriteLine("  [*] Chrome history file exists at {0} , run the 'TriageChrome' command", userChromeHistoryPath);
                     }
                 }
             }

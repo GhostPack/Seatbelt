@@ -4181,7 +4181,13 @@ namespace Seatbelt
 
                 foreach (ManagementObject Process in retObjectCollection)
                 {
-                    processes.Add(Process["ProcessId"].ToString(), Process["Name"].ToString());
+                    if (Process["CommandLine"] != null)
+                    {
+                        processes.Add(Process["ProcessId"].ToString(), Process["CommandLine"].ToString());
+                    } else
+                    {
+                        processes.Add(Process["ProcessId"].ToString(), Process["Name"].ToString());
+                    }
                 }
 
                 MIB_TCPROW_OWNER_PID[] tTable;

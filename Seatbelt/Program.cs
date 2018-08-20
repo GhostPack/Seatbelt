@@ -2919,7 +2919,7 @@ namespace Seatbelt
                     Console.WriteLine("  ConnectionState  : {0}", result["ConnectionState"]);
                     Console.WriteLine("  Persistent       : {0}", result["Persistent"]);
                     Console.WriteLine("  UserName         : {0}", result["UserName"]);
-                    Console.WriteLine("  Description      : {0}", result["Description"]);
+                    Console.WriteLine("  Description      : {0}\r\n", result["Description"]);
                 }
             }
             catch (Exception ex)

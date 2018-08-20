@@ -49,6 +49,7 @@ Seatbelt is licensed under the BSD 3-Clause license.
 **SeatBelt.exe user** collects the following user data:
 
     SavedRDPConnections   -   Saved RDP connections
+    DumpVault             -   Dump saved credentials in Windows Vault (such as logins from Internet Explorer and Edge)
     TriageIE              -   Internet Explorer bookmarks and history (last 7 days)
     RecentRunCommands     -   Recent "run" commands
     PuttySessions         -   Interesting settings from any saved Putty configurations

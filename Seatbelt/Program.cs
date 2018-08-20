@@ -4009,14 +4009,13 @@ namespace Seatbelt
 
         public static void ListDNSCache()
         {
+            Console.WriteLine("\r\n\r\n=== DNS Cache (via WMI) ===\r\n");
+            
             // lists the local DNS cache via WMI (MSFT_DNSClientCache class)
-
             try
             {
                 ManagementObjectSearcher wmiData = new ManagementObjectSearcher(@"root\standardcimv2", "SELECT * FROM MSFT_DNSClientCache");
                 ManagementObjectCollection data = wmiData.Get();
-
-                Console.WriteLine("\r\n\r\n=== DNS Cache (via WMI) ===\r\n");
 
                 foreach (ManagementObject result in data)
                 {
@@ -4024,6 +4023,10 @@ namespace Seatbelt
                     Console.WriteLine("  Name          : {0}", result["Name"]);
                     Console.WriteLine("  Data          : {0}\r\n", result["Data"]);
                 }
+            }
+            catch (ManagementException ex) when (ex.ErrorCode == ManagementStatus.InvalidNamespace)
+            {
+                Console.WriteLine("  [X] 'MSFT_DNSClientCache' WMI class unavailable (minimum supported versions of Windows: 8/2012)", ex.Message);
             }
             catch (Exception ex)
             {

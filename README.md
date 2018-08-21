@@ -25,7 +25,7 @@ Seatbelt is licensed under the BSD 3-Clause license.
     UserEnvVariables      -   Current user environment variables
     SystemEnvVariables    -   Current system environment variables
     UserFolders           -   Folders in C:\Users\
-    NonstandardServices   -   Services with binary paths not in C:\Windows\
+    NonstandardServices   -   Services with file info company names that don't contain 'Microsoft'
     InternetSettings      -   Internet settings including proxy configs
     LapsSettings          -   LAPS settings, if installed
     LocalGroupMembers     -   Members of local admins, RDP, and DCOM
@@ -42,19 +42,23 @@ Seatbelt is licensed under the BSD 3-Clause license.
     ARPTable              -   Lists the current ARP table and adapter information (equivalent to arp -a)
     AllTcpConnections     -   Lists current TCP connections and associated processes
     AllUdpConnections     -   Lists current UDP connections and associated processes
-    NonstandardProcesses  -   Processes with binary paths not in C:\Windows\
+    NonstandardProcesses  -   Running processeswith file info company names that don't contain 'Microsoft'
       *  If the user is in high integrity, the following additional actions are run:
     SysmonConfig          -   Sysmon configuration from the registry
 
 **SeatBelt.exe user** collects the following user data:
 
     SavedRDPConnections   -   Saved RDP connections
-    DumpVault             -   Dump saved credentials in Windows Vault (such as logins from Internet Explorer and Edge)
     TriageIE              -   Internet Explorer bookmarks and history (last 7 days)
+    DumpVault             -   Dump saved credentials in Windows Vault (i.e. logins from Internet Explorer and Edge), from SharpWeb
     RecentRunCommands     -   Recent "run" commands
     PuttySessions         -   Interesting settings from any saved Putty configurations
     PuttySSHHostKeys      -   Saved putty SSH host keys
+    CloudCreds            -   AWS/Google/Azure cloud credential files (SharpCloud)
     RecentFiles           -   Parsed "recent files" shortcuts (last 7 days)
+    MasterKeys            -   List DPAPI master keys
+    CredFiles             -   List Windows credential DPAPI blobs
+    RDCManFiles           -   List Windows Remote Desktop Connection Manager settings files
       *  If the user is in high integrity, this data is collected for ALL users instead of just the current user
 
 Non-default collection options:
@@ -104,3 +108,5 @@ Seatbelt incorporates various code C# snippets and bits of PoCs found throughout
 * [Fred's code on querying the ARP cache](https://social.technet.microsoft.com/Forums/lync/en-US/e949b8d6-17ad-4afc-88cd-0019a3ac9df9/powershell-alternative-to-arp-a?forum=ITCG)
 * [ShuggyCoUk's snippet on querying the TCP connection table](https://stackoverflow.com/questions/577433/which-pid-listens-on-a-given-port-in-c-sharp/577660#577660)
 * [yizhang82's example of using reflection to interact with COM objects through C#](https://gist.github.com/yizhang82/a1268d3ea7295a8a1496e01d60ada816)
+* [@djhohnstein](https://twitter.com/djhohnstein)'s [SharpWeb project](https://github.com/djhohnstein/SharpWeb/blob/master/Edge/SharpEdge.cs)
+* [@cmaddalena](https://twitter.com/cmaddalena)'s [SharpCloud project](https://github.com/chrismaddalena/SharpCloud), BSD 3-Clause

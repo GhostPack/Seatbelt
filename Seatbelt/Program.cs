@@ -1648,37 +1648,28 @@ namespace Seatbelt
 
         public static List<string> FindFiles(string path, string patterns)
         {
+            // finds files matching one or more patterns under a given path, recursive
             // adapted from http://csharphelper.com/blog/2015/06/find-files-that-match-multiple-patterns-in-c/
             //      pattern: "*pass*;*.png;"
 
-            string[] pattern_array = patterns.Split(';');
-
             var files = new List<string>();
-            foreach (string pattern in pattern_array)
+
+            try
             {
-                try
+                // search every pattern in this directory's files
+                foreach (string pattern in patterns.Split(';'))
                 {
                     files.AddRange(Directory.GetFiles(path, pattern, SearchOption.TopDirectoryOnly));
-                    foreach (var directory in Directory.GetDirectories(path))
-                        files.AddRange(FindFiles(directory, pattern));
                 }
-                catch (UnauthorizedAccessException) { }
-                catch (PathTooLongException) { }
+
+                // go recurse in all sub-directories
+                foreach (var directory in Directory.GetDirectories(path))
+                    files.AddRange(FindFiles(directory, patterns));
             }
+            catch (UnauthorizedAccessException) { }
+            catch (PathTooLongException) { }
 
             return files;
-
-            //foreach (string pattern in pattern_array)
-            //{
-            //    foreach (string filename in Directory.GetFiles(dir_name, pattern, SearchOption.AllDirectories))
-            //    {
-            //        if (!files.Contains(filename)) files.Add(filename);
-            //    }
-            //}
-
-            //files.Sort();
-
-            //return files;
         }
 
         public static IEnumerable<string> Split(string text, int partLength)

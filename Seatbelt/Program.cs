@@ -3138,52 +3138,35 @@ namespace Seatbelt
                 Console.WriteLine("\r\n\r\n=== Local Group Memberships ===\r\n");
 
                 // localization for @cnotin ;)
-                string localAdminsNameFull = TranslateSid("S-1-5-32-544");
-                string localAdminsName = localAdminsNameFull.Substring(localAdminsNameFull.IndexOf('\\') + 1);
-                Console.WriteLine("  * {0} *\r\n", localAdminsName);
-                string[] localAdmins = GetLocalGroupMembers(localAdminsName);
-                if (localAdmins != null)
-                {
-                    foreach (string member in localAdmins)
-                    {
-                        Console.WriteLine("    {0}", member);
-                    }
-                }
+                string[] groupsSIDs = {
+                    "S-1-5-32-544", // Administrators
+                    "S-1-5-32-555", // RDP
+                    "S-1-5-32-562", // COM
+                    "S-1-5-32-580" // Remote Management
+                };
 
-                string rdpNameFull = TranslateSid("S-1-5-32-555");
-                string rdpName = rdpNameFull.Substring(rdpNameFull.IndexOf('\\') + 1);
-                Console.WriteLine("\r\n  * {0} *\r\n", rdpName);
-                string[] localRDPUsers = GetLocalGroupMembers(rdpName);
-                if (localRDPUsers != null)
+                foreach (string sid in groupsSIDs)
                 {
-                    foreach (string member in localRDPUsers)
+                    string groupNameFull = TranslateSid(sid);
+                    if (string.IsNullOrEmpty(groupNameFull))
                     {
-                        Console.WriteLine("    {0}", member);
+                        // e.g. "S-1-5-32-580" for "Remote Management Users" can be missing on older versions of Windows
+                        Console.WriteLine("  [X] Cannot find SID translation for '{0}'", sid);
+                        continue;
                     }
-                }
 
-                string comNameFull = TranslateSid("S-1-5-32-562");
-                string comName = comNameFull.Substring(comNameFull.IndexOf('\\') + 1);
-                Console.WriteLine("\r\n  * {0} *\r\n", comName);
-                string[] distComUsers = GetLocalGroupMembers(comName);
-                if (distComUsers != null)
-                {
-                    foreach (string member in distComUsers)
+                    string groupName = groupNameFull.Substring(groupNameFull.IndexOf('\\') + 1);
+                    Console.WriteLine("  * {0} *\r\n", groupName);
+                    string[] members = GetLocalGroupMembers(groupName);
+                    if (members != null)
                     {
-                        Console.WriteLine("    {0}", member);
+                        foreach (string member in members)
+                        {
+                            Console.WriteLine("    {0}", member);
+                        }
                     }
-                }
 
-                string remoteManagementNameFull = TranslateSid("S-1-5-32-580");
-                string remoteManagementName = remoteManagementNameFull.Substring(remoteManagementNameFull.IndexOf('\\') + 1);
-                Console.WriteLine("\r\n  * {0} *\r\n", remoteManagementName);
-                string[] remoteManagementUsers = GetLocalGroupMembers(remoteManagementName);
-                if (remoteManagementUsers != null)
-                {
-                    foreach (string member in remoteManagementUsers)
-                    {
-                        Console.WriteLine("    {0}", member);
-                    }
+                    Console.WriteLine("");
                 }
             }
             catch (Exception ex)

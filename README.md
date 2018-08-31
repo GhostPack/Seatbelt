@@ -108,5 +108,4 @@ Seatbelt incorporates various code C# snippets and bits of PoCs found throughout
 * [Fred's code on querying the ARP cache](https://social.technet.microsoft.com/Forums/lync/en-US/e949b8d6-17ad-4afc-88cd-0019a3ac9df9/powershell-alternative-to-arp-a?forum=ITCG)
 * [ShuggyCoUk's snippet on querying the TCP connection table](https://stackoverflow.com/questions/577433/which-pid-listens-on-a-given-port-in-c-sharp/577660#577660)
 * [yizhang82's example of using reflection to interact with COM objects through C#](https://gist.github.com/yizhang82/a1268d3ea7295a8a1496e01d60ada816)
-* [@djhohnstein](https://twitter.com/djhohnstein)'s [SharpWeb project](https://github.com/djhohnstein/SharpWeb/blob/master/Edge/SharpEdge.cs)
 * [@cmaddalena](https://twitter.com/cmaddalena)'s [SharpCloud project](https://github.com/chrismaddalena/SharpCloud), BSD 3-Clause

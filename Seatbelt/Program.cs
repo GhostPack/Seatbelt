@@ -1911,13 +1911,39 @@ namespace Seatbelt
 
                 foreach (ManagementObject result in data)
                 {
-                    //OLD - if ((result["PathName"] != null) && ((!FilterResults.filter) || (!Regex.IsMatch(result["PathName"].ToString(), "C:\\\\WINDOWS\\\\", RegexOptions.IgnoreCase))))
-                    if (result["PathName"] != null)
+                    // The "Path Name" for a service can include a fully quoted path (that includes spaces), as well as
+                    // Program arguments (such as the ones that live inside svchost). Some paths, such as Carbon Black's agent)
+                    // don't even have a file extension. So it's fair to say that if there are quotes, we'll take what's inside
+                    // them, otherwise we'll split on spaces and take the first entry, regardless of its extension).
+                    var binaryPath = result["PathName"].ToString().Trim();
+                    if (binaryPath.Contains('"'))
                     {
-                        Match path = Regex.Match(result["PathName"].ToString(), @"^\W*([a-z]:\\.+?(\.exe|\.dll|\.sys))\W*", RegexOptions.IgnoreCase);
-                        String binaryPath = path.Groups[1].ToString();
-                        FileVersionInfo myFileVersionInfo = FileVersionInfo.GetVersionInfo(binaryPath);
-                        string companyName = myFileVersionInfo.CompanyName;
+                        // Quotes are present, so split on quotes. Given that this is a service path,
+                        // it's fair to assume that the path is valid (otherwise the service wouldn't
+                        // be installed) and so we can just rip out the bit between the quotes. This
+                        // split should result in a minimum of 2 parts, so taking the second should
+                        // give us what we need.
+                        binaryPath = binaryPath.Split('"')[1];
+                    }
+                    else
+                    {
+                        // No quotes, so it's safe to assume that we can split on spaces and take the first element.
+                        binaryPath = binaryPath.Split(' ')[0];
+                    }
+                    if (!string.IsNullOrEmpty(binaryPath) && File.Exists(binaryPath))
+                    {
+                        var companyName = "";
+                        try
+                        {
+                            FileVersionInfo myFileVersionInfo = FileVersionInfo.GetVersionInfo(binaryPath);
+                            companyName = myFileVersionInfo.CompanyName;
+                        }
+                        catch
+                        {
+                            // Nope! Something is up, but let's not bail on the entire loop like we were doing so before.
+                            continue;
+                        }
+
                         if ((String.IsNullOrEmpty(companyName)) || (!FilterResults.filter) || (!Regex.IsMatch(companyName, @"^Microsoft.*", RegexOptions.IgnoreCase)))
                         {
                             bool isDotNet = false;

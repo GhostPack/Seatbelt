@@ -3120,6 +3120,64 @@ namespace Seatbelt
             }
         }
 
+        public static void ListAppLockerSettings()
+            // @_RastaMouse
+        {
+            Console.WriteLine("\r\n\r\n=== AppLocker Settings ===\r\n");
+
+            ManagementObjectSearcher wmiData = new ManagementObjectSearcher(@"root\cimv2", "SELECT Name, State FROM win32_service WHERE Name = 'AppIDSvc'");
+            ManagementObjectCollection data = wmiData.Get();
+
+            foreach (ManagementObject result in data)
+            {
+                Console.WriteLine("  [*] " + result["Name"] + " is " + result["State"] + "\r\n");
+            }
+
+            string[] keys = GetRegSubkeys("HKLM", "Software\\Policies\\Microsoft\\Windows\\SrpV2");
+
+            if (keys.Length != 0)
+            {
+
+                foreach (string key in keys)
+                {
+                    string EnforcementMode = GetRegValue("HKLM", "Software\\Policies\\Microsoft\\Windows\\SrpV2\\" + key, "EnforcementMode");
+
+                    if (EnforcementMode != "")
+                    {
+                        // This is really sucky
+                        if (EnforcementMode == "0") { EnforcementMode = "Audit Mode"; }
+                        if (EnforcementMode == "1") { EnforcementMode = "Enforce Mode"; }
+
+                        Console.WriteLine("\r\n    [*] " + key + " is in " + EnforcementMode);
+
+                        string[] ids = GetRegSubkeys("HKLM", "Software\\Policies\\Microsoft\\Windows\\SrpV2\\" + key);
+
+                        foreach (string id in ids)
+                        {
+                            string rule = GetRegValue("HKLM", "Software\\Policies\\Microsoft\\Windows\\SrpV2\\" + key + "\\" + id, "Value");
+                            Console.WriteLine("      [*] " + rule);
+                        }
+
+                        if (ids.Length == 0)
+                        {
+                            Console.WriteLine("      [*] No rules");
+                        }
+
+                    }
+                    else
+                    {
+                        Console.WriteLine("    [*] " + key + " not configured");
+                    }
+
+                }
+
+            }
+            else
+            {
+                Console.WriteLine("  [*] AppLocker not configured");
+            }
+        }
+
         public static void ListLocalGroupMembers()
         {
             // adapted from https://stackoverflow.com/questions/33935825/pinvoke-netlocalgroupgetmembers-runs-into-fatalexecutionengineerror/33939889#33939889
@@ -6678,6 +6736,7 @@ namespace Seatbelt
             ListNonstandardServices();
             ListInternetSettings();
             ListLapsSettings();
+            ListAppLockerSettings();
             ListLocalGroupMembers();
             ListMappedDrives();
             ListRDPSessions();
@@ -6763,6 +6822,7 @@ namespace Seatbelt
             Console.WriteLine("\tNonstandardServices   -   Services with file info company names that don't contain 'Microsoft'");
             Console.WriteLine("\tInternetSettings      -   Internet settings including proxy configs");
             Console.WriteLine("\tLapsSettings          -   LAPS settings, if installed");
+            Console.WriteLine("\tAppLockerSettings     -   AppLocker settings, if installed");
             Console.WriteLine("\tLocalGroupMembers     -   Members of local admins, RDP, and DCOM");
             Console.WriteLine("\tMappedDrives          -   Mapped drives");
             Console.WriteLine("\tRDPSessions           -   Current incoming RDP sessions");

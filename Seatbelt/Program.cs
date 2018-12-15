@@ -3289,6 +3289,7 @@ namespace Seatbelt
                 {"bds-vision.exe"              , "BDS Vision behavioral analysis"},
                 {"Triumfant.exe"               , "Triumfant behavioral analysis"},
                 {"CSFalcon.exe"                , "CrowdStrike Falcon EDR"},
+                {"CSFalconContainer.exe"       , "CrowdStrike Falcon EDR"},
                 {"ossec.exe"                   , "OSSEC intrusion detection"},
                 {"TmPfw.exe"                   , "Trend Micro firewall"},
                 {"dgagent.exe"                 , "Verdasys Digital Guardian DLP"},

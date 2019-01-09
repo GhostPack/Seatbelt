@@ -1539,6 +1539,7 @@ namespace Seatbelt
                         string manufacturer = item["Manufacturer"].ToString().ToLower();
                         if ((manufacturer == "microsoft corporation" && item["Model"].ToString().ToUpperInvariant().Contains("VIRTUAL"))
                             || manufacturer.Contains("vmware")
+                            || manufacturer.Contains("xen")
                             || item["Model"].ToString() == "VirtualBox")
                         {
                             return true;

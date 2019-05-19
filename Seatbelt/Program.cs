@@ -20,7 +20,7 @@ using System.Xml;
 
 namespace Seatbelt
 {
-    // used to fignal whether filtering should be done on results
+    // used to signal whether filtering should be done on results
     public static class FilterResults
     {
         public static bool filter = true;
@@ -1751,6 +1751,60 @@ namespace Seatbelt
             }
         }
 
+        public static void CheckDeviceGuard()
+        {
+            ManagementObjectSearcher wmiData = new ManagementObjectSearcher(@"root\Microsoft\Windows\DeviceGuard", "SELECT * FROM Win32_DeviceGuard");
+            ManagementObjectCollection data = wmiData.Get();
+
+            Console.WriteLine("\r\n\r\n=== DeviceGuard Information ===\r\n");
+            foreach (ManagementObject result in data)
+            {
+                // 0 means no services configured, 1 means Credential Guard, and 2 means HVCI
+                uint[] configCheck = (uint[])result.GetPropertyValue("SecurityServicesConfigured");
+                uint[] serviceCheck = (uint[])result.GetPropertyValue("SecurityServicesRunning");
+                uint noCredGuard = 0;
+                uint credGuardEnabled = 1;
+                try
+                {
+                    if (configCheck.Contains(noCredGuard))
+                    {
+                        Console.WriteLine("  {0,-30}:  No CredentialGuard ({1})", "DeviceGuard Config", configCheck[0].ToString());
+                    }
+                    else if (configCheck.Contains(credGuardEnabled))
+                    {
+                        Console.WriteLine("  {0,-30}:  CredentialGuard Configured ({1})", "DeviceGuard Config", configCheck[0].ToString());
+                    }
+                    else
+                    {
+                        Console.WriteLine("  {0,-30}:  Inconclusive, not 0 or 1 ({1})", "DeviceGuard Config", configCheck[0].ToString());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("  [X] Exception: {0}", ex.Message);
+                }
+                try
+                {
+                    if (serviceCheck.Contains(noCredGuard))
+                    {
+                        Console.WriteLine("  {0,-30}:  CredentialGuard Service Not Running ({1})", "DeviceGuard Service Status", serviceCheck[0].ToString());
+                    }
+                    else if (serviceCheck.Contains(credGuardEnabled))
+                    {
+                        Console.WriteLine("  {0,-30}:  CredentialGuard Service Running ({1})", "DeviceGuard Service Status", serviceCheck[0].ToString());
+                    }
+                    else
+                    {
+                        Console.WriteLine("  {0,-30}:  Inconclusive, not 0 or 1 ({1})", "DeviceGuard Service Status", serviceCheck[0].ToString());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("  [X] Exception: {0}", ex.Message);
+                }
+            }
+        }
+
         public static void ListRebootSchedule()
         {
             // queries event IDs 12 (kernel boot) and 13 (kernel shutdown), sorts, and gives reboot schedule
@@ -2083,6 +2137,9 @@ namespace Seatbelt
                     Console.WriteLine("  {0,30} : {1}\r\n", kvp.Key, kvp.Value);
                 }
             }
+
+            List4103Events();
+            List4104Events();
         }
 
         public static void ListInternetSettings()
@@ -4743,6 +4800,207 @@ namespace Seatbelt
 
 
         // elevated system checks
+        public static void List4103Events()
+        {
+            // ID 4103 is Module Logging - https://github.com/Cyb3rWard0g/OSSEM/blob/master/data_dictionaries/windows/powershell/events/event-4103.md
+            var eventId = "4103";
+
+            // grab events from the last X days - 7 for default, 30 for "full" collection
+            int lastDays = 7;
+
+            if (!FilterResults.filter)
+            {
+                lastDays = 30;
+            }
+
+            var startTime = System.DateTime.Now.AddDays(-lastDays);
+            var endTime = System.DateTime.Now;
+
+            Console.WriteLine("\r\n\r\n=== 4103 PowerShell Module Logging Events (last {0} days) ===\r\n", lastDays);
+
+            var query = string.Format(@"*[System/EventID={0}] and *[System[TimeCreated[@SystemTime >= '{1}']]] and *[System[TimeCreated[@SystemTime <= '{2}']]]",
+                eventId,
+                startTime.ToUniversalTime().ToString("o"),
+                endTime.ToUniversalTime().ToString("o"));
+
+            EventLogQuery eventsQuery = new EventLogQuery("Microsoft-Windows-PowerShell/Operational", PathType.LogName, query);
+            eventsQuery.ReverseDirection = true;
+
+            try
+            {
+                EventLogReader logReader = new EventLogReader(eventsQuery);
+                int counter = 0;
+                for (EventRecord eventdetail = logReader.ReadEvent(); eventdetail != null; eventdetail = logReader.ReadEvent())
+                {
+                    // only check if events exist unless "full" parameter is passed
+                    if (FilterResults.filter)
+                    {
+                        counter++;
+                    } else {
+                        counter++;
+
+                        string userSid = eventdetail.UserId.ToString();
+                        string user = new System.Security.Principal.SecurityIdentifier(userSid).Translate(typeof(System.Security.Principal.NTAccount)).ToString();
+                        string payload = eventdetail.Properties[2].Value.ToString();
+
+                        // unused value that never really returns anything
+                        // string userData = eventdetail.Properties[1].Value.ToString();
+
+                        // process ContextInfo
+                        List<string> ContextInfo = eventdetail.Properties[0].Value.ToString().Split(new[] { "\r\n" }, StringSplitOptions.None).ToList();
+                        string commandType = ContextInfo[8].Trim().Replace("Command Name = ", "");
+                        string commandName = ContextInfo[9].Trim().Replace("Command Type = ", "");
+                        string scriptName = ContextInfo[10].Trim().Replace("Script Name = ", "").Replace("\n", "");
+
+                        Console.WriteLine("  User                           : {0}", user);
+                        Console.WriteLine("  ContextInfo                    : {0} {1}, Path: {2}", commandType, commandName, scriptName);
+                        //Console.WriteLine("  Payload               : \r\n{0}", payload);
+
+                        // some keywords of interest that may be in scripts
+                        List<string> stringsOfInterest = new List<string>();
+                        stringsOfInterest.Add("Password");
+                        stringsOfInterest.Add("password");
+                        stringsOfInterest.Add("pass ");
+                        stringsOfInterest.Add("pass=");
+                        stringsOfInterest.Add("username");
+                        stringsOfInterest.Add("user");
+                        stringsOfInterest.Add("PSCredential");
+                        stringsOfInterest.Add("PScredential");
+                        stringsOfInterest.Add("Pscredential");
+                        stringsOfInterest.Add("pscredential");
+                        // search for and track hits in the script blocks
+                        List<string> searchHits = new List<string>();
+                        foreach (var soi in stringsOfInterest)
+                        {
+                            if (payload.Contains(soi))
+                            {
+                                searchHits.Add(soi);
+                            }
+                        }
+                        // return the results for the keyword searches
+                        if (searchHits.Count() > 0)
+                        {
+                            string displayList = string.Join(", ", searchHits.ToArray());
+                            Console.WriteLine("  Payload contains               : {0}\r\n", displayList);
+                        }
+                        else
+                        {
+                            Console.WriteLine("");
+                        }
+                    }
+                }
+                if (counter > 0)
+                {
+                    Console.WriteLine("  Total 4103 events:             : {0}", counter);
+                } else
+                {
+                    Console.WriteLine("  No 4103 events were found.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("  [X] Exception: {0}", ex.Message);
+            }
+        }
+
+        public static void List4104Events()
+        {
+            // ID 4104 is Script Block Logging - https://github.com/Cyb3rWard0g/OSSEM/blob/master/data_dictionaries/windows/powershell/events/event-4104.md
+            var eventId = "4104";
+
+            // grab events from the last X days - 7 for default, 30 for "full" collection
+            int lastDays = 7;
+
+            if (!FilterResults.filter)
+            {
+                lastDays = 30;
+            }
+
+            var startTime = System.DateTime.Now.AddDays(-lastDays);
+            var endTime = System.DateTime.Now;
+
+            Console.WriteLine("\r\n\r\n=== 4104 PowerShell Script Block Logging Events (last {0} days) ===\r\n", lastDays);
+
+            var query = string.Format(@"*[System/EventID={0}] and *[System[TimeCreated[@SystemTime >= '{1}']]] and *[System[TimeCreated[@SystemTime <= '{2}']]]",
+                eventId,
+                startTime.ToUniversalTime().ToString("o"),
+                endTime.ToUniversalTime().ToString("o"));
+
+            EventLogQuery eventsQuery = new EventLogQuery("Microsoft-Windows-PowerShell/Operational", PathType.LogName, query);
+            eventsQuery.ReverseDirection = true;
+
+            try
+            {
+                EventLogReader logReader = new EventLogReader(eventsQuery);
+                int counter = 0;
+                for (EventRecord eventdetail = logReader.ReadEvent(); eventdetail != null; eventdetail = logReader.ReadEvent())
+                {
+                    // Only check if events exist unless "full" parameter is passed
+                    if (FilterResults.filter)
+                    {
+                        counter++;
+                    }
+                    else
+                    {
+                        counter++;
+
+                        string scriptBlockText = eventdetail.Properties[2].Value.ToString();
+                        string scriptBlockId = eventdetail.Properties[3].Value.ToString();
+                        string scriptPath = eventdetail.Properties[4].Value.ToString();
+
+                        Console.WriteLine("  ScriptBlockId                  : {0}", scriptBlockId);
+                        Console.WriteLine("  ScriptPath                     : {0}", scriptPath);
+                        //Console.WriteLine("  ScriptBlock                    : {0}", scriptBlockText);
+
+                        // some keywords of interest that may be in scripts
+                        List<string> stringsOfInterest = new List<string>();
+                        stringsOfInterest.Add("Password");
+                        stringsOfInterest.Add("password");
+                        stringsOfInterest.Add("pass ");
+                        stringsOfInterest.Add("pass=");
+                        stringsOfInterest.Add("username");
+                        stringsOfInterest.Add("user");
+                        stringsOfInterest.Add("PSCredential");
+                        stringsOfInterest.Add("PScredential");
+                        stringsOfInterest.Add("Pscredential");
+                        stringsOfInterest.Add("pscredential");
+                        // search for and track hits in the script blocks
+                        List<string> searchHits = new List<string>();
+                        foreach (var soi in stringsOfInterest)
+                        {
+                            if (scriptBlockText.Contains(soi))
+                            {
+                                searchHits.Add(soi);
+                            }
+                        }
+                        // return the results for the keyword searches
+                        if (searchHits.Count() > 0)
+                        {
+                            string displayList = string.Join(", ", searchHits.ToArray());
+                            Console.WriteLine("  ScriptBlock contains           : {0}\r\n", displayList);
+                        }
+                        else
+                        {
+                            Console.WriteLine("");
+                        }
+                    }
+                }
+                if (counter > 0)
+                {
+                    Console.WriteLine("  Total 4104 events:             : {0}", counter);
+                }
+                else
+                {
+                    Console.WriteLine("  No 4104 events were found for the past {0} days.", lastDays);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("  [X] Exception: {0}", ex.Message);
+            }
+        }
+
+
         public static void List4624Events()
         {
             var eventId = "4624";
@@ -6665,6 +6923,7 @@ namespace Seatbelt
         {
             Console.WriteLine("\r\n=== Running System Triage Checks ===\r\n");
             ListBasicOSInfo();
+            CheckDeviceGuard();
             ListRebootSchedule();
             ListTokenGroupPrivs();
             ListUACSystemPolicies();

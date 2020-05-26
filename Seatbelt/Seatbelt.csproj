@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Seatbelt</RootNamespace>
     <AssemblyName>Seatbelt</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
@@ -26,6 +26,9 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -37,6 +40,11 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>CS8632</NoWarn>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -47,22 +55,167 @@
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DebugSymbols>false</DebugSymbols>
+    <Prefer32Bit>false</Prefer32Bit>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>CS8632,CA1401</NoWarn>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup />
+  <PropertyGroup />
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Core" />
     <Reference Include="System.DirectoryServices" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.IdentityModel" />
     <Reference Include="System.Management" />
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\CommandGroup.cs" />
+    <Compile Include="SeatbeltArgumentParser.cs" />
+    <Compile Include="Commands\Browser\ChromeBookmarksCommand.cs" />
+    <Compile Include="Commands\Browser\ChromeHistoryCommand.cs" />
+    <Compile Include="Commands\Browser\FirefoxHistoryCommand.cs" />
+    <Compile Include="Commands\Browser\InternetExplorerFavoritesCommand.cs" />
+    <Compile Include="Commands\Browser\InternetExplorerTypedUrlsCommand.cs" />
+    <Compile Include="Commands\HostDTO.cs" />
+    <Compile Include="Commands\ErrorDTO.cs" />
+    <Compile Include="Commands\CommandOutputTypeAttribute.cs" />
+    <Compile Include="Commands\Misc\SearchIndexCommand.cs" />
+    <Compile Include="Commands\Products\InstalledProductsCommand.cs" />
+    <Compile Include="Commands\Products\OfficeMRUsCommand.cs" />
+    <Compile Include="Commands\Products\OutlookDownloadsCommand.cs" />
+    <Compile Include="Commands\Products\PuttyHostKeysCommand.cs" />
+    <Compile Include="Commands\Products\PuttySessionsCommand.cs" />
+    <Compile Include="Commands\Products\SlackDownloadsCommand.cs" />
+    <Compile Include="Commands\Products\SlackPresenceCommand.cs" />
+    <Compile Include="Commands\Products\SlackWorkspacesCommand.cs" />
+    <Compile Include="Commands\Products\WsusClientCommand.cs" />
+    <Compile Include="Commands\Products\SccmClientCommand.cs" />
+    <Compile Include="Commands\Template.cs" />
+    <Compile Include="Commands\VerboseDTO.cs" />
+    <Compile Include="Commands\Misc\FileInfoCommand.cs" />
+    <Compile Include="Commands\WarningDTO.cs" />
+    <Compile Include="Commands\Windows\AMSIProvidersCommand.cs" />
+    <Compile Include="Commands\Windows\AuditPoliciesCommand.cs" />
+    <Compile Include="Commands\Windows\AuditPolicyRegistryCommand.cs" />
+    <Compile Include="Commands\Windows\CredentialGuardCommand.cs" />
+    <Compile Include="Commands\Windows\CredEnumCommand.cs" />
+    <Compile Include="Commands\Windows\DotNetCommand.cs" />
+    <Compile Include="Commands\Windows\EnvironmentPathCommand.cs" />
+    <Compile Include="Commands\Windows\EventLogs\ExplicitLogonEvents\ExplicitLogonEventsCommandDTO.cs" />
+    <Compile Include="Commands\Windows\EventLogs\ExplicitLogonEvents\ExplicitLogonEventsTextFormatter.cs" />
+    <Compile Include="Commands\Windows\EventLogs\PowerShellEventsCommand.cs" />
+    <Compile Include="Commands\Windows\EventLogs\ProcessCreationEventsCommand.cs" />
+    <Compile Include="Commands\Windows\EventLogs\SysmonEventsCommand.cs" />
+    <Compile Include="Commands\Windows\ExplorerMRUsCommand.cs" />
+    <Compile Include="Commands\Windows\IdleTimeCommand.cs" />
+    <Compile Include="Commands\Windows\AntiVirusCommand.cs" />
+    <Compile Include="Commands\Windows\AppLockerCommand.cs" />
+    <Compile Include="Commands\Windows\ARPTableCommand.cs" />
+    <Compile Include="Commands\CommandDTOBase.cs" />
+    <Compile Include="Commands\Windows\PrintersCommand.cs" />
+    <Compile Include="Commands\Windows\LastShutdownCommand.cs" />
+    <Compile Include="Commands\Windows\LocalGPOCommand.cs" />
+    <Compile Include="Commands\Windows\LocalUserCommand.cs" />
+    <Compile Include="Commands\Windows\NamedPipesCommand.cs" />
+    <Compile Include="Commands\Windows\NetworkProfilesCommand.cs" />
+    <Compile Include="Commands\Windows\NtlmSettingsCommand.cs" />
+    <Compile Include="Commands\Windows\ProcessesCommand.cs" />
+    <Compile Include="Commands\Windows\ProcessOwnersCommand.cs" />
+    <Compile Include="Commands\Windows\PSSessionSettingsCommand.cs" />
+    <Compile Include="Commands\Windows\RPCMappedEndpointsCommand.cs" />
+    <Compile Include="Commands\Windows\ScheduledTasksCommand.cs" />
+    <Compile Include="Commands\Windows\SecurityPackagesCommand.cs" />
+    <Compile Include="Commands\Windows\ServicesCommand.cs" />
+    <Compile Include="Commands\Windows\UserRightAssignmentsCommand.cs" />
+    <Compile Include="Commands\Windows\RegistryValueCommand.cs" />
+    <Compile Include="Commands\Windows\WindowsAutoLogonCommand.cs" />
+    <Compile Include="Commands\Windows\AutoRunsCommand.cs" />
+    <Compile Include="Commands\Browser\ChromePresenceCommand.cs" />
+    <Compile Include="Commands\Misc\CloudCredentialsCommand.cs" />
+    <Compile Include="Commands\Windows\WindowsCredentialFileCommand.cs" />
+    <Compile Include="Commands\Windows\TokenGroupCommand.cs" />
+    <Compile Include="Commands\Windows\DNSCacheCommand.cs" />
+    <Compile Include="Commands\Windows\DpapiMasterKeysCommand.cs" />
+    <Compile Include="Commands\Windows\EnvironmentVariableCommand.cs" />
+    <Compile Include="Commands\CommandBase.cs" />
+    <Compile Include="Commands\Windows\EventLogs\ExplicitLogonEvents\ExplicitLogonEventsCommand.cs" />
+    <Compile Include="Commands\Browser\FirefoxPresenceCommand.cs" />
+    <Compile Include="Commands\Misc\InterestingFilesCommand.cs" />
+    <Compile Include="Commands\Browser\InternetExplorerTabCommand.cs" />
+    <Compile Include="Commands\Windows\InternetSettingsCommand.cs" />
+    <Compile Include="Commands\Products\LAPSCommand.cs" />
+    <Compile Include="Commands\Windows\LocalGroupMembershipCommand.cs" />
+    <Compile Include="Commands\Windows\EventLogs\LogonEventsCommand.cs" />
+    <Compile Include="Commands\Windows\LogonSessionsCommand.cs" />
+    <Compile Include="Commands\Windows\LocalSecurityAuthorityCommand.cs" />
+    <Compile Include="Commands\Windows\NetworkSharesCommand.cs" />
+    <Compile Include="Commands\Windows\OSInfoCommand.cs" />
+    <Compile Include="Commands\Windows\PowerShellCommand.cs" />
+    <Compile Include="Commands\Windows\InterestingProcessesCommand.cs" />
+    <Compile Include="Commands\Windows\RDPSessionsCommand.cs" />
+    <Compile Include="Commands\Windows\EventLogs\PoweredOnEventsCommand.cs" />
+    <Compile Include="Commands\Windows\RecycleBinCommand.cs" />
+    <Compile Include="Commands\Products\RemoteDesktopConnectionManagerCommand.cs" />
+    <Compile Include="Commands\Windows\ExplorerRunCommandCommand.cs" />
+    <Compile Include="Commands\Windows\RDPSavedConnectionCommand.cs" />
+    <Compile Include="Commands\Products\SysmonCommand.cs" />
+    <Compile Include="Commands\Windows\TcpConnectionsCommand.cs" />
+    <Compile Include="Commands\Windows\TokenPrivilegesCommand.cs" />
+    <Compile Include="Commands\Windows\UserAccountControlCommand.cs" />
+    <Compile Include="Commands\Windows\UdpConnectionsCommand.cs" />
+    <Compile Include="Commands\Misc\DirectoryListCommand.cs" />
+    <Compile Include="Commands\Windows\WindowsDefenderCommand.cs" />
+    <Compile Include="Commands\Windows\WindowsEventForwardingCommand.cs" />
+    <Compile Include="Commands\Windows\MappedDrivesCommand.cs" />
+    <Compile Include="Commands\Windows\WindowsFirewallCommand.cs" />
+    <Compile Include="Commands\Windows\WindowsVaultCommand.cs" />
+    <Compile Include="Commands\Windows\WMIEventConsumerCommand.cs" />
+    <Compile Include="Commands\Windows\WMIEventFilterCommand.cs" />
+    <Compile Include="Commands\Windows\WMIFilterToConsumerBindingCommand.cs" />
+    <Compile Include="Interop\Rpcrt4.cs" />
+    <Compile Include="Output\Sinks\JsonFileOutputSink.cs" />
+    <Compile Include="SeatbeltOptions.cs" />
+    <Compile Include="Util\ExtensionMethods.cs" />
+    <Compile Include="Util\FileUtil.cs" />
+    <Compile Include="Util\MiscUtil.cs" />
+    <Compile Include="Util\SecurityUtil.cs" />
+    <Compile Include="Util\LsaWrapper.cs" />
+    <Compile Include="Interop\Shlwapi.cs" />
+    <Compile Include="Interop\User32.cs" />
+    <Compile Include="Runtime.cs" />
+    <Compile Include="Output\Sinks\IOutputSink.cs" />
+    <Compile Include="Output\TextWriters\FileTextWriter.cs" />
+    <Compile Include="Output\Formatters\DefaultTextFormatter.cs" />
+    <Compile Include="Output\TextWriters\ConsoleTextWriter.cs" />
+    <Compile Include="Output\Formatters\TextFormatterBase.cs" />
+    <Compile Include="Interop\Advapi32.cs" />
+    <Compile Include="Interop\COM.cs" />
+    <Compile Include="Interop\Shell32.cs" />
+    <Compile Include="Interop\Win32Error.cs" />
+    <Compile Include="Interop\Iphlpapi.cs" />
+    <Compile Include="Interop\Kernel32.cs" />
+    <Compile Include="Interop\Mpr.cs" />
+    <Compile Include="Interop\Netapi32.cs" />
+    <Compile Include="Interop\Secur32.cs" />
+    <Compile Include="Interop\Wtsapi32.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Util\RegistryUtil.cs" />
+    <Compile Include="Interop\VaultCli.cs" />
+    <Compile Include="Seatbelt.cs" />
+    <Compile Include="Output\TextWriters\ITextWriter.cs" />
+    <Compile Include="Output\Sinks\TextOutputSink.cs" />
+    <Compile Include="Util\WMIUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
@@ -71,6 +224,10 @@
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

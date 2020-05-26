@@ -6,91 +6,404 @@ Seatbelt is a C# project that performs a number of security oriented host-survey
 
 [@andrewchiles](https://twitter.com/andrewchiles)' [HostEnum.ps1](https://github.com/threatexpress/red-team-scripts/blob/master/HostEnum.ps1) script and [@tifkin\_](https://twitter.com/tifkin_)'s [Get-HostProfile.ps1](https://github.com/leechristensen/Random/blob/master/PowerShellScripts/Get-HostProfile.ps1) provided inspiration for many of the artifacts to collect.
 
-[@harmj0y](https://twitter.com/harmj0y) is the primary author of this implementation.
+[@harmj0y](https://twitter.com/harmj0y) and [@tifkin_](https://twitter.com/tifkin_) are the primary authors of this implementation.
 
 Seatbelt is licensed under the BSD 3-Clause license.
 
-## Usage
 
-**SeatBelt.exe system** collects the following system data:
+## Table of Contents
 
-    BasicOSInfo           -   Basic OS info (i.e. architecture, OS version, etc.)
-    RebootSchedule        -   Reboot schedule (last 15 days) based on event IDs 12 and 13
-    TokenGroupPrivs       -   Current process/token privileges (e.g. SeDebugPrivilege/etc.)
-    UACSystemPolicies     -   UAC system policies via the registry
-    PowerShellSettings    -   PowerShell versions and security settings
-    AuditSettings         -   Audit settings via the registry
-    WEFSettings           -   Windows Event Forwarding (WEF) settings via the registry
-    LSASettings           -   LSA settings (including auth packages)
-    UserEnvVariables      -   Current user environment variables
-    SystemEnvVariables    -   Current system environment variables
-    UserFolders           -   Folders in C:\Users\
-    NonstandardServices   -   Services with file info company names that don't contain 'Microsoft'
-    InternetSettings      -   Internet settings including proxy configs
-    LapsSettings          -   LAPS settings, if installed
-    LocalGroupMembers     -   Members of local admins, RDP, and DCOM
-    MappedDrives          -   Mapped drives
-    RDPSessions           -   Current incoming RDP sessions
-    WMIMappedDrives       -   Mapped drives via WMI
-    NetworkShares         -   Network shares
-    FirewallRules         -   Deny firewall rules, "full" dumps all
-    AntiVirusWMI          -   Registered antivirus (via WMI)
-    InterestingProcesses  -   "Interesting" processes- defensive products and admin tools
-    RegistryAutoRuns      -   Registry autoruns
-    RegistryAutoLogon     -   Registry autologon information
-    DNSCache              -   DNS cache entries (via WMI)
-    ARPTable              -   Lists the current ARP table and adapter information (equivalent to arp -a)
-    AllTcpConnections     -   Lists current TCP connections and associated processes
-    AllUdpConnections     -   Lists current UDP connections and associated processes
-    NonstandardProcesses  -   Running processeswith file info company names that don't contain 'Microsoft'
-      *  If the user is in high integrity, the following additional actions are run:
-    SysmonConfig          -   Sysmon configuration from the registry
+- [Seatbelt](#seatbelt)
+  * [Table of Contents](#table-of-contents)
+  * [Command Line Usage](#command-line-usage)
+  * [Command Groups](#command-groups)
+    + [system](#system)
+    + [user](#user)
+    + [misc](#misc)
+    + [Additional Command Groups](#additional-command-groups)
+  * [Command Arguments](#command-arguments)
+  * [Output](#output)
+  * [Remote Enumeration](#remote-enumeration)
+  * [Building Your Own Modules](#building-your-own-modules)
+  * [Compile Instructions](#compile-instructions)
+  * [Acknowledgments](#acknowledgments)
 
-**SeatBelt.exe user** collects the following user data:
 
-    SavedRDPConnections   -   Saved RDP connections
-    TriageIE              -   Internet Explorer bookmarks and history (last 7 days)
-    DumpVault             -   Dump saved credentials in Windows Vault (i.e. logins from Internet Explorer and Edge), from SharpWeb
-    RecentRunCommands     -   Recent "run" commands
-    PuttySessions         -   Interesting settings from any saved Putty configurations
-    PuttySSHHostKeys      -   Saved putty SSH host keys
-    CloudCreds            -   AWS/Google/Azure cloud credential files (SharpCloud)
-    RecentFiles           -   Parsed "recent files" shortcuts (last 7 days)
-    MasterKeys            -   List DPAPI master keys
-    CredFiles             -   List Windows credential DPAPI blobs
-    RDCManFiles           -   List Windows Remote Desktop Connection Manager settings files
-      *  If the user is in high integrity, this data is collected for ALL users instead of just the current user
+## Command Line Usage
 
-Non-default collection options:
+```
+                            %&&@@@&&
+                            &&&&&&&%%%,                       #&&@@@@@@%%%%%%###############%
+                            &%&   %&%%                        &////(((&%%%%%#%################//((((###%%%%%%%%%%%%%%%
+    %%%%%%%%%%%######%%%#%%####%  &%%**#                      @////(((&%%%%%%######################(((((((((((((((((((
+    #%#%%%%%%%#######%#%%#######  %&%,,,,,,,,,,,,,,,,         @////(((&%%%%%#%#####################(((((((((((((((((((
+    #%#%%%%%%#####%%#%#%%#######  %%%,,,,,,  ,,.   ,,         @////(((&%%%%%%%######################(#(((#(#((((((((((
+    #####%%%####################  &%%......  ...   ..         @////(((&%%%%%%%###############%######((#(#(####((((((((
+    #######%##########%#########  %%%......  ...   ..         @////(((&%%%%%#########################(#(#######((#####
+    ###%##%%####################  &%%...............          @////(((&%%%%%%%%##############%#######(#########((#####
+    #####%######################  %%%..                       @////(((&%%%%%%%################
+                            &%&   %%%%%      Seatbelt         %////(((&%%%%%%%%#############*
+                            &%%&&&%%%%%        v1.0.0         ,(((&%%%%%%%%%%%%%%%%%,
+                             #%%%%##,
 
-    CurrentDomainGroups   -   The current user's local and domain groups
-    Patches               -   Installed patches via WMI (takes a bit on some systems)
-    LogonSessions         -   User logon session data
-    KerberosTGTData       -   ALL TEH TGTZ!
-    InterestingFiles      -   "Interesting" files matching various patterns in the user's folder
-    IETabs                -   Open Internet Explorer tabs
-    TriageChrome          -   Chrome bookmarks and history
-    TriageFirefox         -   Firefox history (no bookmarks)
-    RecycleBin            -   Items in the Recycle Bin deleted in the last 30 days - only works from a user context!
-    4624Events            -   4624 logon events from the security event log
-    4648Events            -   4648 explicit logon events from the security event log
-    KerberosTickets       -   List Kerberos tickets. If elevated, grouped by all logon sessions.
 
-**SeatBelt.exe all** will run ALL enumeration checks, can be combined with **full**.
+    Available commands (+ means remote usage is supported):
 
-**SeatBelt.exe [CheckName] full** will prevent any filtering and will return complete results.
+        + AMSIProviders          - Providers registered for AMSI
+        + AntiVirus              - Registered antivirus (via WMI)
+          AppLocker              - AppLocker settings, if installed
+          ARPTable               - Lists the current ARP table and adapter information (equivalent to arp -a)
+          AuditPolicies          - Enumerates classic and advanced audit policy settings
+        + AuditPolicyRegistry    - Audit settings via the registry
+        + AutoRuns               - Auto run executables/scripts/programs
+          ChromeBookmarks        - Parses any found Chrome bookmark files
+          ChromeHistory          - Parses any found Chrome history files
+          ChromePresence         - Checks if interesting Google Chrome files exist
+          CloudCredentials       - AWS/Google/Azure cloud credential files
+          CredEnum               - Enumerates the current user's saved credentials using CredEnumerate()
+          CredGuard              - CredentialGuard configuration
+          dir                    - Lists files/folders. By default, lists users' downloads, documents, and desktop folders (arguments == [directory] [depth] [regex] [boolIgnoreErrors]
+        + DNSCache               - DNS cache entries (via WMI)
+        + DotNet                 - DotNet versions
+          DpapiMasterKeys        - List DPAPI master keys
+          EnvironmentPath        - Current environment %PATH$ folders and SDDL information
+          EnvironmentVariables   - Current user environment variables
+          ExplicitLogonEvents    - Explicit Logon events (Event ID 4648) from the security event log. Default of 7 days, argument == last X days.
+          ExplorerMRUs           - Explorer most recently used files (last 7 days, argument == last X days)
+        + ExplorerRunCommands    - Recent Explorer "run" commands
+          FileInfo               - Information about a file (version information, timestamps, basic PE info, etc. argument(s) == file path(s)
+          FirefoxHistory         - Parses any found FireFox history files
+          FirefoxPresence        - Checks if interesting Firefox files exist
+          IdleTime               - Returns the number of seconds since the current user's last input.
+          IEFavorites            - Internet Explorer favorites
+          IETabs                 - Open Internet Explorer tabs
+          IEUrls                 - Internet Explorer typed URLs (last 7 days, argument == last X days)
+          InstalledProducts      - Installed products via the registry
+          InterestingFiles       - "Interesting" files matching various patterns in the user's folder. Note: takes non-trivial time.
+        + InterestingProcesses   - "Interesting" processes - defensive products and admin tools
+          InternetSettings       - Internet settings including proxy configs
+        + LAPS                   - LAPS settings, if installed
+        + LastShutdown           - Returns the DateTime of the last system shutdown (via the registry).
+          LocalGPOs              - Local Group Policy settings applied to the machine/local users
+        + LocalGroups            - Non-empty local groups, "-full" displays all groups (argument == computername to enumerate)
+        + LocalUsers             - Local users, whether they're active/disabled, and pwd last set (argument == computername to enumerate)
+          LogonEvents            - Logon events (Event ID 4624) from the security event log. Default of 10 days, argument == last X days.
+        + LogonSessions          - Windows logon sessions
+        + LSASettings            - LSA settings (including auth packages)
+        + MappedDrives           - Users' mapped drives (via WMI)
+          NamedPipes             - Named pipe names and any readable ACL information.
+        + NetworkProfiles        - Windows network profiles
+        + NetworkShares          - Network shares exposed by the machine (via WMI)
+        + NTLMSettings           - NTLM authentication settings
+          OfficeMRUs             - Office most recently used file list (last 7 days)
+          OSInfo                 - Basic OS info (i.e. architecture, OS version, etc.)
+          OutlookDownloads       - List files downloaded by Outlook
+          PoweredOnEvents        - Reboot and sleep schedule based on the System event log EIDs 1, 12, 13, 42, and 6008. Default of 7 days, argument == last X days.
+        + PowerShell             - PowerShell versions and security settings
+          PowerShellEvents       - PowerShell script block logs (4104) with sensitive data.
+          Printers               - Installed Printers (via WMI)
+          ProcessCreationEvents  - Process creation logs (4688) with sensitive data.
+          Processes              - Running processes with file info company names that don't contain 'Microsoft', "-full" enumerates all processes
+        + ProcessOwners          - Running non-session 0 process list with owners. For remote use.
+        + PSSessionSettings      - Enumerates PS Session Settings from the registry
+        + PuttyHostKeys          - Saved Putty SSH host keys
+        + PuttySessions          - Saved Putty configuration (interesting fields) and SSH host keys
+          RDCManFiles            - Windows Remote Desktop Connection Manager settings files
+        + RDPSavedConnections    - Saved RDP connections stored in the registry
+        + RDPSessions            - Current incoming RDP sessions (argument == computername to enumerate)
+          RecycleBin             - Items in the Recycle Bin deleted in the last 30 days - only works from a user context!
+          reg                    - Registry key values (HKLM\Software by default) argument == [Path] [intDepth] [Regex] [boolIgnoreErrors]
+          RPCMappedEndpoints     - Current RPC endpoints mapped
+        + SCCM                   - System Center Configuration Manager (SCCM) settings, if applicable
+        + ScheduledTasks         - Scheduled tasks (via WMI) that aren't authored by 'Microsoft', "-full" dumps all Scheduled tasks
+          SearchIndex            - Query results from the Windows Search Index, default term of 'passsword'. (argument(s) == <search path> <pattern1,pattern2,...>
+          SecurityPackages       - Enumerates the security packages currently available using EnumerateSecurityPackagesA()
+          Services               - Services with file info company names that don't contain 'Microsoft', "-full" dumps all processes
+          SlackDownloads         - Parses any found 'slack-downloads' files
+          SlackPresence          - Checks if interesting Slack files exist
+          SlackWorkspaces        - Parses any found 'slack-workspaces' files
+        + Sysmon                 - Sysmon configuration from the registry
+          SysmonEvents           - Sysmon process creation logs (1) with sensitive data.
+          TcpConnections         - Current TCP connections and their associated processes and services
+          TokenGroups            - The current token's local and domain groups
+          TokenPrivileges        - Currently enabled token privileges (e.g. SeDebugPrivilege/etc.)
+        + UAC                    - UAC system policies via the registry
+          UdpConnections         - Current UDP connections and associated processes and services
+          UserRightAssignments   - Configured User Right Assignments (e.g. SeDenyNetworkLogonRight, SeShutdownPrivilege, etc.) argument == computername to enumerate
+        + WindowsAutoLogon       - Registry autologon information
+          WindowsCredentialFiles - Windows credential DPAPI blobs
+        + WindowsDefender        - Windows Defender settings (including exclusion locations)
+        + WindowsEventForwarding - Windows Event Forwarding (WEF) settings via the registry
+        + WindowsFirewall        - Non-standard firewall rules, "-full" dumps all (arguments == allow/deny/tcp/udp/in/out/domain/private/public)
+          WindowsVault           - Credentials saved in the Windows Vault (i.e. logins from Internet Explorer and Edge).
+          WMIEventConsumer       - Lists WMI Event Consumers
+          WMIEventFilter         - Lists WMI Event Filters
+          WMIFilterBinding       - Lists WMI Filter to Consumer Bindings
+        + WSUS                   - Windows Server Update Services (WSUS) settings, if applicable
 
-**SeatBelt.exe [CheckName] [CheckName2] ...** will run one or more specified checks only (case-sensitive naming!)
+
+    Seatbelt has the following command groups: All, User, System, Slack, Chrome, Remote, Misc
+
+        You can invoke command groups with "Seatbelt.exe <group>"
+
+       "Seatbelt.exe -group=all" runs all commands
+
+       "Seatbelt.exe -group=user" runs the following commands:
+
+            ChromePresence, CloudCredentials, CredEnum, dir, DpapiMasterKeys,
+            ExplorerMRUs, ExplorerRunCommands, FirefoxPresence, IdleTime,
+            IEFavorites, IETabs, IEUrls, MappedDrives,
+            OfficeMRUs, PuttyHostKeys, PuttySessions, RDCManFiles,
+            RDPSavedConnections, SlackDownloads, SlackPresence, SlackWorkspaces,
+            TokenGroups, WindowsCredentialFiles, WindowsVault
+
+       "Seatbelt.exe -group=system" runs the following commands:
+
+            AMSIProviders, AntiVirus, AppLocker, ARPTable, AuditPolicies,
+            AuditPolicyRegistry, AutoRuns, CredGuard, DNSCache,
+            DotNet, EnvironmentPath, EnvironmentVariables, InterestingProcesses,
+            InternetSettings, LAPS, LastShutdown, LocalGPOs,
+            LocalGroups, LocalUsers, LogonSessions, LSASettings,
+            NamedPipes, NetworkProfiles, NetworkShares, NTLMSettings,
+            OSInfo, PoweredOnEvents, PowerShell, Printers,
+            Processes, PSSessionSettings, RDPSessions, SCCM,
+            Services, Sysmon, TcpConnections, TokenPrivileges,
+            UAC, UdpConnections, UserRightAssignments, WindowsAutoLogon,
+            WindowsDefender, WindowsEventForwarding, WindowsFirewall, WMIEventConsumer,
+            WMIEventFilter, WMIFilterBinding, WSUS
+
+       "Seatbelt.exe -group=slack" runs the following commands:
+
+            SlackDownloads, SlackPresence, SlackWorkspaces
+
+       "Seatbelt.exe -group=chrome" runs the following commands:
+
+            ChromeBookmarks, ChromeHistory, ChromePresence
+
+       "Seatbelt.exe -group=remote" runs the following commands:
+
+            AMSIProviders, AntiVirus, DotNet, ExplorerRunCommands, InterestingProcesses,
+            LastShutdown, LogonSessions, LSASettings, MappedDrives,
+            NetworkProfiles, NetworkShares, NTLMSettings, PowerShell,
+            ProcessOwners, PuttyHostKeys, PuttySessions, RDPSavedConnections,
+            RDPSessions, Sysmon, WindowsDefender, WindowsEventForwarding,
+            WindowsFirewall
+
+       "Seatbelt.exe -group=misc" runs the following commands:
+
+            ChromeBookmarks, ChromeHistory, ExplicitLogonEvents, FileInfo, FirefoxHistory,
+            InstalledProducts, InterestingFiles, LogonEvents, OutlookDownloads,
+            PowerShellEvents, ProcessCreationEvents, ProcessOwners, RecycleBin,
+            reg, RPCMappedEndpoints, ScheduledTasks, SearchIndex,
+            SecurityPackages, SysmonEvents
+
+
+    Examples:
+        'Seatbelt.exe <Command> [Command2] ...' will run one or more specified checks only
+        'Seatbelt.exe <Command> -full' will return complete results for a command without any filtering.
+        'Seatbelt.exe "<Command> [argument]"' will pass an argument to a command that supports it (note the quotes).
+        'Seatbelt.exe -group=all' will run ALL enumeration checks, can be combined with "-full".
+        'Seatbelt.exe <Command> -computername=COMPUTER.DOMAIN.COM [-username=DOMAIN\USER -password=PASSWORD]' will run an applicable check remotely
+        'Seatbelt.exe -group=remote -computername=COMPUTER.DOMAIN.COM [-username=DOMAIN\USER -password=PASSWORD]' will run remote specific checks
+        'Seatbelt.exe -group=system -outputfile="C:\Temp\out.txt"' will run system checks and output to a .txt file.
+        'Seatbelt.exe -group=user -q -outputfile="C:\Temp\out.json"' will run in quiet mode with user checks and output to a .json file.
+```
+
+**Note:** searches that target users will run for the current user if not-elevated and for ALL users if elevated.
+
+**A more detailed wiki is coming...**
+
+
+## Command Groups
+
+**Note:** many commands do some type of filtering by default. Supplying the `-full` argument prevents filtering output. Also, the command group `all` will run all current checks.
+
+For example, the following command will run ALL checks and returns ALL output:
+
+`Seatbelt.exe -group=all -full`
+
+### system
+
+Runs checks that mine interesting data about the system.
+
+Executed with: `Seatbelt.exe -group=system`
+
+| Command | Description |
+| ----------- | ----------- |
+| AMSIProviders | Providers registered for AMSI |
+| AntiVirus |  Registered antivirus (via WMI) |
+| AppLocker | AppLocker settings, if installed |
+| ARPTable | Lists the current ARP table and adapter information(equivalent to arp -a) |
+| AuditPolicies | Enumerates classic and advanced audit policy settings |
+| AuditSettings | Audit settings via the registry |
+| AutoRuns | Auto run executables/scripts/programs |
+| CredGuard | CredentialGuard configuration |
+| DNSCache | DNS cache entries (via WMI) |
+| DotNet | DotNet versions |
+| EnvironmentPath | Current environment %PATH$ folders and SDDL information |
+| EnvironmentVariables | Current user environment variables |
+| InterestingProcesses | "Interesting" processes - defensive products and admin tools |
+| InternetSettings | Internet settings including proxy configs |
+| LAPS | LAPS settings, if installed |
+| LastShutdown | Returns the DateTime of the last system shutdown (via the registry) |
+| LocalGPOs |  Local Group Policy settings applied to the machine/local users |
+| LocalGroups | Non-empty local groups, "full" displays all groups (argument == computername to enumerate) |
+| LocalUsers | Local users, whether they're active/disabled, and pwd last set (argument == computername to enumerate) |
+| LogonSessions | Logon events (Event ID 4624) from the security event log. Default of 10 days, argument == last X days. |
+| LSASettings | LSA settings (including auth packages) |
+| NamedPipes | Named pipe names and any readable ACL information |
+| NetworkProfiles | Windows network profiles |
+| NetworkShares |  Network shares exposed by the machine (via WMI) |
+| NTLMSettings | NTLM authentication settings |
+| OSInfo | Basic OS info (i.e. architecture, OS version, etc.) |
+| PoweredOnEvents | Reboot and sleep schedule based on the System event log EIDs 1, 12, 13, 42, and 6008. Default of 7 days, argument == last X days. |
+| PowerShell | PowerShell versions and security settings |
+| Processes | Running processes with file info company names that don't contain 'Microsoft', "full" enumerates all processes |
+| PSSessionSettings | Enumerates PS Session Settings from the registry |
+| RDPSessions | Current incoming RDP sessions (argument == computername to enumerate) |
+| SCCM | System Center Configuration Manager (SCCM) settings, if applicable |
+| Services | Services with file info company names that don't contain 'Microsoft', "full" dumps all processes |
+| Sysmon | Sysmon configuration from the registry |
+| TcpConnections |  Current TCP connections and their associated processes and services |
+| TokenPrivileges | Currently enabled token privileges (e.g. SeDebugPrivilege/etc.) |
+| UAC | UAC system policies via the registry |
+| UdpConnections | Current UDP connections and associated processes and services |
+| UserRightAssignments | Configured User Right Assignments (e.g. SeDenyNetworkLogonRight, SeShutdownPrivilege, etc.) argument == computername to enumerate |
+| WindowsAutoLogon | Registry autologon information |
+| WindowsDefender | Windows Defender settings (including exclusion locations) |
+| WindowsEventForwarding | Windows Event Forwarding (WEF) settings via the registry |
+| WindowsFirewall | Non-standard firewall rules, "full" dumps all (arguments == allow/deny/tcp/udp/in/out/domain/private/public) |
+| WMIEventConsumer | Lists WMI Event Consumers |
+| WMIEventFilter | Lists WMI Event Filters |
+| WMIFilterBinding | Lists WMI Filter to Consumer Bindings |
+| WSUS | Windows Server Update Services (WSUS) settings, if applicable |
+
+
+### user
+
+Runs checks that mine interesting data about the currently logged on user (if not elevated) or ALL users (if elevated).
+
+Executed with: `Seatbelt.exe -group=user`
+
+| Command | Description |
+| ----------- | ----------- |
+| ChromePresence | Checks if interesting Google Chrome files exist |
+| CloudCredentials | AWS/Google/Azure cloud credential files |
+| CredEnum | Enumerates the current user's saved credentials using CredEnumerate() |
+| dir | Lists files/folders. By default, lists users' downloads, documents, and desktop folders (arguments == \<directory\> \<depth\> \<regex\> |
+| DpapiMasterKeys | List DPAPI master keys |
+| ExplorerMRUs | Explorer most recently used files (last 7 days, argument == last X days) |
+| FirefoxPresence | Checks if interesting Firefox files exist |
+| IdleTime | Returns the number of seconds since the current user's last input. |
+| IEFavorites | Internet Explorer favorites |
+| IETabs | Open Internet Explorer tabs |
+| IEUrls| Internet Explorer typed URLs (last 7 days, argument == last X days) |
+| MappedDrives | Users' mapped drives (via WMI) |
+| OfficeMRUs | Office most recently used file list (last 7 days) |
+| PuttyHostKeys | Saved Putty SSH host keys |
+| PuttySessions | Saved Putty configuration (interesting fields) and SSH host keys |
+| RDCManFiles | Windows Remote Desktop Connection Manager settings files |
+| RDPSavedConnections | Saved RDP connections stored in the registry |
+| RecentRunCommands | Recent Explorer "run" commands |
+| SlackPresence | Checks if interesting Slack files exist |
+| TokenGroups | The current token's local and domain groups |
+| WindowsCredentialFiles | Windows credential DPAPI blobs |
+| WindowsVault | Credentials saved in the Windows Vault (i.e. logins from Internet Explorer and Edge). |
+
+
+### misc
+
+Runs all miscellaneous checks.
+
+Executed with: `Seatbelt.exe -group=misc`
+
+| Command | Description |
+| ----------- | ----------- |
+| ChromeBookmarks | Parses any found Chrome bookmark files |
+| ChromeHistory | Parses any found Chrome history files |
+| ExplicitLogonEvents | Explicit Logon events (Event ID 4648) from the security event log. Default of 7 days, argument == last X days. |
+| FileInfo | Information about a file (version information, timestamps, basic PE info, etc. argument(s) == file path(s) |
+| FirefoxHistory | Parses any found FireFox history files |
+| InstalledProducts | Installed products via the registry |
+| InterestingFiles | "Interesting" files matching various patterns in the user's folder. Note: takes non-trivial time. |
+| LogonEvents | Logon events (Event ID 4624) from the security event log. Default of 10 days, argument == last X days. |
+| OutlookDownloads | List files downloaded by Outlook |
+| PowerShellEvents | PowerShell script block logs (4104) with sensitive data. |
+| Printers | Installed Printers (via WMI) |
+| ProcessCreation | Process creation logs (4688) with sensitive data. |
+| ProcessOwners | Running non-session 0 process list with owners. For remote use. |
+| RecycleBin | Items in the Recycle Bin deleted in the last 30 days - only works from a user context! |
+| reg | Registry key values (HKLM\Software by default) argument == [Path] [intDepth] [Regex] [boolIgnoreErrors] |
+| RPCMappedEndpoints | Current RPC endpoints mapped |
+| ScheduledTasks | Scheduled tasks (via WMI) that aren't authored by 'Microsoft', "full" dumps all Scheduled tasks |
+| SearchIndex | Query results from the Windows Search Index, default term of 'passsword'. (argument(s) == \<search path\> \<pattern1,pattern2,...\> |
+| SecurityPackages | Enumerates the security packages currently available using EnumerateSecurityPackagesA() |
+| SlackDownloads | Parses any found 'slack-downloads' files |
+| SlackWorkspaces | Parses any found 'slack-workspaces' files |
+| SysmonEvents | Sysmon process creation logs (1) with sensitive data. |
+
+
+### Additional Command Groups
+
+Executed with: `Seatbelt.exe -group=GROUPNAME`
+
+| Alias | Description |
+| ----------- | ----------- |
+| Slack | Runs modules that start with "Slack*" |
+| Chrome | Runs modules that start with "Chrome*" |
+| Remote | Runs the following modules (for use against a remote system): AMSIProviders, AntiVirus, AuditSettings, DotNet, InterestingProcesses, LastShutdown, LogonSessions, LSASettings, MappedDrives, NetworkProfiles, NetworkShares, NTLMSettings, PowerShell, PuttyHostKeys, PuttySessions, RDPSavedConnections, RDPSessions, RecentRunCommands, Sysmon, WindowsDefender, WindowsEventForwarding, WindowsFirewall |
+
+
+## Command Arguments
+
+Command that accept arguments have it noted in their description. To pass an argument to a command, enclose the command an arguments in double quotes.
+
+For example, the following command returns 4624 logon events for the last 30 days:
+
+`Seatbelt.exe "LogonEvents 30"`
+
+The following command queries a registry three levels deep, returning only keys/valueNames/values that match the regex `.*defini.*`, and ignoring any errors that occur.
+
+`Seatbelt.exe "reg \"HKLM\SOFTWARE\Microsoft\Windows Defender\" 3 .*defini.* true"`
+
+
+## Output
+
+Seatbelt can redirect its output to a file with the `-outputfile="C:\Path\file.txt"` argument. If the file path ends in .json, the output will be structured json.
+
+For example, the following command will output the results of system checks to a txt file:
+
+`Seatbelt.exe -group=system -outputfile="C:\Temp\system.txt"`
+
+
+## Remote Enumeration
+
+Commands noted with a + in the help menu can be run remotely against another system. This is performed over WMI via queries for WMI classes and WMI's StdRegProv for registry enumeration.
+
+To enumerate a remote system, supply `-computername=COMPUTER.DOMAIN.COM` - an alternate username and password can be specified with `-username=DOMAIN\USER -password=PASSWORD`
+
+For example, the following command runs remote-focused checks against a remote system:
+
+`Seatbelt.exe -group=remote -computername=dc.theshire.local -computername=192.168.230.209 -username=THESHIRE\sam -password="yum \"po-ta-toes\""`
+
+
+## Building Your Own Modules
+
+Seatbelt's structure is completely modular, allowing for additional command modules to be dropped into the file structure and loaded up dynamically.
+
+There is a commented command module template at `.\Seatbelt\Commands\Template.cs` for reference. Once built, drop the module in the logical file location, include it in the project in the Visual Studio Solution Explorer, and compile.
+
 
 ## Compile Instructions
 
-We are not planning on releasing binaries for Seatbelt, so you will have to compile yourself :)
+We are not planning on releasing binaries for Seatbelt, so you will have to compile yourself.
 
-Seatbelt has been built against .NET 3.5 and is compatible with [Visual Studio 2015 Community Edition](https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409). Simply open up the project .sln, choose "release", and build.
+Seatbelt has been built against .NET 3.5 and 4.0 with C# 8.0 features and is compatible with [Visual Studio Community Edition](https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409). Simply open up the project .sln, choose "release", and build.
+
 
 ## Acknowledgments
 
-Seatbelt incorporates various code C# snippets and bits of PoCs found throughout research for its capabilities. These snippets and authors are highlighted in the appropriate locations in the source code, and include:
+Seatbelt incorporates various collection items, code C# snippets, and bits of PoCs found throughout research for its capabilities. These ideas, snippets, and authors are highlighted in the appropriate locations in the source code, and include:
 
 * [@andrewchiles](https://twitter.com/andrewchiles)' [HostEnum.ps1](https://github.com/threatexpress/red-team-scripts/blob/master/HostEnum.ps1) script and [@tifkin\_](https://twitter.com/tifkin_)'s [Get-HostProfile.ps1](https://github.com/leechristensen/Random/blob/master/PowerShellScripts/Get-HostProfile.ps1) provided inspiration for many of the artifacts to collect.
 * [Boboes' code concerning NetLocalGroupGetMembers](https://stackoverflow.com/questions/33935825/pinvoke-netlocalgroupgetmembers-runs-into-fatalexecutionengineerror/33939889#33939889)
@@ -101,11 +414,36 @@ Seatbelt incorporates various code C# snippets and bits of PoCs found throughout
 * [Rod Stephens' pattern for recursive file enumeration](http://csharphelper.com/blog/2015/06/find-files-that-match-multiple-patterns-in-c/)
 * [SwDevMan81's snippet for enumerating current token privileges](https://stackoverflow.com/questions/4349743/setting-size-of-token-privileges-luid-and-attributes-array-returned-by-gettokeni)
 * [Jared Atkinson's PowerShell work on Kerberos ticket caches](https://github.com/Invoke-IR/ACE/blob/master/ACE-Management/PS-ACE/Scripts/ACE_Get-KerberosTicketCache.ps1)
-* [Vincent LE TOUX' great C# Kerberos work](https://github.com/vletoux/MakeMeEnterpriseAdmin/blob/master/MakeMeEnterpriseAdmin.ps1#L2939-L2950)
 * [darkmatter08's Kerberos C# snippet](https://www.dreamincode.net/forums/topic/135033-increment-memory-pointer-issue/)
 * Numerous [PInvoke.net](https://www.pinvoke.net/) samples <3
 * [Jared Hill's awesome CodeProject to use Local Security Authority to Enumerate User Sessions](https://www.codeproject.com/Articles/18179/Using-the-Local-Security-Authority-to-Enumerate-Us)
 * [Fred's code on querying the ARP cache](https://social.technet.microsoft.com/Forums/lync/en-US/e949b8d6-17ad-4afc-88cd-0019a3ac9df9/powershell-alternative-to-arp-a?forum=ITCG)
 * [ShuggyCoUk's snippet on querying the TCP connection table](https://stackoverflow.com/questions/577433/which-pid-listens-on-a-given-port-in-c-sharp/577660#577660)
 * [yizhang82's example of using reflection to interact with COM objects through C#](https://gist.github.com/yizhang82/a1268d3ea7295a8a1496e01d60ada816)
+* [@djhohnstein](https://twitter.com/djhohnstein)'s [SharpWeb project](https://github.com/djhohnstein/SharpWeb/blob/master/Edge/SharpEdge.cs)
+* [@djhohnstein](https://twitter.com/djhohnstein)'s [EventLogParser project](https://github.com/djhohnstein/EventLogParser)
 * [@cmaddalena](https://twitter.com/cmaddalena)'s [SharpCloud project](https://github.com/chrismaddalena/SharpCloud), BSD 3-Clause
+* [@_RastaMouse](https://twitter.com/_RastaMouse)'s [Watson project](https://github.com/rasta-mouse/Watson/), GPL License
+* [@_RastaMouse](https://twitter.com/_RastaMouse)'s [Work on AppLocker enumeration](https://rastamouse.me/2018/09/enumerating-applocker-config/)
+* [@peewpw](https://twitter.com/peewpw)'s [Invoke-WCMDump project](https://github.com/peewpw/Invoke-WCMDump/blob/master/Invoke-WCMDump.ps1), GPL License
+* TrustedSec's [HoneyBadger project](https://github.com/trustedsec/HoneyBadger/tree/master/modules/post/windows/gather), BSD 3-Clause
+* CENTRAL Solutions's [Audit User Rights Assignment Project](https://www.centrel-solutions.com/support/tools.aspx?feature=auditrights), No license
+* Collection ideas inspired from [@ukstufus](https://twitter.com/ukstufus)'s [Reconerator](https://github.com/stufus/reconerator)
+* Office MRU locations and timestamp parsing information from Dustin Hurlbut's paper [Microsoft Office 2007, 2010 - Registry Artifacts](https://ad-pdf.s3.amazonaws.com/Microsoft_Office_2007-2010_Registry_ArtifactsFINAL.pdf)
+* The [Windows Commands list](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/windows-commands), used for sensitive regex construction
+* [Ryan Ries' code for enumeration mapped RPC endpoints](https://stackoverflow.com/questions/21805038/how-do-i-pinvoke-rpcmgmtepeltinqnext)
+* [Chris Haas' post on EnumerateSecurityPackages()](https://stackoverflow.com/a/5941873)
+* [darkoperator](carlos_perez)'s work [on the HoneyBadger project](https://github.com/trustedsec/HoneyBadger)
+* [@airzero24](https://twitter.com/airzero24)'s work on [WMI Registry enumeration](https://github.com/airzero24/WMIReg)
+* Alexandru's answer on [RegistryKey.OpenBaseKey alternatives](https://stackoverflow.com/questions/26217199/what-are-some-alternatives-to-registrykey-openbasekey-in-net-3-5)
+* Tomas Vera's [post on JavaScriptSerializer](http://www.tomasvera.com/programming/using-javascriptserializer-to-parse-json-objects/)
+* Marc Gravell's [note on recursively listing files/folders](https://stackoverflow.com/a/929418)
+* [@mattifestation](https://twitter.com/mattifestation)'s [Sysmon rule parser](https://github.com/mattifestation/PSSysmonTools/blob/master/PSSysmonTools/Code/SysmonRuleParser.ps1#L589-L595)
+* Some inspiration from spolnik's [Simple.CredentialsManager project](https://github.com/spolnik/Simple.CredentialsManager), Apache 2 license
+* [This post on Credential Guard settings](https://www.tenforums.com/tutorials/68926-verify-if-device-guard-enabled-disabled-windows-10-a.html)
+* [This thread](https://social.technet.microsoft.com/Forums/windows/en-US/b0e13a16-51a6-4aca-8d44-c85e097f882b/nametype-in-nla-information-for-a-network-profile) on network profile information
+* Mark McKinnon's post on [decoding the DateCreated and DateLastConnected SSID values](http://cfed-ttf.blogspot.com/2009/08/decoding-datecreated-and.html)
+* This Specops [post on group policy caching](https://specopssoft.com/blog/things-work-group-policy-caching/)
+* sa_ddam213's StackOverflow post on [enumerating items in the Recycle Bin](https://stackoverflow.com/questions/18071412/list-filenames-in-the-recyclebin-with-c-sharp-without-using-any-external-files)
+
+We've tried to do our due diligence for citations, but if we've left someone/something out, please let us know!

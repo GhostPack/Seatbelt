@@ -398,7 +398,7 @@ There is a commented command module template at `.\Seatbelt\Commands\Template.cs
 
 We are not planning on releasing binaries for Seatbelt, so you will have to compile yourself.
 
-Seatbelt has been built against .NET 3.5 and 4.0 with C# 8.0 features and is compatible with [Visual Studio Community Edition](https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409). Simply open up the project .sln, choose "release", and build.
+Seatbelt has been built against .NET 3.5 and 4.0 with C# 8.0 features and is compatible with [Visual Studio Community Edition](https://visualstudio.microsoft.com/downloads/). Simply open up the project .sln, choose "release", and build.
 
 
 ## Acknowledgments

@@ -80,6 +80,11 @@ namespace Seatbelt.Commands.Windows
                 {
                     WriteLine("    [*] LSASS Protected Mode is enabled! You will not be able to access lsass.exe's memory easily.");
                 }
+
+                if (dto.Key.Equals("DisableRestrictedAdmin", System.StringComparison.InvariantCultureIgnoreCase) && dto.Value == "0")
+                {
+                    WriteLine("    [*] RDP Restricted Admin Mode is enabled! You can use pass-the-hash to access RDP on this system.");
+                }
             }
         }
     }

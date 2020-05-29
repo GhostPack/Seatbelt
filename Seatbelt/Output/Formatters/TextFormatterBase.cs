@@ -19,9 +19,6 @@ namespace Seatbelt.Output.Formatters
         protected void Write(string str) => _textWriter.Write(str);
         protected void WriteLine() => _textWriter.WriteLine();
         protected void WriteLine(string str) => _textWriter.WriteLine(str);
-        protected void WriteLine(string format, object? arg0) => _textWriter.WriteLine(format, arg0);
-        protected void WriteLine(string format, object? arg0, object? arg1) => _textWriter.WriteLine(format, arg0, arg1);
-        protected void WriteLine(string format, object arg0, object arg1, object arg2) => _textWriter.WriteLine(format, arg0, arg1, arg2);
         protected void WriteLine(string format, params object?[] args) => _textWriter.WriteLine(format, args);
     }
 }

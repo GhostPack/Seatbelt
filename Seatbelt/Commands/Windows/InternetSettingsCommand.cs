@@ -21,41 +21,33 @@ namespace Seatbelt.Commands.Windows
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            WriteHost(" Hive                               Key : Value\n");
+            var result = new InternetSettingsDTO();
+
             // lists user/system internet settings, including default proxy info
-            var proxySettings = RegistryUtil.GetValues(RegistryHive.CurrentUser, "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
-
-            if ((proxySettings != null) && (proxySettings.Count != 0))
+            var keyPath = "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings";
+            var proxySettings = RegistryUtil.GetValues(RegistryHive.CurrentUser, keyPath);
+            foreach (var kvp in proxySettings)
             {
-                foreach (var kvp in proxySettings)
-                {
-                    yield return new InternetSettingsDTO()
-                    {
-                        Hive = "HKCU",
-                        Key = kvp.Key,
-                        Value = kvp.Value.ToString()
-                    };
-                }
+                result.GeneralSettings.Add(new InternetSettingsKey(
+                    "HKCU",
+                    keyPath,
+                    kvp.Key,
+                    kvp.Value.ToString(),
+                    null));
             }
 
-            WriteHost();
-
-            var proxySettings2 = RegistryUtil.GetValues(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
-
-            if ((proxySettings2 != null) && (proxySettings2.Count != 0))
+            keyPath = "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings";
+            var proxySettings2 = RegistryUtil.GetValues(RegistryHive.LocalMachine, keyPath);
+            foreach (var kvp in proxySettings2)
             {
-                foreach (var kvp in proxySettings2)
-                {
-                    yield return new InternetSettingsDTO()
-                    {
-                        Hive = "HKLM",
-                        Key = kvp.Key,
-                        Value = kvp.Value.ToString()
-                    };
-                }
+                result.GeneralSettings.Add(new InternetSettingsKey(
+                    "HKLM",
+                    keyPath,
+                    kvp.Key,
+                    kvp.Value.ToString(),
+                    null));
             }
 
-            WriteHost("");
 
             // List user/system internet settings for zonemapkey (local, trusted, etc.) :
             // 1 = Intranet zone – sites on your local network.
@@ -63,49 +55,40 @@ namespace Seatbelt.Commands.Windows
             // 3 = Internet zone – sites that are on the Internet.
             // 4 = Restricted Sites zone – sites that have been specifically added to your restricted sites.
 
-            WriteHost(" Hive                               Key : Value\n");
 
             IDictionary<string, string> zoneMapKeys = new Dictionary<string, string>()
                                             {
                                                 {"0", "My Computer" },
                                                 {"1", "Local Intranet Zone"},
-                                                {"2", "Trusted sites Zone"},
+                                                {"2", "Trusted Sites Zone"},
                                                 {"3", "Internet Zone"},
                                                 {"4", "Restricted Sites Zone"}
                                             };
 
-            var zoneMapKey = RegistryUtil.GetValues(RegistryHive.LocalMachine, @"Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMapKey");
-            if ((zoneMapKey != null) && (zoneMapKey.Count != 0))
+            keyPath = @"Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMapKey";
+            var zoneMapKey = RegistryUtil.GetValues(RegistryHive.LocalMachine, keyPath);
+            foreach (var kvp in zoneMapKey.AsEnumerable())
             {
-                foreach (var kvp in zoneMapKey)
-                {
-                    yield return new InternetSettingsDTO()
-                    {
-                        Hive = "HKLM",
-                        Key = kvp.Key,
-                        Value = zoneMapKeys.AsEnumerable().Single(l => l.Key == kvp.Value.ToString()).Value
-                    };
-                }
+                result.ZoneMaps.Add(new InternetSettingsKey(
+                    "HKLM",
+                    keyPath,
+                    kvp.Key,
+                    kvp.Value.ToString(),
+                    zoneMapKeys.AsEnumerable().Single(l => l.Key == kvp.Value.ToString()).Value
+                ));
             }
 
-            WriteHost("");
-
-            var zoneMapKey2 = RegistryUtil.GetValues(RegistryHive.CurrentUser, @"Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMapKey");
-
-            if ((zoneMapKey2 != null) && (zoneMapKey2.Count != 0))
+            var zoneMapKey2 = RegistryUtil.GetValues(RegistryHive.CurrentUser, keyPath);
+            foreach (var kvp in zoneMapKey2.AsQueryable())
             {
-                foreach (var kvp in zoneMapKey2)
-                {
-                    yield return new InternetSettingsDTO()
-                    {
-                        Hive = "HKCU",
-                        Key = kvp.Key,
-                        Value = zoneMapKeys.AsEnumerable().Single(l => l.Key == kvp.Value.ToString()).Value
-                    };
-                }
+                result.ZoneMaps.Add(new InternetSettingsKey(
+                    "HKCU",
+                    keyPath,
+                    kvp.Key,
+                    kvp.Value.ToString(),
+                    zoneMapKeys.AsEnumerable().Single(l => l.Key == kvp.Value.ToString()).Value
+                ));
             }
-
-            WriteHost("");
 
             // List Zones settings with automatic logons
 
@@ -120,7 +103,6 @@ namespace Seatbelt.Commands.Windows
              * 0x00030000 Anonymous logon
             **/
 
-            WriteHost("Zone settings");
             IDictionary<uint, string> zoneAuthSettings = new Dictionary<uint, string>()
                                             {
                                                 {0x00000000, "Automatically logon with current username and password"},
@@ -131,21 +113,48 @@ namespace Seatbelt.Commands.Windows
 
             for (int i = 0; i <= 4; i++)
             {
-                var zoneSettings = RegistryUtil.GetDwordValue(RegistryHive.LocalMachine, @"Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\Zones\" + i.ToString(), "1A00");
-                if (zoneSettings != null)
+                keyPath = @"Software\Policies\Microsoft\Windows\CurrentVersion\Internet Settings\Zones\" + i;
+                var authSetting = RegistryUtil.GetDwordValue(RegistryHive.LocalMachine, keyPath, "1A00");
+                if (authSetting != null)
                 {
-                    WriteHost(zoneMapKeys.AsEnumerable().Single(l => l.Key == i.ToString()).Value + "\tSettings: " + zoneAuthSettings.AsEnumerable().Single(l => l.Key == zoneSettings).Value);
+                    var zone = zoneMapKeys.AsEnumerable().Single(l => l.Key == i.ToString()).Value;
+                    var authSettingStr = zoneAuthSettings.AsEnumerable().Single(l => l.Key == authSetting).Value;
+
+                    result.ZoneAuthSettings.Add(new InternetSettingsKey(
+                        "HKLM",
+                        keyPath,
+                        "1A00",
+                        authSetting.ToString(),
+                        $"{zone} : {authSettingStr}"
+                    ));
                 }
             }
+
+            yield return result;
+        }
+
+        internal class InternetSettingsKey
+        {
+            public InternetSettingsKey(string hive, string path, string valueName, string value, string? interpretation)
+            {
+                Hive = hive;
+                Path = path;
+                ValueName = valueName;
+                Value = value;
+                Interpretation = interpretation;
+            }
+            public string Hive { get; }
+            public string Path { get; }
+            public string ValueName { get; }
+            public string Value { get; }
+            public string? Interpretation { get; }
         }
 
         internal class InternetSettingsDTO : CommandDTOBase
         {
-            public string Hive { get; set; }
-
-            public string Key { get; set; }
-
-            public string Value { get; set; }
+            public List<InternetSettingsKey> GeneralSettings { get; set; } = new List<InternetSettingsKey>();
+            public List<InternetSettingsKey> ZoneMaps { get; set; } = new List<InternetSettingsKey>();
+            public List<InternetSettingsKey> ZoneAuthSettings { get; set; } = new List<InternetSettingsKey>();
         }
 
         [CommandOutputType(typeof(InternetSettingsDTO))]
@@ -159,7 +168,29 @@ namespace Seatbelt.Commands.Windows
             {
                 var dto = (InternetSettingsDTO)result;
 
-                WriteLine(" {0}    {1,30} : {2}", dto.Hive, dto.Key, dto.Value);
+                WriteLine("General Settings");
+                WriteLine("  {0}    {1,30} : {2}\n", "Hive", "Key", "Value");
+                foreach (var i in dto.GeneralSettings)
+                {
+                    WriteLine("  {0}    {1,30} : {2}", "HKCU", i.ValueName, i.Value);
+                }
+
+                WriteLine("\nURLs by Zone");
+
+                if(dto.ZoneMaps.Count == 0)
+                    WriteLine("  No URLs configured");
+
+                foreach (var i in dto.ZoneMaps)
+                {
+                    WriteLine("  {0} {1,-30} : {2}", i.Hive, i.ValueName, i.Interpretation);
+                }
+
+                WriteLine("\nZone Auth Settings");
+                foreach (var i in dto.ZoneAuthSettings)
+                {
+                    WriteLine($"  {i.Interpretation}");
+                }
+
             }
         }
     }

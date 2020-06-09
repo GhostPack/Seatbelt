@@ -384,7 +384,7 @@ To enumerate a remote system, supply `-computername=COMPUTER.DOMAIN.COM` - an al
 
 For example, the following command runs remote-focused checks against a remote system:
 
-`Seatbelt.exe -group=remote -computername=dc.theshire.local -computername=192.168.230.209 -username=THESHIRE\sam -password="yum \"po-ta-toes\""`
+`Seatbelt.exe -group=remote -computername=192.168.230.209 -username=THESHIRE\sam -password="yum \"po-ta-toes\""`
 
 
 ## Building Your Own Modules

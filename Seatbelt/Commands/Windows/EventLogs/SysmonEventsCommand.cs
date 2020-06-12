@@ -32,10 +32,8 @@ namespace Seatbelt.Commands.Windows.EventLogs
             // Get our "sensitive" cmdline regexes from a common helper function.
             Regex[] processCmdLineRegex = MiscUtil.GetProcessCmdLineRegex();
 
-            var eventId = 1;
-            var query = String.Format("*[System/EventId={0}]", eventId);
-            var eventLogQuery = new EventLogQuery("Microsoft-Windows-Sysmon/Operational", PathType.LogName, query);
-            eventLogQuery.ReverseDirection = true;
+            var query = "*[System/EventID=1]";
+            var eventLogQuery = new EventLogQuery("Microsoft-Windows-Sysmon/Operational", PathType.LogName, query) { ReverseDirection = true };
 
             EventLogReader logReader = null;
             try

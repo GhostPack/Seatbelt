@@ -34,13 +34,14 @@ namespace Seatbelt.Commands.Windows.EventLogs
 
             foreach (var logName in powershellLogs)
             {
-                var query = "*[System/EventId=4104]";
+                var query = "*[System/EventID=4104]";
                 var eventLogQuery = new EventLogQuery(logName, PathType.LogName, query) { ReverseDirection = true };
                 var logReader = new EventLogReader(eventLogQuery);
 
                 for (var eventDetail = logReader.ReadEvent(); eventDetail != null; eventDetail = logReader.ReadEvent())
                 {
                     var scriptBlock = eventDetail.Properties[2].Value.ToString();
+
                     foreach (var reg in powershellRegex)
                     {
                         var m = reg.Match(scriptBlock);

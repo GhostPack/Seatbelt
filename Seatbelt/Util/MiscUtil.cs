@@ -29,6 +29,7 @@ namespace Seatbelt.Util
                 new Regex(@"(New-Object.*System.Management.Automation.PSCredential.*)", RegexOptions.IgnoreCase & RegexOptions.Multiline),
                 new Regex(@"(ConvertTo-SecureString.*AsPlainText.*)", RegexOptions.IgnoreCase & RegexOptions.Multiline),
                 new Regex(@"(net(.exe)?.*user .*)", RegexOptions.IgnoreCase & RegexOptions.Multiline),
+                new Regex(@"(net(.exe)?.*use .*)", RegexOptions.IgnoreCase & RegexOptions.Multiline),
                 new Regex(@"(cmdkey(.exe)?.*/pass:.*)", RegexOptions.IgnoreCase & RegexOptions.Multiline),
                 new Regex(@"(ssh(.exe)?.*-i .*)", RegexOptions.IgnoreCase & RegexOptions.Multiline),
                 new Regex(@"(psexec(.exe)?.*-p .*)", RegexOptions.IgnoreCase & RegexOptions.Multiline),

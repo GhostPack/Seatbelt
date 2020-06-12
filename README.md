@@ -384,7 +384,7 @@ To enumerate a remote system, supply `-computername=COMPUTER.DOMAIN.COM` - an al
 
 For example, the following command runs remote-focused checks against a remote system:
 
-`Seatbelt.exe -group=remote -computername=dc.theshire.local -computername=192.168.230.209 -username=THESHIRE\sam -password="yum \"po-ta-toes\""`
+`Seatbelt.exe -group=remote -computername=192.168.230.209 -username=THESHIRE\sam -password="yum \"po-ta-toes\""`
 
 
 ## Building Your Own Modules
@@ -398,7 +398,7 @@ There is a commented command module template at `.\Seatbelt\Commands\Template.cs
 
 We are not planning on releasing binaries for Seatbelt, so you will have to compile yourself.
 
-Seatbelt has been built against .NET 3.5 and 4.0 with C# 8.0 features and is compatible with [Visual Studio Community Edition](https://visualstudio.microsoft.com/downloads/). Simply open up the project .sln, choose "release", and build.
+Seatbelt has been built against .NET 3.5 and 4.0 with C# 8.0 features and is compatible with [Visual Studio Community Edition](https://visualstudio.microsoft.com/downloads/). Simply open up the project .sln, choose "release", and build. To change the target .NET framework version, [modify the project's settings](https://github.com/GhostPack/Seatbelt/issues/27) and rebuild the project.
 
 
 ## Acknowledgments

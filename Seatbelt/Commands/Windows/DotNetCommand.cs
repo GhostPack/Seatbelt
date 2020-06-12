@@ -21,24 +21,47 @@ namespace Seatbelt.Commands.Windows
             ThisRunTime = runtime;
         }
 
+        private IEnumerable<string> GetCLRVersions()
+        {
+            var versions = new List<string>();
+
+            var dirs = System.IO.Directory.GetDirectories($"{Environment.GetEnvironmentVariable("windir")}\\Microsoft.Net\\Framework\\");
+            foreach (var dir in dirs)
+            {
+                if (System.IO.File.Exists($"{dir}\\System.dll"))
+                {
+                    // yes, I know I'm passing a directory and not a file. I know this is a hack :)
+                    versions.Add(System.IO.Path.GetFileName(dir.TrimEnd(System.IO.Path.DirectorySeparatorChar)).TrimStart('v'));
+                }
+            }
+
+            return versions;
+        }
+
+
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            var installedVersions = new List<string>();
+            var installedDotNetVersions = new List<string>();
+            var installedCLRVersions = new List<string>();
+            installedCLRVersions.AddRange(GetCLRVersions());
+
 #nullable disable
             var dotNet35Version = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\NET Framework Setup\NDP\v3.5", "Version");
             if (!string.IsNullOrEmpty(dotNet35Version))
             {
-                installedVersions.Add(dotNet35Version);
+                installedDotNetVersions.Add(dotNet35Version);
             }
 
             var dotNet4Version = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full", "Version");
             if (!string.IsNullOrEmpty(dotNet4Version))
             {
-                installedVersions.Add(dotNet4Version);
+                installedDotNetVersions.Add(dotNet4Version);
             }
+
 #nullable restore
             yield return new DotNetDTO(
-                installedVersions.ToArray(),
+                installedCLRVersions.ToArray(),
+                installedDotNetVersions.ToArray(),
                 Environment.OSVersion.Version.Major >= 10
                 );
         }
@@ -46,12 +69,14 @@ namespace Seatbelt.Commands.Windows
 
     class DotNetDTO : CommandDTOBase
     {
-        public DotNetDTO(string[] installedVersions, bool osSupportsAmsi)
+        public DotNetDTO(string[] installedCLRVersions, string[] installedDotNetVersions, bool osSupportsAmsi)
         {
-            InstalledVersions = installedVersions;
+            InstalledCLRVersions = installedCLRVersions;
+            InstalledDotNetVersions = installedDotNetVersions;
             OsSupportsAmsi = osSupportsAmsi;
         }
-        public string[] InstalledVersions { get; }
+        public string[] InstalledCLRVersions { get; }
+        public string[] InstalledDotNetVersions { get; }
         public bool OsSupportsAmsi { get; }
     }
 
@@ -65,12 +90,18 @@ namespace Seatbelt.Commands.Windows
         public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
         {
             var dto = (DotNetDTO)result;
-            var lowestVersion = dto.InstalledVersions.Min(v => (new Version(v)));
-            var highestVersion = dto.InstalledVersions.Max(v => (new Version(v)));
+            var lowestVersion = dto.InstalledDotNetVersions.Min(v => (new Version(v)));
+            var highestVersion = dto.InstalledDotNetVersions.Max(v => (new Version(v)));
             bool dotNetSupportsAMSI = ((highestVersion.Major >= 4) && (highestVersion.Minor >= 8));
 
-            WriteLine("  Installed .NET Versions");
-            foreach (var v in dto.InstalledVersions)
+            WriteLine("  Installed CLR Versions");
+            foreach (var v in dto.InstalledCLRVersions)
+            {
+                WriteLine("      " + v);
+            }
+
+            WriteLine("\n  Installed .NET Versions");
+            foreach (var v in dto.InstalledDotNetVersions)
             {
                 WriteLine("      " + v);
             }

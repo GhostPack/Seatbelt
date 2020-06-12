@@ -61,14 +61,32 @@ namespace Seatbelt.Commands.Windows
             return versions;
         }
 
+        private IEnumerable<string> GetCLRVersions()
+        {
+            var versions = new List<string>();
+
+            var dirs = System.IO.Directory.GetDirectories($"{Environment.GetEnvironmentVariable("windir")}\\Microsoft.Net\\Framework\\");
+            foreach (var dir in dirs)
+            {
+                if (System.IO.File.Exists($"{dir}\\System.dll"))
+                {
+                    // yes, I know I'm passing a directory and not a file. I know this is a hack :)
+                    versions.Add(System.IO.Path.GetFileName(dir.TrimEnd(System.IO.Path.DirectorySeparatorChar)).TrimStart('v'));
+                }
+            }
+
+            return versions;
+        }
+
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
 
             var installedVersions = new List<string>();
+            var installedCLRVersions = new List<string>();
             installedVersions.AddRange(GetWindowsPowerShellVersions());
             installedVersions.AddRange(GetPowerShellCoreVersions());
-
+            installedCLRVersions.AddRange(GetCLRVersions());
 
             var transcriptionLogging = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "SOFTWARE\\Policies\\Microsoft\\Windows\\PowerShell\\Transcription", "EnableTranscripting") == "1";
             var transcriptionInvocationLogging = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "SOFTWARE\\Policies\\Microsoft\\Windows\\PowerShell\\Transcription", "EnableInvocationHeader") == "1";
@@ -82,6 +100,7 @@ namespace Seatbelt.Commands.Windows
             var osSupportsAmsi = Environment.OSVersion.Version.Major >= 10;
 
             yield return new PowerShellDTO(
+                installedCLRVersions.ToArray(),
                 installedVersions.ToArray(),
                 transcriptionLogging,
                 transcriptionInvocationLogging,
@@ -97,8 +116,9 @@ namespace Seatbelt.Commands.Windows
 
     class PowerShellDTO : CommandDTOBase
     {
-        public PowerShellDTO(string[] installedVersions, bool transcriptionLogging, bool transcriptionInvocationLogging, string? transcriptionDirectory, bool moduleLogging, string[]? moduleNames, bool scriptBlockLogging, bool scriptBlockInvocationLogging, bool osSupportsAmsi)
+        public PowerShellDTO(string[] installedCLRVersions, string[] installedVersions, bool transcriptionLogging, bool transcriptionInvocationLogging, string? transcriptionDirectory, bool moduleLogging, string[]? moduleNames, bool scriptBlockLogging, bool scriptBlockInvocationLogging, bool osSupportsAmsi)
         {
+            InstalledCLRVersions = installedCLRVersions;
             InstalledVersions = installedVersions;
             TranscriptionLogging = transcriptionLogging;
             TranscriptionInvocationLogging = transcriptionInvocationLogging;
@@ -109,6 +129,7 @@ namespace Seatbelt.Commands.Windows
             ScriptBlockInvocationLogging = scriptBlockInvocationLogging;
             OsSupportsAmsi = osSupportsAmsi;
         }
+        public string[] InstalledCLRVersions { get; }
         public string[] InstalledVersions { get; }
         public bool? TranscriptionLogging { get; }
         public bool? TranscriptionInvocationLogging { get; }
@@ -133,10 +154,20 @@ namespace Seatbelt.Commands.Windows
             var lowestVersion = dto.InstalledVersions.Min(v => (new Version(v)));
             var highestVersion = dto.InstalledVersions.Max(v => (new Version(v)));
 
-            WriteLine("  Installed PowerShell Versions");
+            WriteLine("\n  Installed CLR Versions");
+            foreach (var v in dto.InstalledCLRVersions)
+            {
+                WriteLine("      " + v);
+            }
+
+            WriteLine("\n  Installed PowerShell Versions");
             foreach (var v in dto.InstalledVersions)
             {
                 WriteLine("      " + v);
+                if((v == "2.0") && !dto.InstalledCLRVersions.Contains("2.0.50727"))
+                {
+                    WriteLine("        [!] Version 2.0.50727 of the CLR is not installed - PowerShell v2.0 won't be able to run.");
+                }
             }
 
             WriteLine("\n  Transcription Logging Settings");
@@ -160,12 +191,12 @@ namespace Seatbelt.Commands.Windows
             {
                 if (lowestVersion.Major < 3)
                 {
-                    WriteLine("      [!] You can do a PowerShell version downgrade to bypass the logging.");
+                    WriteLine("        [!] You can do a PowerShell version downgrade to bypass the logging.");
                 }
 
                 if (highestVersion.Major < 3)
                 {
-                    WriteLine("      [!] Module logging is configured. Logging will not occur, however, because it requires PSv3.");
+                    WriteLine("        [!] Module logging is configured. Logging will not occur, however, because it requires PSv3.");
                 }
             }
 
@@ -177,12 +208,12 @@ namespace Seatbelt.Commands.Windows
             {
                 if (highestVersion.Major < 5)
                 {
-                    WriteLine("      [!] Script block logging is configured. Logging will not occur, however, because it requires PSv5.");
+                    WriteLine("        [!] Script block logging is configured. Logging will not occur, however, because it requires PSv5.");
                 }
 
                 if (lowestVersion.Major < 5)
                 {
-                    WriteLine("      [!] You can do a PowerShell version downgrade to bypass the logging.");
+                    WriteLine("        [!] You can do a PowerShell version downgrade to bypass the logging.");
                 }
             }
 
@@ -190,7 +221,7 @@ namespace Seatbelt.Commands.Windows
             WriteLine("      OS Supports AMSI: " + dto.OsSupportsAmsi);
             if (dto.OsSupportsAmsi && lowestVersion.Major < 3)
             {
-                WriteLine("      [!] You can do a PowerShell version downgrade to bypass AMSI.");
+                WriteLine("        [!] You can do a PowerShell version downgrade to bypass AMSI.");
             }
         }
     }

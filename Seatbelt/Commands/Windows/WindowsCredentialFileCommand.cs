@@ -51,57 +51,110 @@ namespace Seatbelt.Commands.Windows
                 }
 
                 var userCredFilePath = $"{dir}\\AppData\\Local\\Microsoft\\Credentials\\";
-                if (!Directory.Exists(userCredFilePath))
+                if (Directory.Exists(userCredFilePath))
                 {
-                    continue;
+
+
+                    var userFiles = Directory.GetFiles(userCredFilePath);
+                    if (userFiles.Length != 0)
+                    {
+
+
+                        List<CredentialFile> UserCredentials = new List<CredentialFile>();
+
+                        foreach (var file in userFiles)
+                        {
+                            var lastAccessed = File.GetLastAccessTime(file);
+                            var lastModified = File.GetLastWriteTime(file);
+                            var size = new FileInfo(file).Length;
+                            var fileName = Path.GetFileName(file);
+
+                            // jankily parse the bytes to extract the credential type and master key GUID
+                            // reference- https://github.com/gentilkiwi/mimikatz/blob/3d8be22fff9f7222f9590aa007629e18300cf643/modules/kull_m_dpapi.h#L24-L54
+                            var credentialArray = File.ReadAllBytes(file);
+                            var guidMasterKeyArray = new byte[16];
+                            Array.Copy(credentialArray, 36, guidMasterKeyArray, 0, 16);
+                            var guidMasterKey = new Guid(guidMasterKeyArray);
+
+                            var stringLenArray = new byte[16];
+                            Array.Copy(credentialArray, 56, stringLenArray, 0, 4);
+                            var descLen = BitConverter.ToInt32(stringLenArray, 0);
+
+                            var descBytes = new byte[descLen - 4];
+                            Array.Copy(credentialArray, 60, descBytes, 0, descBytes.Length);
+
+                            var desc = Encoding.Unicode.GetString(descBytes);
+
+                            CredentialFile userCredential = new CredentialFile();
+                            userCredential.FileName = Path.GetFileName(file);
+                            userCredential.Description = desc;
+                            userCredential.GUIDMasterKey = guidMasterKey;
+                            userCredential.LastAccessed = File.GetLastAccessTime(file);
+                            userCredential.LastModified = File.GetLastAccessTime(file);
+                            userCredential.Size = size;
+                            UserCredentials.Add(userCredential);
+                        }
+
+                        yield return new WindowsCredentialFileDTO()
+                        {
+                            Folder = userCredFilePath,
+                            CredentialFiles = UserCredentials
+                        };
+                    }
                 }
-
-                var userFiles = Directory.GetFiles(userCredFilePath);
-                if (userFiles.Length == 0)
+                // don't overcomplicate the data model
+                var userCredFileRoamingPath = $"{dir}\\AppData\\Roaming\\Microsoft\\Credentials\\";
+                if (Directory.Exists(userCredFileRoamingPath))
                 {
-                    continue;
+
+
+                    var userFilesRoaming = Directory.GetFiles(userCredFileRoamingPath);
+                    if (userFilesRoaming.Length != 0)
+                    {
+
+
+                        List<CredentialFile> UserRoamingCredentials = new List<CredentialFile>();
+
+                        foreach (var file in userFilesRoaming)
+                        {
+                            var lastAccessed = File.GetLastAccessTime(file);
+                            var lastModified = File.GetLastWriteTime(file);
+                            var size = new FileInfo(file).Length;
+                            var fileName = Path.GetFileName(file);
+
+                            // jankily parse the bytes to extract the credential type and master key GUID
+                            // reference- https://github.com/gentilkiwi/mimikatz/blob/3d8be22fff9f7222f9590aa007629e18300cf643/modules/kull_m_dpapi.h#L24-L54
+                            var credentialArray = File.ReadAllBytes(file);
+                            var guidMasterKeyArray = new byte[16];
+                            Array.Copy(credentialArray, 36, guidMasterKeyArray, 0, 16);
+                            var guidMasterKey = new Guid(guidMasterKeyArray);
+
+                            var stringLenArray = new byte[16];
+                            Array.Copy(credentialArray, 56, stringLenArray, 0, 4);
+                            var descLen = BitConverter.ToInt32(stringLenArray, 0);
+
+                            var descBytes = new byte[descLen - 4];
+                            Array.Copy(credentialArray, 60, descBytes, 0, descBytes.Length);
+
+                            var desc = Encoding.Unicode.GetString(descBytes);
+
+                            CredentialFile userRoamingCredential = new CredentialFile();
+                            userRoamingCredential.FileName = Path.GetFileName(file);
+                            userRoamingCredential.Description = desc;
+                            userRoamingCredential.GUIDMasterKey = guidMasterKey;
+                            userRoamingCredential.LastAccessed = File.GetLastAccessTime(file);
+                            userRoamingCredential.LastModified = File.GetLastAccessTime(file);
+                            userRoamingCredential.Size = size;
+                            UserRoamingCredentials.Add(userRoamingCredential);
+                        }
+
+                        yield return new WindowsCredentialFileDTO()
+                        {
+                            Folder = userCredFileRoamingPath,
+                            CredentialFiles = UserRoamingCredentials
+                        };
+                    }
                 }
-
-                List<CredentialFile> UserCredentials = new List<CredentialFile>();
-
-                foreach (var file in userFiles)
-                {
-                    var lastAccessed = File.GetLastAccessTime(file);
-                    var lastModified = File.GetLastWriteTime(file);
-                    var size = new FileInfo(file).Length;
-                    var fileName = Path.GetFileName(file);
-                    
-                    // jankily parse the bytes to extract the credential type and master key GUID
-                    // reference- https://github.com/gentilkiwi/mimikatz/blob/3d8be22fff9f7222f9590aa007629e18300cf643/modules/kull_m_dpapi.h#L24-L54
-                    var credentialArray = File.ReadAllBytes(file);
-                    var guidMasterKeyArray = new byte[16];
-                    Array.Copy(credentialArray, 36, guidMasterKeyArray, 0, 16);
-                    var guidMasterKey = new Guid(guidMasterKeyArray);
-
-                    var stringLenArray = new byte[16];
-                    Array.Copy(credentialArray, 56, stringLenArray, 0, 4);
-                    var descLen = BitConverter.ToInt32(stringLenArray, 0);
-
-                    var descBytes = new byte[descLen-4];
-                    Array.Copy(credentialArray, 60, descBytes, 0, descBytes.Length);
-
-                    var desc = Encoding.Unicode.GetString(descBytes);
-
-                    CredentialFile userCredential = new CredentialFile();
-                    userCredential.FileName = Path.GetFileName(file);
-                    userCredential.Description = desc;
-                    userCredential.GUIDMasterKey = guidMasterKey;
-                    userCredential.LastAccessed = File.GetLastAccessTime(file);
-                    userCredential.LastModified = File.GetLastAccessTime(file);
-                    userCredential.Size = size;
-                    UserCredentials.Add(userCredential);
-                }
-
-                yield return new WindowsCredentialFileDTO()
-                {
-                    Folder = userCredFilePath,
-                    CredentialFiles = UserCredentials
-                };
             }
 
             var systemFolder = $"{Environment.GetEnvironmentVariable("SystemRoot")}\\System32\\config\\systemprofile\\AppData\\Local\\Microsoft\\Credentials";

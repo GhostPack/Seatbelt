@@ -80,6 +80,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\CommandGroup.cs" />
+    <Compile Include="Commands\Windows\HotfixesCommand.cs" />
+    <Compile Include="Commands\Windows\MicrosoftUpdatesCommand.cs" />
     <Compile Include="SeatbeltArgumentParser.cs" />
     <Compile Include="Commands\Browser\ChromeBookmarksCommand.cs" />
     <Compile Include="Commands\Browser\ChromeHistoryCommand.cs" />

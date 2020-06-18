@@ -202,10 +202,14 @@ namespace Seatbelt
 
                 var instance = (CommandBase)Activator.CreateInstance(type, new object[] { this });
 
+#if DEBUG
                 if (instance.Command != "TEMPLATE")
                 {
                     AllCommands.Add(instance);
                 }
+#else
+                AllCommands.Add(instance);
+#endif
             }
 
             AllCommands = AllCommands.OrderBy(c => c.Command).ToList();

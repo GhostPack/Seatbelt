@@ -39,15 +39,15 @@ namespace Seatbelt.Commands.Windows.EventLogs
             }
 
             WriteHost($"Collecting kernel boot (EID 12) and shutdown (EID 13) events from the last {lastDays} days\n");
+            WriteHost("Powered On Events (Time is local time)");
 
             var startTime = DateTime.Now.AddDays(-lastDays);
             var endTime = DateTime.Now;
 
-            WriteHost("Powered On Events");
 
             // eventID 1 == sleep
             var query = $@"
-((*[System[(EventId=12 or EventId=13) and Provider[@Name='Microsoft-Windows-Kernel-General']]] or *[System/EventId=42]) or (*[System/EventId=6008]) or (*[System/EventId=1] and *[System[Provider[@Name='Microsoft-Windows-Power-Troubleshooter']]])) and *[System[TimeCreated[@SystemTime >= '{startTime.ToUniversalTime():o}']]] and *[System[TimeCreated[@SystemTime <= '{endTime.ToUniversalTime():o}']]]
+((*[System[(EventID=12 or EventID=13) and Provider[@Name='Microsoft-Windows-Kernel-General']]] or *[System/EventID=42]) or (*[System/EventID=6008]) or (*[System/EventID=1] and *[System[Provider[@Name='Microsoft-Windows-Power-Troubleshooter']]])) and *[System[TimeCreated[@SystemTime >= '{startTime.ToUniversalTime():o}']]] and *[System[TimeCreated[@SystemTime <= '{endTime.ToUniversalTime():o}']]]
 ";
 
             var eventsQuery = new EventLogQuery("System", PathType.LogName, query);
@@ -77,19 +77,16 @@ namespace Seatbelt.Commands.Windows.EventLogs
 
                 yield return new PoweredOnEventsDTO()
                 {
-                    Date = (DateTime)eventDetail.TimeCreated,
+                    DateUtc = (DateTime)eventDetail.TimeCreated?.ToUniversalTime(),
                     Description = action
                 };
             }
         }
-
-
-
     }
 
     internal class PoweredOnEventsDTO : CommandDTOBase
     {
-        public DateTime Date { get; set; }
+        public DateTime DateUtc { get; set; }
         public string Description { get; set; }
     }
 
@@ -106,13 +103,13 @@ namespace Seatbelt.Commands.Windows.EventLogs
         {
 
             var dto = (PoweredOnEventsDTO)result;
-            if (_currentDay != dto.Date.ToShortDateString())
+            if (_currentDay != dto.DateUtc.ToShortDateString())
             {
-                _currentDay = dto.Date.ToShortDateString();
+                _currentDay = dto.DateUtc.ToShortDateString();
                 WriteLine();
             }
 
-            WriteLine($"  {dto.Date,-23} :  {dto.Description}");
+            WriteLine($"  {dto.DateUtc.ToLocalTime(),-23} :  {dto.Description}");
         }
     }
 }

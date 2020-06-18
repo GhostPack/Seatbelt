@@ -11,7 +11,7 @@ namespace Seatbelt.Commands.Windows.EventLogs.ExplicitLogonEvents
         public string TargetDomain { get; set; }
         public string Process { get; set; }
         public string IpAddress { get; set; }
-        public DateTime? TimeCreated { get; set; }
+        public DateTime? TimeCreatedUtc { get; set; }
     }
 }
 #nullable enable

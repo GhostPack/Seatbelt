@@ -21,7 +21,7 @@ namespace Seatbelt.Commands.Windows.EventLogs.ExplicitLogonEvents
             var subjectUser = dto.SubjectDomain + "\\" + dto.SubjectUser;
             var uniqueCredKey = $"{targetUser},{dto.Process},{subjectUser},{dto.IpAddress}";
 
-            WriteLine($"{dto.TimeCreated?.ToString("MM/dd/yyyy hh:mm tt")},{uniqueCredKey}");
+            WriteLine($"{dto.TimeCreatedUtc?.ToLocalTime().ToString("MM/dd/yyyy hh:mm tt")},{uniqueCredKey}");
 
             //if (events.TryGetValue(uniqueCredKey, out _) == false)
             //{

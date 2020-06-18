@@ -1,8 +1,9 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
 using System.Text.RegularExpressions;
+using Seatbelt.Output.Formatters;
+using Seatbelt.Output.TextWriters;
 using Seatbelt.Util;
 
 
@@ -27,7 +28,8 @@ namespace Seatbelt.Commands.Windows.EventLogs
                 yield break;
             }
 
-            WriteVerbose($"Searching process creation logs (EID 4688) for sensitive data.\n");
+            WriteVerbose($"Searching process creation logs (EID 4688) for sensitive data.");
+            WriteVerbose($"Format: Date(Local time),User,Command line.\n");
 
             // Get our "sensitive" cmdline regexes from a common helper function.
             Regex[] processCmdLineRegex = MiscUtil.GetProcessCmdLineRegex();
@@ -39,35 +41,53 @@ namespace Seatbelt.Commands.Windows.EventLogs
             for (var eventDetail = logReader.ReadEvent(); eventDetail != null; eventDetail = logReader.ReadEvent())
             {
 
+                var user = eventDetail.Properties[1].Value.ToString().Trim();
                 var commandLine = eventDetail.Properties[8].Value.ToString().Trim();
-                
-                if (commandLine != "")
+
+                foreach (var reg in processCmdLineRegex)
                 {
-                    foreach (var reg in processCmdLineRegex)
+                    var m = reg.Match(commandLine);
+                    if (m.Success)
                     {
-                        var m = reg.Match(commandLine);
-                        if (m.Success)
-                        {
-                            yield return new ProcessCreationDTO()
-                            {
-                                TimeCreated = eventDetail.TimeCreated,
-                                EventID = eventDetail.Id,
-                                UserID = $"{eventDetail.UserId}",
-                                Match = m.Value
-                            };
-                        }
+                        yield return new ProcessCreationEventDTO(
+                            eventDetail.TimeCreated?.ToUniversalTime(),
+                            eventDetail.Id,
+                            user,
+                            commandLine
+                        );
                     }
                 }
             }
         }
     }
 
-    internal class ProcessCreationDTO : CommandDTOBase
+    internal class ProcessCreationEventDTO : CommandDTOBase
     {
-        public DateTime? TimeCreated { get; set; }
+        public ProcessCreationEventDTO(DateTime? timeCreatedUtc, int eventId, string user, string match)
+        {
+            TimeCreatedUtc = timeCreatedUtc;
+            EventID = eventId;
+            User = user;
+            Match = match;
+        }
+        public DateTime? TimeCreatedUtc { get; set; }
         public int EventID { get; set; }
-        public string UserID { get; set; }
+        public string User { get; set; }
         public string Match { get; set; }
     }
+
+    [CommandOutputType(typeof(ProcessCreationEventDTO))]
+    internal class ProcessCreationEventTextFormatter : TextFormatterBase
+    {
+        public ProcessCreationEventTextFormatter(ITextWriter writer) : base(writer)
+        {
+        }
+
+        public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
+        {
+            var dto = (ProcessCreationEventDTO)result;
+
+            WriteLine($"  {dto.TimeCreatedUtc?.ToLocalTime(),-22}  {dto.User,-30} {dto.Match}");
+        }
+    }
 }
-#nullable enable

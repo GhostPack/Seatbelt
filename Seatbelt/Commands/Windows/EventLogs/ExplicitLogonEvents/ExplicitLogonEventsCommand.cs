@@ -63,7 +63,7 @@ namespace Seatbelt.Commands.Windows.EventLogs.ExplicitLogonEvents
                 yield break;
             }
 
-            var query = $@"*[System/EventId={eventId}] and *[System[TimeCreated[@SystemTime >= '{startTime.ToUniversalTime():o}']]] and *[System[TimeCreated[@SystemTime <= '{endTime.ToUniversalTime():o}']]]";
+            var query = $@"*[System/EventID={eventId}] and *[System[TimeCreated[@SystemTime >= '{startTime.ToUniversalTime():o}']]] and *[System[TimeCreated[@SystemTime <= '{endTime.ToUniversalTime():o}']]]";
 
             var eventsQuery = new EventLogQuery("Security", PathType.LogName, query)
             {
@@ -101,7 +101,7 @@ namespace Seatbelt.Commands.Windows.EventLogs.ExplicitLogonEvents
 
                 yield return new ExplicitLogonEventsDTO()
                 {
-                    TimeCreated = eventDetail.TimeCreated,
+                    TimeCreatedUtc = eventDetail.TimeCreated?.ToUniversalTime(),
                     SubjectUser = subjectUserName,
                     SubjectDomain = subjectDomainName,
                     TargetUser = targetUserName,

@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -217,7 +216,7 @@ namespace Seatbelt.Commands
                 {
                     // Eat it
                 }
-                string[] files = null;
+                string[]? files = null;
                 try
                 {
                     files = Directory.GetFiles(path);
@@ -227,7 +226,9 @@ namespace Seatbelt.Commands
                     // Eat it
                 }
 
-                if (files == null) continue;
+                if(files == null)
+                    continue;
+                ;
                 foreach (var f in files)
                 {
                     yield return f;
@@ -276,4 +277,3 @@ namespace Seatbelt.Commands
         }
     }
 }
-#nullable enable

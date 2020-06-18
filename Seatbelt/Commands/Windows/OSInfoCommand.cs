@@ -1,11 +1,12 @@
-﻿#nullable disable
-using Seatbelt.Output.Formatters;
+﻿using Seatbelt.Output.Formatters;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Security.Principal;
+using System.Windows.Forms;
 using Microsoft.Win32;
 using Seatbelt.Util;
 using Seatbelt.Output.TextWriters;
@@ -17,7 +18,7 @@ namespace Seatbelt.Commands.Windows
     {
         public override string Command => "OSInfo";
         public override string Description => "Basic OS info (i.e. architecture, OS version, etc.)";
-        public override CommandGroup[] Group => new[] {CommandGroup.System};
+        public override CommandGroup[] Group => new[] { CommandGroup.System };
         public override bool SupportRemote => false;
 
         public OSInfoCommand(Runtime runtime) : base(runtime)
@@ -48,8 +49,7 @@ namespace Seatbelt.Commands.Windows
             var isVM = IsVirtualMachine();
 
             var now = DateTime.UtcNow;
-            var boot = now - TimeSpan.FromMilliseconds(Environment.TickCount);
-            var BootTime = boot + TimeSpan.FromMilliseconds(Environment.TickCount);
+            var bootTimeUtc = now - TimeSpan.FromMilliseconds(Environment.TickCount);
 
             var strHostName = Dns.GetHostName();
             var properties = IPGlobalProperties.GetIPGlobalProperties();
@@ -57,33 +57,40 @@ namespace Seatbelt.Commands.Windows
 
             var timeZone = TimeZone.CurrentTimeZone;
             var cultureInfo = CultureInfo.InstalledUICulture;
+            var inputLanguage = InputLanguage.CurrentInputLanguage.LayoutName;
+
+            var installedInputLanguages = new List<string>();
+            foreach (InputLanguage l in InputLanguage.InstalledInputLanguages)
+                installedInputLanguages.Add(l.LayoutName);
 
             var machineGuid = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, "SOFTWARE\\Microsoft\\Cryptography", "MachineGuid");
 
-            yield return new OSInfoDTO()
-            {
-                Hostname = strHostName,
-                Domain = dnsDomain,
-                Username = WindowsIdentity.GetCurrent().Name,
-                ProductName = ProductName,
-                EditionId = EditionID,
-                ReleaseId = ReleaseId,
-                Build = BuildNumber,
-                BuildBranch = BuildBranch,
-                CurrentMajorVersionNumber = CurrentMajorVersionNumber,
-                CurrentVersion = CurrentVersion,
-                Architecture = arch,
-                ProcessorCount = ProcessorCount,
-                IsVirtualMachine = isVM,
-                BootTime = BootTime,
-                IsHighIntegrity = isHighIntegrity,
-                IsLocalAdmin = isLocalAdmin,
-                Time = DateTime.Now,
-                TimeZone = timeZone.StandardName,
-                TimeZoneUtcOffset = timeZone.GetUtcOffset(DateTime.Now).ToString(),
-                Locale = cultureInfo.ToString(),
-                MachineGuid = machineGuid
-            };
+
+            yield return new OSInfoDTO(
+                strHostName,
+                dnsDomain,
+                WindowsIdentity.GetCurrent().Name,
+                ProductName,
+                 EditionID,
+                 ReleaseId,
+                 BuildNumber,
+                 BuildBranch,
+                 CurrentMajorVersionNumber,
+                 CurrentVersion,
+                 arch,
+                 ProcessorCount,
+                 isVM,
+                 bootTimeUtc,
+                isHighIntegrity,
+                isLocalAdmin,
+                DateTime.UtcNow,
+                timeZone.StandardName,
+                timeZone.GetUtcOffset(DateTime.Now).ToString(),
+                cultureInfo.ToString(),
+                inputLanguage,
+                installedInputLanguages.ToArray(),
+                machineGuid
+            );
         }
 
         private bool IsVirtualMachine()
@@ -114,27 +121,56 @@ namespace Seatbelt.Commands.Windows
 
     internal class OSInfoDTO : CommandDTOBase
     {
+        public OSInfoDTO(string hostname, string domain, string username, string? productName, string? editionId, string? releaseId, string? build, string? buildBranch, string? currentMajorVersionNumber, string? currentVersion, string architecture, string processorCount, bool isVirtualMachine, DateTime bootTimeUtc, bool isHighIntegrity, bool isLocalAdmin, DateTime currentTimeUtc, string timeZone, string timeZoneUtcOffset, string locale, string inputLanguage, string[] installedInputLanguages, string? machineGuid)
+        {
+            Hostname = hostname;
+            Domain = domain;
+            Username = username;
+            ProductName = productName;
+            EditionId = editionId;
+            ReleaseId = releaseId;
+            Build = build;
+            BuildBranch = buildBranch;
+            CurrentMajorVersionNumber = currentMajorVersionNumber;
+            CurrentVersion = currentVersion;
+            Architecture = architecture;
+            ProcessorCount = processorCount;
+            IsVirtualMachine = isVirtualMachine;
+            BootTimeUtc = bootTimeUtc;
+            IsHighIntegrity = isHighIntegrity;
+            IsLocalAdmin = isLocalAdmin;
+            CurrentTimeUtc = currentTimeUtc;
+            TimeZone = timeZone;
+            TimeZoneUtcOffset = timeZoneUtcOffset;
+            Locale = locale;
+            InputLanguage = inputLanguage;
+            InstalledInputLanguages = installedInputLanguages;
+            MachineGuid = machineGuid;
+        }
+
         public string Hostname { get; set; }
         public string Domain { get; set; }
         public string Username { get; set; }
         public string? ProductName { get; set; }
         public string? EditionId { get; set; }
         public string? ReleaseId { get; set; }
-        public string Build { get; set; }
+        public string? Build { get; set; }
         public string? BuildBranch { get; set; }
         public string? CurrentMajorVersionNumber { get; set; }
         public string? CurrentVersion { get; set; }
         public string Architecture { get; set; }
         public string ProcessorCount { get; set; }
         public bool IsVirtualMachine { get; set; }
-        public DateTime BootTime { get; set; }
+        public DateTime BootTimeUtc { get; set; }
         public bool IsHighIntegrity { get; set; }
         public bool IsLocalAdmin { get; set; }
-        public DateTime Time { get; set; }
+        public DateTime CurrentTimeUtc { get; set; }
         public string TimeZone { get; set; }
         public string TimeZoneUtcOffset { get; set; }
         public string Locale { get; set; }
-        public string MachineGuid { get; set; }
+        public string InputLanguage;
+        public string[] InstalledInputLanguages;
+        public string? MachineGuid { get; set; }
     }
 
     [CommandOutputType(typeof(OSInfoDTO))]
@@ -160,9 +196,10 @@ namespace Seatbelt.Commands.Windows
             WriteLine("  {0,-30}:  {1}", "Architecture", dto.Architecture);
             WriteLine("  {0,-30}:  {1}", "ProcessorCount", dto.ProcessorCount);
             WriteLine("  {0,-30}:  {1}", "IsVirtualMachine", dto.IsVirtualMachine);
-            var uptime = TimeSpan.FromTicks(dto.Time.Ticks - dto.BootTime.Ticks);
+            
+            var uptime = TimeSpan.FromTicks(dto.CurrentTimeUtc.Ticks - dto.BootTimeUtc.Ticks);
             var bootTimeStr = $"{uptime.Days:00}:{uptime.Hours:00}:{uptime.Minutes:00}:{uptime.Seconds:00}";
-            WriteLine("  {0,-30}:  {1} ({2})", "BootTime (approx)", dto.BootTime, bootTimeStr);
+            WriteLine("  {0,-30}:  {1} (Total uptime: {2})", "BootTimeUtc (approx)", dto.BootTimeUtc, bootTimeStr);
             WriteLine("  {0,-30}:  {1}", "HighIntegrity", dto.IsHighIntegrity);
             WriteLine("  {0,-30}:  {1}", "IsLocalAdmin", dto.IsLocalAdmin);
 
@@ -171,12 +208,12 @@ namespace Seatbelt.Commands.Windows
                 WriteLine("    [*] In medium integrity but user is a local administrator - UAC can be bypassed.");
             }
 
-            WriteLine("  {0,-30}:  {1}", "Time", dto.Time);
+            WriteLine($"  {"CurrentTimeUtc",-30}:  {dto.CurrentTimeUtc} (Local time: {dto.CurrentTimeUtc.ToLocalTime()})");
             WriteLine("  {0,-30}:  {1}", "TimeZone", dto.TimeZone);
             WriteLine("  {0,-30}:  {1}", "TimeZoneOffset", dto.TimeZoneUtcOffset);
-            WriteLine("  {0,-30}:  {1}", "Locale", dto.Locale);
+            WriteLine("  {0,-30}:  {1}", "InputLanguage", dto.InputLanguage);
+            WriteLine("  {0,-30}:  {1}", "InstalledInputLanguages", string.Join(", ", dto.InstalledInputLanguages));
             WriteLine("  {0,-30}:  {1}", "MachineGuid", dto.MachineGuid);
         }
     }
 }
-#nullable enable

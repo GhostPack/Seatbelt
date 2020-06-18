@@ -1,5 +1,4 @@
-﻿#nullable disable   // Temporary - Need to fix nullable type issues
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -9,12 +8,21 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Seatbelt.Output.TextWriters;
 using Seatbelt.Output.Formatters;
+using Seatbelt.Util;
 
 
 namespace Seatbelt.Commands.Windows
 {
     class Module
     {
+        public Module(string moduleName, string moduleFileName, string moduleFileDescription, string moduleOriginalFilename, string moduleCompanyName)
+        {
+            ModuleName = moduleName;
+            ModuleFileName = moduleFileName;
+            ModuleFileDescription = moduleFileDescription;
+            ModuleOriginalFilename = moduleOriginalFilename;
+            ModuleCompanyName = moduleCompanyName;  
+        }
         public string ModuleName { get; set; }
         public string ModuleFileName { get; set; }
         public string ModuleFileDescription { get; set; }
@@ -65,32 +73,11 @@ namespace Seatbelt.Commands.Windows
                     foreach (var item in query)
                     {
                         var isDotNet = false;
-                        string companyName = null;
+                        string? companyName = null;
 
                         if (item.Path != null)
                         {
-                            try
-                            {
-                                var myAssemblyName = AssemblyName.GetAssemblyName(item.Path);
-                                isDotNet = true;
-                            }
-                            catch (FileNotFoundException)
-                            {
-                                // WriteHost("The file cannot be found.");
-                            }
-                            catch (BadImageFormatException exception)
-                            {
-                                if (Regex.IsMatch(exception.Message,
-                                    ".*This assembly is built by a runtime newer than the currently loaded runtime and cannot be loaded.*",
-                                    RegexOptions.IgnoreCase))
-                                {
-                                    isDotNet = true;
-                                }
-                            }
-                            catch
-                            {
-                                // WriteHost("The assembly has already been loaded.");
-                            }
+                            isDotNet = FileUtil.IsDotNetAssembly(item.Path);
 
                             try
                             {
@@ -104,7 +91,7 @@ namespace Seatbelt.Commands.Windows
 
                         if (Runtime.FilterResults)
                         {
-                            if (string.IsNullOrEmpty(companyName) ||
+                            if (companyName == null || string.IsNullOrEmpty(companyName.Trim()) ||
                                 (companyName != null &&
                                  Regex.IsMatch(companyName, @"^Microsoft.*", RegexOptions.IgnoreCase)))
                             {
@@ -112,7 +99,7 @@ namespace Seatbelt.Commands.Windows
                             }
                         }
 
-                        var ProcessModules = new List<Module>();
+                        var processModules = new List<Module>();
                         if (enumerateModules)
                         {
                             try
@@ -120,15 +107,14 @@ namespace Seatbelt.Commands.Windows
                                 var modules = item.Process.Modules;
                                 foreach (ProcessModule module in modules)
                                 {
-                                    var ProcessModule = new Module()
-                                    {
-                                        ModuleName = module.ModuleName,
-                                        ModuleFileName = module.FileVersionInfo.FileName,
-                                        ModuleFileDescription = module.FileVersionInfo.FileDescription,
-                                        ModuleOriginalFilename = module.FileVersionInfo.OriginalFilename,
-                                        ModuleCompanyName = module.FileVersionInfo.CompanyName
-                                    };
-                                    ProcessModules.Add(ProcessModule);
+                                    var ProcessModule = new Module(
+                                        module.ModuleName,
+                                        module.FileVersionInfo.FileName,
+                                        module.FileVersionInfo.FileDescription,
+                                        module.FileVersionInfo.OriginalFilename,
+                                        module.FileVersionInfo.CompanyName
+                                    );
+                                    processModules.Add(ProcessModule);
                                 }
                             }
                             catch
@@ -137,16 +123,15 @@ namespace Seatbelt.Commands.Windows
                             }
                         }
 
-                        yield return new ProcessesDTO()
-                        {
-                            ProcessName = item.Process.ProcessName,
-                            CompanyName = companyName,
-                            ProcessId = item.Process.Id,
-                            Path = item.Path,
-                            CommandLine = item.CommandLine,
-                            IsDotNet = isDotNet,
-                            Modules = ProcessModules
-                        };
+                        yield return new ProcessesDTO(
+                            item.Process.ProcessName,
+                            companyName,
+                            item.Process.Id,
+                            item.Path,
+                            item.CommandLine,
+                            isDotNet,
+                            processModules
+                        );
                     }
                 }
             }
@@ -155,10 +140,20 @@ namespace Seatbelt.Commands.Windows
 
     internal class ProcessesDTO : CommandDTOBase
     {
+        public ProcessesDTO(string processName, string? companyName, int processId, string? path, string commandLine, bool? isDotNet, List<Module> modules)
+        {
+            ProcessName = processName;
+            CompanyName = companyName;
+            ProcessId = processId;
+            Path = path;
+            CommandLine = commandLine;
+            IsDotNet = isDotNet;
+            Modules = modules;  
+        }
         public string ProcessName { get; set; }
-        public string CompanyName { get; set; }
+        public string? CompanyName { get; set; }
         public int ProcessId { get; set; }
-        public string Path { get; set; }
+        public string? Path { get; set; }
         public string CommandLine { get; set; }
         public bool? IsDotNet { get; set; }
         public List<Module> Modules { get; set; }
@@ -201,4 +196,3 @@ namespace Seatbelt.Commands.Windows
         }
     }
 }
-#nullable enable

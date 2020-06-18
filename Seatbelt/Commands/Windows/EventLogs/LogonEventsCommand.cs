@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
 using System.Linq;
@@ -46,7 +45,7 @@ namespace Seatbelt.Commands.Windows.EventLogs
                 lastDays = 1;
             }
 
-            string userRegex = null;
+            string? userRegex = null;
 
             if (args.Length >= 1)
             {
@@ -71,7 +70,7 @@ namespace Seatbelt.Commands.Windows.EventLogs
             var startTime = DateTime.Now.AddDays(-lastDays);
             var endTime = DateTime.Now;
 
-            var query = $@"*[System/EventId=4624] and *[System[TimeCreated[@SystemTime >= '{startTime.ToUniversalTime():o}']]] and *[System[TimeCreated[@SystemTime <= '{endTime.ToUniversalTime():o}']]]";
+            var query = $@"*[System/EventID=4624] and *[System[TimeCreated[@SystemTime >= '{startTime.ToUniversalTime():o}']]] and *[System[TimeCreated[@SystemTime <= '{endTime.ToUniversalTime():o}']]]";
             var eventsQuery = new EventLogQuery("Security", PathType.LogName, query) { ReverseDirection = true };
             var logReader = new EventLogReader(eventsQuery);
 
@@ -116,8 +115,12 @@ namespace Seatbelt.Commands.Windows.EventLogs
                 //var ElevatedToken = eventDetail.Properties[26].Value.ToString();
 
                 // filter out SYSTEM, computer accounts, local service accounts, UMFD-X accounts, and DWM-X accounts (for now)
-                var ignoreRegex = "^(SYSTEM|LOCAL SERVICE|NETWORK SERVICE|UMFD-[0-9]+|DWM-[0-9]+|ANONYMOUS LOGON|" + Environment.MachineName + "\\$)$";
-                if (userRegex == null && Regex.IsMatch(targetUserName, ignoreRegex, RegexOptions.IgnoreCase))
+                var userIgnoreRegex = "^(SYSTEM|LOCAL SERVICE|NETWORK SERVICE|UMFD-[0-9]+|DWM-[0-9]+|ANONYMOUS LOGON|" + Environment.MachineName + "\\$)$";
+                if (userRegex == null && Regex.IsMatch(targetUserName, userIgnoreRegex, RegexOptions.IgnoreCase))
+                    continue;
+
+                var domainIgnoreRegex = "^(NT VIRTUAL MACHINE)$";
+                if (userRegex == null && Regex.IsMatch(targetDomainName, domainIgnoreRegex, RegexOptions.IgnoreCase))
                     continue;
 
 
@@ -147,20 +150,19 @@ namespace Seatbelt.Commands.Windows.EventLogs
                     }
                 }
 
-                yield return new LogonEventsDTO()
-                {
-                    TimeCreated = eventDetail.TimeCreated,
-                    TargetUserName = targetUserName,
-                    TargetDomainName = targetDomainName,
-                    LogonType = logonType,
-                    IpAddress = ipAddress,
-                    SubjectUserName = subjectUserName,
-                    SubjectDomainName = subjectDomainName,
-                    AuthenticationPackage = authenticationPackageName,
-                    LmPackage = lmPackageName,
-                    TargetOutboundUserName = targetOutboundUserName,
-                    TargetOutboundDomainName = targetOutboundDomainName
-                };
+                yield return new LogonEventsDTO(
+                    eventDetail.TimeCreated?.ToUniversalTime(),
+                    targetUserName,
+                    targetDomainName,
+                    logonType,
+                    ipAddress,
+                    subjectUserName,
+                    subjectDomainName,
+                    authenticationPackageName,
+                    lmPackageName,
+                    targetOutboundUserName,
+                    targetOutboundDomainName
+                );
             }
 
 
@@ -219,7 +221,22 @@ namespace Seatbelt.Commands.Windows.EventLogs
 
     internal class LogonEventsDTO : CommandDTOBase
     {
-        public DateTime? TimeCreated { get; set; }
+        public LogonEventsDTO(DateTime? timeCreatedUtc, string targetUserName, string targetDomainName, string logonType, string ipAddress, string subjectUserName, string subjectDomainName, string authenticationPackage, string lmPackage, string targetOutboundUserName, string targetOutboundDomainName)
+        {
+            TimeCreatedUtc = timeCreatedUtc;
+            TargetUserName = targetUserName;
+            TargetDomainName = targetDomainName;
+            LogonType = logonType;
+            IpAddress = ipAddress;
+            SubjectUserName = subjectUserName;
+            SubjectDomainName = subjectDomainName;
+            AuthenticationPackage = authenticationPackage;
+            LmPackage = lmPackage;
+            TargetOutboundUserName = targetOutboundUserName;
+            TargetOutboundDomainName = targetOutboundDomainName;    
+        }
+
+        public DateTime? TimeCreatedUtc { get; set; }
         public string TargetUserName { get; set; }
         public string TargetDomainName { get; set; }
         public string LogonType { get; set; }
@@ -244,14 +261,13 @@ namespace Seatbelt.Commands.Windows.EventLogs
             var dto = (LogonEventsDTO)result;
             var targetUser = dto.TargetDomainName + "\\" + dto.TargetUserName;
             var subjectUser = dto.SubjectDomainName + "\\" + dto.SubjectUserName;
-            string targetOutboundUser = null;
+            string targetOutboundUser = "";
             if (dto.TargetOutboundUserName != "-")
             {
                 targetOutboundUser = dto.TargetOutboundDomainName + "\\" + dto.TargetOutboundUserName;
             }
 
-            WriteLine($"  {dto.TimeCreated},{targetUser},{dto.LogonType},{dto.IpAddress},{subjectUser},{dto.AuthenticationPackage},{dto.LmPackage},{targetOutboundUser}");
+            WriteLine($"  {dto.TimeCreatedUtc?.ToLocalTime()},{targetUser},{dto.LogonType},{dto.IpAddress},{subjectUser},{dto.AuthenticationPackage},{dto.LmPackage},{targetOutboundUser}");
         }
     }
 }
-#nullable enable

@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Management;
 
@@ -21,7 +20,7 @@ namespace Seatbelt.Commands.Windows
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            ManagementObjectCollection data = null;
+            ManagementObjectCollection? data = null;
 
             // lists the local DNS cache via WMI (MSFT_DNSClientCache class)
             try
@@ -46,12 +45,11 @@ namespace Seatbelt.Commands.Windows
             foreach (var o in data)
             {
                 var result = (ManagementObject) o;
-                yield return new DNSCacheDTO()
-                {
-                    Entry = result["Entry"],
-                    Name = result["Name"],
-                    Data = result["Data"]
-                };
+                yield return new DNSCacheDTO(
+                    result["Entry"],
+                    result["Name"],
+                    result["Data"]
+                );
             }
 
             data.Dispose();
@@ -60,9 +58,14 @@ namespace Seatbelt.Commands.Windows
 
     internal class DNSCacheDTO : CommandDTOBase
     {
+        public DNSCacheDTO(object entry, object name, object data)
+        {
+            Entry = entry;
+            Name = name;
+            Data = data;
+        }
         public object Entry { get; set; }
         public object Name { get; set; }
         public object Data { get; set; }
     }
 }
-#nullable enable

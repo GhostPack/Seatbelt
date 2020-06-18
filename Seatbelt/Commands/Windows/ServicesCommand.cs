@@ -33,18 +33,15 @@ namespace Seatbelt.Commands.Windows
             foreach (ManagementObject result in data)
             {
                 var serviceName = result["Name"] == null ? null : (string)result["Name"];
-                string serviceDll = null;
-                string serviceCommand = null;
-                string binaryPath = null;
-                var isDotNet = false;
                 string companyName = null;
-                string binaryPathSDDL = null;
-                string serviceSDDL = null;
+                string binaryPathSddl = null;
+                string serviceSddl = null;
+                bool? isDotNet = null;
 
-                serviceCommand = GetServiceCommand(result);
-                serviceDll = GetServiceDll(serviceName);
+                var serviceCommand = GetServiceCommand(result);
+                var binaryPath = GetServiceBinaryPath(serviceCommand);
+                var serviceDll = GetServiceDll(serviceName);
 
-                binaryPath = GetServiceBinaryPath(serviceCommand);
 
                 // ServiceDll could be null if access to the Parameters key is denied 
                 //  - Examples: The lmhosts service on Win10 as an unprivileged user
@@ -59,7 +56,7 @@ namespace Seatbelt.Commands.Windows
 
                     if (Runtime.FilterResults)
                     {
-                        if (string.IsNullOrEmpty(companyName) || (companyName != null && Regex.IsMatch(companyName, @"^Microsoft.*", RegexOptions.IgnoreCase)))
+                        if (companyName != null && Regex.IsMatch(companyName, @"^Microsoft.*", RegexOptions.IgnoreCase))
                         {
                             continue;
                         }
@@ -67,13 +64,13 @@ namespace Seatbelt.Commands.Windows
 
                     isDotNet = FileUtil.IsDotNetAssembly(binaryPath);
 
-                    binaryPathSDDL = File.GetAccessControl(binaryPath).GetSecurityDescriptorSddlForm(System.Security.AccessControl.AccessControlSections.All);
+                    binaryPathSddl = File.GetAccessControl(binaryPath).GetSecurityDescriptorSddlForm(System.Security.AccessControl.AccessControlSections.All);
                 }
 
                 try
                 {
                     var info = SecurityUtil.GetSecurityInfos(serviceName, Interop.Advapi32.SE_OBJECT_TYPE.SE_SERVICE);
-                    serviceSDDL = info.SDDL;
+                    serviceSddl = info.SDDL;
                 }
                 catch
                 {
@@ -90,9 +87,9 @@ namespace Seatbelt.Commands.Windows
                     StartMode = (string)result["StartMode"],
                     ServiceCommand = serviceCommand,
                     BinaryPath = binaryPath,
-                    BinaryPathSDDL = binaryPathSDDL,
+                    BinaryPathSDDL = binaryPathSddl,
                     ServiceDll = serviceDll,
-                    ServiceSDDL = serviceSDDL,
+                    ServiceSDDL = serviceSddl,
                     CompanyName = companyName,
                     IsDotNet = isDotNet
                 };
@@ -239,7 +236,7 @@ namespace Seatbelt.Commands.Windows
         public string ServiceDll { get; set; }
         public string ServiceSDDL { get; set; }
         public string CompanyName { get; set; }
-        public bool IsDotNet { get; set; }
+        public bool? IsDotNet { get; set; }
     }
 }
 #nullable enable

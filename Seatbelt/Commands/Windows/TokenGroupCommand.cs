@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Security.Principal;
 using Seatbelt.Output.Formatters;
 using Seatbelt.Output.TextWriters;
@@ -34,17 +33,22 @@ namespace Seatbelt.Commands.Windows
                 }
                 catch { }
 
-                yield return new TokenGroupsDTO()
-                {
-                    GroupSID = $"{(SecurityIdentifier)group}",
-                    GroupName = groupName
-                };
+                yield return new TokenGroupsDTO(
+                    $"{(SecurityIdentifier)group}",
+                    groupName
+                );
             }
         }
     }
 
     internal class TokenGroupsDTO : CommandDTOBase
     {
+        public TokenGroupsDTO(string groupSid, string groupName)
+        {
+            GroupSID = groupSid;
+            GroupName = groupName;  
+        }
+
         //public System.Security.Principal.SecurityIdentifier GroupSID { get; set; }
         public string GroupSID { get; set; }
         public string GroupName { get; set; }
@@ -65,4 +69,3 @@ namespace Seatbelt.Commands.Windows
         }
     }
 }
-#nullable enable

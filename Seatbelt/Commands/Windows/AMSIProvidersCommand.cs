@@ -24,16 +24,20 @@ namespace Seatbelt.Commands.Windows
             {
                 var ProviderPath = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, $"SOFTWARE\\Classes\\CLSID\\{provider}\\InprocServer32", "");
 
-                yield return new AMSIProviderDTO()
-                {
-                    GUID = provider,
-                    ProviderPath = ProviderPath
-                };
+                yield return new AMSIProviderDTO(
+                    provider,
+                    ProviderPath
+                );
             }
         }
 
         internal class AMSIProviderDTO : CommandDTOBase
         {
+            public AMSIProviderDTO(string guid, string? providerPath)
+            {
+                GUID = guid;
+                ProviderPath = providerPath;    
+            }
             public string GUID { get; set; }
             public string? ProviderPath { get; set; }
         }

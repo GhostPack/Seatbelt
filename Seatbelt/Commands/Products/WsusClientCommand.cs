@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Microsoft.Win32;
 
 namespace Seatbelt.Commands
@@ -19,22 +18,27 @@ namespace Seatbelt.Commands
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            yield return new WsusClientDTO()
-            {
-                UseWUServer = (ThisRunTime.GetDwordValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU", "UseWUServer") == 1),
-                Server = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", "WUServer"),
-                AlternateServer = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", "UpdateServiceUrlAlternate"),
-                StatisticsServer = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", "WUStatusServer"),
-            };
+            yield return new WsusClientDTO(
+                (ThisRunTime.GetDwordValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU", "UseWUServer") == 1),
+                ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", "WUServer"),
+                ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", "UpdateServiceUrlAlternate"),
+                ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", "WUStatusServer")
+            );
         }
     }
 
     internal class WsusClientDTO : CommandDTOBase
     {
-        public bool UseWUServer { get; set; }
-        public string Server { get; set; }
-        public string AlternateServer { get; set; }
-        public string StatisticsServer { get; set; }
+        public WsusClientDTO(bool? useWuServer, string? server, string? alternateServer, string? statisticsServer)
+        {
+            UseWUServer = useWuServer;
+            Server = server;
+            AlternateServer = alternateServer;
+            StatisticsServer = statisticsServer;    
+        }
+        public bool? UseWUServer { get; set; }
+        public string? Server { get; set; }
+        public string? AlternateServer { get; set; }
+        public string? StatisticsServer { get; set; }
     }
 }
-#nullable enable

@@ -32,15 +32,15 @@ namespace Seatbelt.Commands.Windows.EventLogs
             WriteVerbose($"Format: Date(Local time),User,Command line.\n");
 
             // Get our "sensitive" cmdline regexes from a common helper function.
-            Regex[] processCmdLineRegex = MiscUtil.GetProcessCmdLineRegex();
+            var processCmdLineRegex = MiscUtil.GetProcessCmdLineRegex();
 
-            var query = "*[System/EventID=4688]";
-            var eventLogQuery = new EventLogQuery("Security", PathType.LogName, query) { ReverseDirection = true };
+            var query = $"*[System/EventID=4688]";
+            var eventLogQuery = new EventLogQuery("Security", PathType.LogName, query);
+            eventLogQuery.ReverseDirection = true;
             var logReader = new EventLogReader(eventLogQuery);
 
             for (var eventDetail = logReader.ReadEvent(); eventDetail != null; eventDetail = logReader.ReadEvent())
             {
-
                 var user = eventDetail.Properties[1].Value.ToString().Trim();
                 var commandLine = eventDetail.Properties[8].Value.ToString().Trim();
 

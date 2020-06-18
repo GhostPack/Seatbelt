@@ -105,7 +105,7 @@ namespace Seatbelt.Commands.Windows
 
                 if (Runtime.FilterResults)
                 {
-                    if (String.IsNullOrEmpty($"{result["Author"]}") || Regex.IsMatch($"{result["Author"]}", "Microsoft"))
+                    if (Regex.IsMatch($"{result["Author"]}", "Microsoft"))
                     {
                         continue;
                     }

@@ -47,35 +47,6 @@ namespace Seatbelt.Util
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         private static extern int GetPrivateProfileSection(string section, IntPtr keyValue, int size, string filePath);
 
-        [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool WritePrivateProfileString(string section, string? key, string? value, string filePath);
-
-        public static bool WriteValue(string section, string key, string value, string filePath)
-        {
-            var result = WritePrivateProfileString(section, key, value, filePath);
-            return result;
-        }
-
-        public static bool DeleteSection(string section, string filepath)
-        {
-            var result = WritePrivateProfileString(section, null, null, filepath);
-            return result;
-        }
-
-        public static bool DeleteKey(string section, string key, string filepath)
-        {
-            var result = WritePrivateProfileString(section, key, null, filepath);
-            return result;
-        }
-
-        public static string ReadValue(string section, string key, string filePath, string defaultValue = "")
-        {
-            var value = new StringBuilder(capacity);
-            GetPrivateProfileString(section, key, defaultValue, value, value.Capacity, filePath);
-            return value.ToString();
-        }
-
         public static string[] ReadSections(string filePath)
         {
             // first line will not recognize if ini file is saved in UTF-8 with BOM

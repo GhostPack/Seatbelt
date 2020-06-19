@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Management;
-using System.Reflection;
-using Seatbelt.Interop;
 using Seatbelt.Output.Formatters;
 using Seatbelt.Output.TextWriters;
 
@@ -29,7 +26,7 @@ namespace Seatbelt.Commands.Windows
             //          Updates supplied by Microsoft Windows Installer (MSI) or the Windows update site (https://update.microsoft.com) are not returned.
             // Translation: this only shows (usually) _Windows_ updates, not all _Microsoft_ updates. For that use the "MicrosoftUpdates" command.
 
-            WriteHost("Enumerating Windows Hotfixes. For *all* Microsoft upates, use the 'MicrosoftUpdates' command.\r\n");
+            WriteHost("Enumerating Windows Hotfixes. For *all* Microsoft updates, use the 'MicrosoftUpdates' command.\r\n");
 
             var wmiData = ThisRunTime.GetManagementObjectSearcher(@"root\cimv2", "SELECT * FROM Win32_QuickFixEngineering");
             var data = wmiData.Get();

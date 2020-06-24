@@ -1,10 +1,19 @@
-﻿namespace Seatbelt
+﻿using System;
+
+namespace Seatbelt
 {
     public static class Program
     {
         private static void Main(string[] args)
         {
-            (new Seatbelt(args)).Start();
+            try
+            {
+                (new Seatbelt(args)).Start();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Unhandled terminating exception: {e}");
+            }
         }
     }
 }

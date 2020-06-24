@@ -74,7 +74,7 @@ namespace Seatbelt
                 catch (Exception e)
                 {
                     OutputSink.WriteError($"Error connecting to \"{computerName}\" : {e.Message}");
-                    Environment.Exit(1);
+                    throw e;
                 }
 
                 wmiRegProv = WMIUtil.WMIRegConnection(computerName, userName, password);

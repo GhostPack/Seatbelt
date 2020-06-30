@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Seatbelt.Output.TextWriters;
 using Seatbelt.Output.Formatters;
 using static Seatbelt.VaultCli;
@@ -10,14 +11,15 @@ namespace Seatbelt.Commands.Windows
 {
     class VaultEntry
     {
-        public string? Resource { get; set; }
-        public string? Identity { get; set; }
+        public Guid SchemaGuidId { get; set; }
+        public VaultItemValue? Resource { get; set; }
+        public VaultItemValue? Identity { get; set; }
 
-        public string? PackageSid { get; set; }
+        public VaultItemValue? PackageSid { get; set; }
 
-        public string? Credential { get; set; }
+        public VaultItemValue? Credential { get; set; }
 
-        public DateTime LastModified { get; set; }
+        public DateTime LastModifiedUtc { get; set; }
     }
 
     internal class WindowsVaultCommand : CommandBase
@@ -94,20 +96,20 @@ namespace Seatbelt.Commands.Windows
                     continue;
                 }
                 var currentVaultItem = vaultItemPtr;
-                if (vaultItemCount <= 0)
-                    continue;
-
-                // For each vault item...
-                for (var j = 1; j <= vaultItemCount; j++)
+                if (vaultItemCount > 0)
                 {
-                    var entry = ParseVaultItem(vaultHandle, vaultGuid, currentVaultItem);
+                    // For each vault item...
+                    for (var j = 1; j <= vaultItemCount; j++)
+                    {
+                        var entry = ParseVaultItem(vaultHandle, vaultGuid, currentVaultItem);
 
-                    if (Runtime.FilterResults && string.IsNullOrEmpty(entry.Credential))
-                        continue;
+                        //if (Runtime.FilterResults && string.IsNullOrEmpty(entry.Credential))
+                        //    continue;
 
-                    entries.Add(entry);
+                        entries.Add(entry);
 
-                    currentVaultItem = (IntPtr)(currentVaultItem.ToInt64() + Marshal.SizeOf(currentVaultItem));
+                        currentVaultItem = (IntPtr)(currentVaultItem.ToInt64() + Marshal.SizeOf(currentVaultItem));
+                    }
                 }
 
                 yield return new WindowsVaultDTO(
@@ -118,7 +120,7 @@ namespace Seatbelt.Commands.Windows
             }
         }
 
-        private void GetVaultItem(IntPtr vaultHandle, IntPtr vaultItemPtr, out IntPtr? pPackageSid, out IntPtr pResourceElement, out IntPtr pIdentityElement, out ulong lastModified, out IntPtr pAuthenticatorElement)
+        private void GetVaultItem(IntPtr vaultHandle, IntPtr vaultItemPtr, out Guid schemaId, out IntPtr? pPackageSid, out IntPtr pResourceElement, out IntPtr pIdentityElement, out ulong lastModified, out IntPtr pAuthenticatorElement)
         {
             int result;
             var OSVersion = Environment.OSVersion.Version;
@@ -161,6 +163,7 @@ namespace Seatbelt.Commands.Windows
                 throw new Exception($"Could not retrieve vault vault item. Error code: {result}");
 
             // Return values
+            schemaId = tempSchemaGuidId;
             pPackageSid = tempPackageSid;
             pResourceElement = tempResourceElement;
             pIdentityElement = tempIdentityElement;
@@ -173,12 +176,10 @@ namespace Seatbelt.Commands.Windows
 
         private VaultEntry ParseVaultItem(IntPtr vaultHandle, Guid vaultGuid, IntPtr vaultItemPtr)
         {
-
-
-            GetVaultItem(vaultHandle, vaultItemPtr, out var pPackageSid, out var pResourceElement, out var pIdentityElement, out var lastModified, out var pAuthenticatorElement);
+            GetVaultItem(vaultHandle, vaultItemPtr,out var schemaGuid, out var pPackageSid, out var pResourceElement, out var pIdentityElement, out var lastModified, out var pAuthenticatorElement);
 
             // Cred
-            object? cred = null;
+            VaultItemValue? cred = null;
             try
             {
                 // Fetch the credential from the authenticator element
@@ -191,7 +192,7 @@ namespace Seatbelt.Commands.Windows
 
 
             // Package SID
-            object? packageSid = null;
+            VaultItemValue? packageSid = null;
             if (pPackageSid != null && pPackageSid != IntPtr.Zero)
             {
                 try
@@ -206,7 +207,7 @@ namespace Seatbelt.Commands.Windows
 
 
             // Resource
-            object? resource = null;
+            VaultItemValue? resource = null;
             try
             {
                 resource = GetVaultElementValue(pResourceElement);
@@ -217,82 +218,84 @@ namespace Seatbelt.Commands.Windows
             }
 
 
-            object? identity = null;
+            VaultItemValue? identity = null;
             try
             {
-                identity = GetVaultElementValue(pIdentityElement).ToString();
+                identity = GetVaultElementValue(pIdentityElement);
             }
             catch (NotImplementedException e)
             {
-                WriteError($"Could not parse identity for  for Vault GUID {vaultGuid}: {e}");
+                WriteError($"Could not parse identity for Vault GUID {vaultGuid}: {e}");
             }
-
 
             return new VaultEntry
             {
-                Identity = identity?.ToString(),
-                Resource = resource?.ToString(),
-                Credential = cred?.ToString(),
-                PackageSid = packageSid?.ToString(),
-                LastModified = DateTime.FromFileTimeUtc((long)lastModified)
+                SchemaGuidId = schemaGuid,
+                Identity = identity,
+                Resource = resource,
+                Credential = cred,
+                PackageSid = packageSid,
+                LastModifiedUtc = DateTime.FromFileTimeUtc((long)lastModified)
             };
         }
 
-        private object GetVaultElementValue(IntPtr vaultElementPtr)
+        private VaultItemValue GetVaultElementValue(IntPtr vaultElementPtr)
         {
-            // Helper function to extract the ItemValue field from a VAULT_ITEM_ELEMENT struct
-            // pulled directly from @djhohnstein's SharpWeb project: https://github.com/djhohnstein/SharpWeb/blob/master/Edge/SharpEdge.cs
-            object results;
-            var partialElement = Marshal.PtrToStructure(vaultElementPtr, typeof(VAULT_ITEM_ELEMENT));
-            var partialElementInfo = partialElement.GetType().GetField("Type");
-            var partialElementType = (VAULT_ELEMENT_TYPE)partialElementInfo.GetValue(partialElement);
+            object value;
+
+            var item = (VAULT_ITEM_ELEMENT)Marshal.PtrToStructure(vaultElementPtr, typeof(VAULT_ITEM_ELEMENT));
 
             // Types: https://github.com/SpiderLabs/portia/blob/master/modules/Get-VaultCredential.ps1#L40-L54
             var elementPtr = (IntPtr)(vaultElementPtr.ToInt64() + 16);
-            switch (partialElementType)
+            switch (item.Type)
             {
                 case VAULT_ELEMENT_TYPE.Boolean:
-                    results = Marshal.ReadByte(elementPtr);
-                    results = (bool)results;
+                    value = Marshal.ReadByte(elementPtr);
+                    value = (bool)value;
                     break;
                 case VAULT_ELEMENT_TYPE.Short:
-                    results = Marshal.ReadInt16(elementPtr);
+                    value = Marshal.ReadInt16(elementPtr);
                     break;
                 case VAULT_ELEMENT_TYPE.UnsignedShort:
-                    results = Marshal.ReadInt16(elementPtr);
+                    value = Marshal.ReadInt16(elementPtr);
                     break;
                 case VAULT_ELEMENT_TYPE.Int:
-                    results = Marshal.ReadInt32(elementPtr);
+                    value = Marshal.ReadInt32(elementPtr);
                     break;
                 case VAULT_ELEMENT_TYPE.UnsignedInt:
-                    results = Marshal.ReadInt32(elementPtr);
+                    value = Marshal.ReadInt32(elementPtr);
                     break;
                 case VAULT_ELEMENT_TYPE.Double:
-                    results = Marshal.PtrToStructure(elementPtr, typeof(double));
+                    value = Marshal.PtrToStructure(elementPtr, typeof(double));
                     break;
                 case VAULT_ELEMENT_TYPE.Guid:
-                    results = Marshal.PtrToStructure(elementPtr, typeof(Guid));
+                    value = Marshal.PtrToStructure(elementPtr, typeof(Guid));
                     break;
                 case VAULT_ELEMENT_TYPE.String:
                     var StringPtr = Marshal.ReadIntPtr(elementPtr);
-                    results = Marshal.PtrToStringUni(StringPtr);
+                    value = Marshal.PtrToStringUni(StringPtr);
                     break;
                 case VAULT_ELEMENT_TYPE.Sid:
                     var sidPtr = Marshal.ReadIntPtr(elementPtr);
                     var sidObject = new System.Security.Principal.SecurityIdentifier(sidPtr);
-                    results = sidObject.Value;
+                    value = sidObject.Value;
+                    break;
+                case VAULT_ELEMENT_TYPE.ByteArray:
+                    var o = (VAULT_BYTE_ARRAY)Marshal.PtrToStructure(elementPtr, typeof(VAULT_BYTE_ARRAY));
+                    var array = new byte[o.Length];
+                    Marshal.Copy(o.pData, array, 0, o.Length);
+                    value = array;
                     break;
 
                 //case VAULT_ELEMENT_TYPE.Undefined:
-                //case VAULT_ELEMENT_TYPE.ByteArray:
                 //case VAULT_ELEMENT_TYPE.TimeStamp:
                 //case VAULT_ELEMENT_TYPE.ProtectedArray:
                 //case VAULT_ELEMENT_TYPE.Attribute:
                 //case VAULT_ELEMENT_TYPE.Last:
                 default:
-                    throw new NotImplementedException($"VAULT_ELEMENT_TYPE '{partialElementType}' is currently not implemented");
+                    throw new NotImplementedException($"VAULT_ELEMENT_TYPE '{item.Type}' is currently not implemented");
             }
-            return results;
+            return new VaultItemValue(item.Type, value);
         }
 
         internal class WindowsVaultDTO : CommandDTOBase
@@ -301,7 +304,7 @@ namespace Seatbelt.Commands.Windows
             {
                 VaultGUID = vaultGuid;
                 VaultType = vaultType;
-                VaultEntries = vaultEntries;    
+                VaultEntries = vaultEntries;
             }
 
             public Guid VaultGUID { get; set; }
@@ -323,26 +326,60 @@ namespace Seatbelt.Commands.Windows
                 var dto = (WindowsVaultDTO)result;
 
                 WriteLine($"\n  Vault GUID     : {dto.VaultGUID}");
-                WriteLine($"  Vault Type     : {dto.VaultType}\n");
+                WriteLine($"  Vault Type     : {dto.VaultType}");
+                WriteLine($"  Item count     : {dto.VaultEntries.Count}");
 
                 foreach (var entry in dto.VaultEntries)
                 {
-                    if (!String.IsNullOrEmpty(entry.Resource))
-                    {
-                        WriteLine($"    Resource     : {entry.Resource}");
-                    }
-                    if (!String.IsNullOrEmpty(entry.Identity))
-                    {
-                        WriteLine($"    Identity     : {entry.Identity}");
-                    }
-                    if (!String.IsNullOrEmpty(entry.PackageSid))
-                    {
-                        WriteLine($"    PacakgeSid  : {entry.PackageSid}");
-                    }
-                    WriteLine($"    Credential   : {entry.Credential}");
-                    WriteLine($"    LastModified : {entry.LastModified}\n");
+                    WriteLine("      SchemaGuid   : " + entry.SchemaGuidId);
+                    WriteLine("      Resource     : " + ItemToString(entry.Resource));
+                    WriteLine("      Identity     : " + ItemToString(entry.Identity));
+                    WriteLine("      PackageSid   : " + ItemToString(entry.PackageSid));
+                    WriteLine("      Credential   : " + ItemToString(entry.Credential));
+                    WriteLine($"      LastModified : {entry.LastModifiedUtc}");
                 }
             }
+
+            private string ItemToString(VaultItemValue? item)
+            {
+                if (item == null)
+                    return "(null)";
+
+                string valueStr;
+                switch (item.VaultElementType)
+                {
+                    case VAULT_ELEMENT_TYPE.Boolean:
+                    case VAULT_ELEMENT_TYPE.Short:
+                    case VAULT_ELEMENT_TYPE.UnsignedShort:
+                    case VAULT_ELEMENT_TYPE.Int:
+                    case VAULT_ELEMENT_TYPE.UnsignedInt:
+                    case VAULT_ELEMENT_TYPE.Double:
+                    case VAULT_ELEMENT_TYPE.Guid:
+                    case VAULT_ELEMENT_TYPE.String:
+                    case VAULT_ELEMENT_TYPE.Sid:
+                        valueStr = $"String: {item.Value.ToString()}";
+                        break;
+                    case VAULT_ELEMENT_TYPE.ByteArray:
+                        valueStr = BitConverter.ToString((byte[])item.Value).Replace("-", " "); ;
+                        break;
+                    default:
+                        valueStr = $"Unable to print a value of type {item.VaultElementType}. Please report an issue!";
+                        break;
+                }
+
+                return valueStr;
+            }
         }
+    }
+
+    internal class VaultItemValue
+    {
+        public VaultItemValue(VAULT_ELEMENT_TYPE vaultElementType, object value)
+        {
+            VaultElementType = vaultElementType;
+            Value = value;
+        }
+        public VAULT_ELEMENT_TYPE VaultElementType { get; set; }
+        public object Value { get; set; }
     }
 }

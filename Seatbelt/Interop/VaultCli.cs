@@ -66,13 +66,28 @@ namespace Seatbelt
             public IntPtr pPropertyElements;
         }
 
-        [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Ansi)]
+        [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
         public struct VAULT_ITEM_ELEMENT
         {
             [FieldOffset(0)]
             public VAULT_SCHEMA_ELEMENT_ID SchemaElementId;
             [FieldOffset(8)]
             public VAULT_ELEMENT_TYPE Type;
+            //[FieldOffset(16)]
+            //public Guid Guid;
+        }
+
+        //typedef struct _VAULT_BYTE_BUFFER
+        //{
+        //    DWORD Length;
+        //    PBYTE Value;
+        //}
+        //VAULT_BYTE_BUFFER, *PVAULT_BYTE_BUFFER;
+        [StructLayout(LayoutKind.Sequential)]
+        public struct VAULT_BYTE_ARRAY
+        {
+            public int Length;
+            public IntPtr pData;
         }
 
         [DllImport("vaultcli.dll")]

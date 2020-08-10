@@ -445,5 +445,6 @@ Seatbelt incorporates various collection items, code C# snippets, and bits of Po
 * Mark McKinnon's post on [decoding the DateCreated and DateLastConnected SSID values](http://cfed-ttf.blogspot.com/2009/08/decoding-datecreated-and.html)
 * This Specops [post on group policy caching](https://specopssoft.com/blog/things-work-group-policy-caching/)
 * sa_ddam213's StackOverflow post on [enumerating items in the Recycle Bin](https://stackoverflow.com/questions/18071412/list-filenames-in-the-recyclebin-with-c-sharp-without-using-any-external-files)
+* Kirill Osenkov's [code for managed assembly detection](https://stackoverflow.com/a/15608028)
 
 We've tried to do our due diligence for citations, but if we've left someone/something out, please let us know!

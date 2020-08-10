@@ -32,9 +32,18 @@ namespace Seatbelt.Commands.Windows
             var data = wmiData.Get();
             foreach (var hotfix in data)
             {
+                DateTime? InstalledOn;
+                try
+                {
+                    InstalledOn = Convert.ToDateTime(hotfix["InstalledOn"].ToString()).ToUniversalTime();
+                }
+                catch
+                {
+                    InstalledOn = null;
+                }
                 yield return new HotfixDTO(
                     hotfix["HotFixID"].ToString(),
-                    Convert.ToDateTime(hotfix["InstalledOn"].ToString()).ToUniversalTime(),
+                    InstalledOn,
                     hotfix["Description"].ToString(),
                     hotfix["InstalledBy"].ToString()
                 );

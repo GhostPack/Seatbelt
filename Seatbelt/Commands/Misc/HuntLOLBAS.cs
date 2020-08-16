@@ -13,7 +13,7 @@ namespace Seatbelt.Commands
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };              
         public override bool SupportRemote => false;
 
-        //Contains all lolbas found from https://lolbas-project.github.io/
+        // Contains all lolbas found from https://lolbas-project.github.io/
         // Obtained on 8/15/20
         private static readonly HashSet<string> Lolbas = new HashSet<string>(){
             "Advpack.dll", "Appvlp.exe", "At.exe",

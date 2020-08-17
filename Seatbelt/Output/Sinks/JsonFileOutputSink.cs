@@ -6,7 +6,7 @@ using Seatbelt.Commands;
 namespace Seatbelt.Output.Sinks
 {
     // Any sinks that output text to a location should inherit from this class
-    internal class JsonFileOutputSink : IOutputSink, IDisposable
+    internal class JsonFileOutputSink : IOutputSink
     {
         private StreamWriter _stream;
 
@@ -67,7 +67,7 @@ namespace Seatbelt.Output.Sinks
 
         public void Dispose()
         {
-            _stream?.Dispose();
+            _stream.Dispose();
         }
     }
 }

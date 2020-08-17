@@ -80,6 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\CommandGroup.cs" />
+    <Compile Include="Commands\Misc\HuntLOLBAS.cs" />
     <Compile Include="Commands\Windows\HotfixesCommand.cs" />
     <Compile Include="Commands\Windows\MicrosoftUpdatesCommand.cs" />
     <Compile Include="SeatbeltArgumentParser.cs" />

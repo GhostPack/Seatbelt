@@ -78,6 +78,7 @@ Seatbelt is licensed under the BSD 3-Clause license.
           IEFavorites            - Internet Explorer favorites
           IETabs                 - Open Internet Explorer tabs
           IEUrls                 - Internet Explorer typed URLs (last 7 days, argument == last X days)
+          HuntLolbas             - Locates Living Off The Land Binaries and Scripts (LOLBAS) on the system. Note: takes non-trivial time.
           InstalledProducts      - Installed products via the registry
           InterestingFiles       - "Interesting" files matching various patterns in the user's folder. Note: takes non-trivial time.
         + InterestingProcesses   - "Interesting" processes - defensive products and admin tools
@@ -191,7 +192,7 @@ Seatbelt is licensed under the BSD 3-Clause license.
 
        "Seatbelt.exe -group=misc" runs the following commands:
 
-            ChromeBookmarks, ChromeHistory, ExplicitLogonEvents, FileInfo, FirefoxHistory,
+            ChromeBookmarks, ChromeHistory, ExplicitLogonEvents, FileInfo, FirefoxHistory, HuntLolbas
             InstalledProducts, InterestingFiles, LogonEvents, OutlookDownloads,
             PowerShellEvents, ProcessCreationEvents, ProcessOwners, RecycleBin,
             reg, RPCMappedEndpoints, ScheduledTasks, SearchIndex,
@@ -324,6 +325,7 @@ Executed with: `Seatbelt.exe -group=misc`
 | ExplicitLogonEvents | Explicit Logon events (Event ID 4648) from the security event log. Default of 7 days, argument == last X days. |
 | FileInfo | Information about a file (version information, timestamps, basic PE info, etc. argument(s) == file path(s) |
 | FirefoxHistory | Parses any found FireFox history files |
+| HuntLolbas     | Locates Living Off The Land Binaries and Scripts (LOLBAS) on the system. Note: takes non-trivial time. |
 | InstalledProducts | Installed products via the registry |
 | InterestingFiles | "Interesting" files matching various patterns in the user's folder. Note: takes non-trivial time. |
 | LogonEvents | Logon events (Event ID 4624) from the security event log. Default of 10 days, argument == last X days. |

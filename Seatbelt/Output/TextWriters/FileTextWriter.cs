@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Seatbelt.Output.TextWriters
 {
-    internal class FileTextWriter : ITextWriter, IDisposable
+    internal class FileTextWriter : ITextWriter
     {
         private readonly StreamWriter _stream;
 
@@ -31,12 +31,6 @@ namespace Seatbelt.Output.TextWriters
 
         public void WriteLine(string format, params object?[] args) 
             => _stream.WriteLine(format, args);
-
-        public void FlushAndClose()
-        {
-            _stream.Flush();
-            _stream.Dispose();
-        }
 
         public void Dispose()
         {

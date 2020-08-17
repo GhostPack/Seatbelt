@@ -79,5 +79,10 @@ namespace Seatbelt.Output.Sinks
         public void WriteError(string message) => WriteOutput(new ErrorDTO(message));
 
         public void WriteHost(string message) => WriteOutput(new HostDTO(message));
+
+        public void Dispose()
+        {
+            _textWriter.Dispose();
+        }
     }
 }

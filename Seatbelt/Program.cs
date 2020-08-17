@@ -8,7 +8,8 @@ namespace Seatbelt
         {
             try
             {
-                (new Seatbelt(args)).Start();
+                using var sb = (new Seatbelt(args));
+                sb.Start();
             }
             catch (Exception e)
             {

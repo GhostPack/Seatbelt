@@ -283,7 +283,10 @@ namespace Seatbelt.Commands.Windows
                 case VAULT_ELEMENT_TYPE.ByteArray:
                     var o = (VAULT_BYTE_ARRAY)Marshal.PtrToStructure(elementPtr, typeof(VAULT_BYTE_ARRAY));
                     var array = new byte[o.Length];
-                    Marshal.Copy(o.pData, array, 0, o.Length);
+                    if (o.Length > 0)
+                    {
+                        Marshal.Copy(o.pData, array, 0, o.Length);
+                    }
                     value = array;
                     break;
 

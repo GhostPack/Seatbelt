@@ -27,9 +27,18 @@ namespace Seatbelt.Output.Sinks
             InitializeCustomTextFormatters();
         }
 
+        private static Assembly MyAssemblyResolveEventHandler(object sender, ResolveEventArgs args)
+        {
+            return System.Reflection.Assembly.GetExecutingAssembly();
+        }
+
         private void InitializeCustomTextFormatters()
         {
             var currentAssembly = Assembly.GetExecutingAssembly();
+
+            AppDomain currentDomain = AppDomain.CurrentDomain;
+            currentDomain.AssemblyResolve += new ResolveEventHandler(MyAssemblyResolveEventHandler);
+
             foreach (var formatter in currentAssembly.GetTypes().Where(t => typeof(TextFormatterBase).IsAssignableFrom(t)))
             {
                 var attributes = Attribute.GetCustomAttributes(formatter);

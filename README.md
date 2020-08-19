@@ -302,7 +302,7 @@ Executed with: `Seatbelt.exe -group=user`
 | IEUrls| Internet Explorer typed URLs (last 7 days, argument == last X days) |
 | MappedDrives | Users' mapped drives (via WMI) |
 | OfficeMRUs | Office most recently used file list (last 7 days) |
-|PowerShellHistory | Iterates through every local user and attempts to read their PowerShell console history if successful will print it  |
+| PowerShellHistory | Iterates through every local user and attempts to read their PowerShell console history if successful will print it  |
 | PuttyHostKeys | Saved Putty SSH host keys |
 | PuttySessions | Saved Putty configuration (interesting fields) and SSH host keys |
 | RDCManFiles | Windows Remote Desktop Connection Manager settings files |

@@ -83,6 +83,7 @@
     <Compile Include="Commands\Misc\HuntLOLBAS.cs" />
     <Compile Include="Commands\Windows\HotfixesCommand.cs" />
     <Compile Include="Commands\Windows\MicrosoftUpdatesCommand.cs" />
+    <Compile Include="Commands\Windows\PowerShellHistory.cs" />
     <Compile Include="SeatbeltArgumentParser.cs" />
     <Compile Include="Commands\Browser\ChromeBookmarksCommand.cs" />
     <Compile Include="Commands\Browser\ChromeHistoryCommand.cs" />

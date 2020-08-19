@@ -102,6 +102,7 @@ Seatbelt is licensed under the BSD 3-Clause license.
           PoweredOnEvents        - Reboot and sleep schedule based on the System event log EIDs 1, 12, 13, 42, and 6008. Default of 7 days, argument == last X days.
         + PowerShell             - PowerShell versions and security settings
           PowerShellEvents       - PowerShell script block logs (4104) with sensitive data.
+          PowerShellHistory      - Iterates through every local user and attempts to read their PowerShell console history if successful will print it.
           Printers               - Installed Printers (via WMI)
           ProcessCreationEvents  - Process creation logs (4688) with sensitive data.
           Processes              - Running processes with file info company names that don't contain 'Microsoft', "-full" enumerates all processes
@@ -154,7 +155,7 @@ Seatbelt is licensed under the BSD 3-Clause license.
             ChromePresence, CloudCredentials, CredEnum, dir, DpapiMasterKeys,
             ExplorerMRUs, ExplorerRunCommands, FirefoxPresence, IdleTime,
             IEFavorites, IETabs, IEUrls, MappedDrives,
-            OfficeMRUs, PuttyHostKeys, PuttySessions, RDCManFiles,
+            OfficeMRUs, PowerShellHistory, PuttyHostKeys, PuttySessions, RDCManFiles,
             RDPSavedConnections, SlackDownloads, SlackPresence, SlackWorkspaces,
             TokenGroups, WindowsCredentialFiles, WindowsVault
 
@@ -192,7 +193,7 @@ Seatbelt is licensed under the BSD 3-Clause license.
 
        "Seatbelt.exe -group=misc" runs the following commands:
 
-            ChromeBookmarks, ChromeHistory, ExplicitLogonEvents, FileInfo, FirefoxHistory, HuntLolbas
+            ChromeBookmarks, ChromeHistory, ExplicitLogonEvents, FileInfo, FirefoxHistory, HuntLolbas,
             InstalledProducts, InterestingFiles, LogonEvents, OutlookDownloads,
             PowerShellEvents, ProcessCreationEvents, ProcessOwners, RecycleBin,
             reg, RPCMappedEndpoints, ScheduledTasks, SearchIndex,
@@ -301,6 +302,7 @@ Executed with: `Seatbelt.exe -group=user`
 | IEUrls| Internet Explorer typed URLs (last 7 days, argument == last X days) |
 | MappedDrives | Users' mapped drives (via WMI) |
 | OfficeMRUs | Office most recently used file list (last 7 days) |
+|PowerShellHistory | Iterates through every local user and attempts to read their PowerShell console history if successful will print it  |
 | PuttyHostKeys | Saved Putty SSH host keys |
 | PuttySessions | Saved Putty configuration (interesting fields) and SSH host keys |
 | RDCManFiles | Windows Remote Desktop Connection Manager settings files |

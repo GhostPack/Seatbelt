@@ -3,6 +3,10 @@ using static Seatbelt.Interop.Netapi32;
 using System.Collections.Generic;
 using Seatbelt.Output.TextWriters;
 using Seatbelt.Output.Formatters;
+using System;
+using System.IO;
+using Seatbelt.Util;
+using System.Text.RegularExpressions;
 
 namespace Seatbelt.Commands.Windows
 {
@@ -10,7 +14,7 @@ namespace Seatbelt.Commands.Windows
     { 
 
         public override string Command => "PowerShellHistory";
-        public override string Description => "Iterates through every local user and attempts to read their PowerShell console history if successful will print it.";
+        public override string Description => "Searches PowerShell console history files for sensitive regex matches.";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
         public override bool SupportRemote => false;
         public Runtime ThisRunTime;
@@ -22,77 +26,60 @@ namespace Seatbelt.Commands.Windows
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            string computerName = ThisRunTime.ComputerName;
+            // get our "sensitive" cmdline regexes from a common helper function.
+            var powershellRegex = MiscUtil.GetProcessCmdLineRegex();
 
-            // An alternative approach to obtaining local users if you do not want to use P/Invoke and system is using AD
-            // https://stackoverflow.com/questions/8191696/list-all-local-users-using-directory-service
-
-            foreach (var localUser in GetLocalUsers(computerName))
+            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
+            var dirs = Directory.GetDirectories(userFolder);
+            foreach (var dir in dirs)
             {
-                // Loop through each local user and attempt to read their consolehost history
-                // This is enabled by default starting with PowerShell v5 on Windows 10
-                // Does not record terminal less PowerShell sessions
-
-                string Errored = "";
-                string user = localUser.name;
-                string content = "";
-                try
+                var parts = dir.Split('\\');
+                var userName = parts[parts.Length - 1];
+                if (dir.EndsWith("Public") || dir.EndsWith("Default") || dir.EndsWith("Default User") ||
+                    dir.EndsWith("All Users"))
                 {
-                    string path = $"C:\\Users\\{user}\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadline\\ConsoleHost_history.txt";
-                    if (System.IO.File.Exists(path))
-                    {
-                        // Make sure file exists before attempting to read it
-                        content += System.IO.File.ReadAllText(path);
-                    }
-                    else
-                    {
-                        Errored = "ConsoleHost_History.txt was not found";
-                    }
-                }
-                catch(System.Exception e)
-                {
-                    Errored = e.Message;
+                    continue;
                 }
 
-                if (Errored.Length > 0)
+                var consoleHistoryPath = $"{dir}\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadline\\ConsoleHost_history.txt";
+                
+                if (File.Exists(consoleHistoryPath))
                 {
-                    yield return new PowerShellHistoryDTO() { User = user, Error = Errored };
-                }
-                else 
-                {
-                    yield return new PowerShellHistoryDTO() { User = user, Content = content };
+                    string content = System.IO.File.ReadAllText(consoleHistoryPath);
+
+                    foreach (var reg in powershellRegex)
+                    {
+                        var matches = reg.Matches(content);
+                        foreach(Match match in matches)
+                        {
+                            string context = content.Substring(match.Index - 100, 200 + match.Length);
+
+                            yield return new PowerShellHistoryDTO(
+                                userName,
+                                consoleHistoryPath,
+                                match.ToString(),
+                                context
+                            );
+                        }
+                    }
                 }
             }
         }
 
         internal class PowerShellHistoryDTO : CommandDTOBase
         {
-            public string? User { get; set; }
-            public string? Content { get; set; }
-            public string? Error { get; set; } = "";
-        }
-        
-        [CommandOutputType(typeof(PowerShellHistoryDTO))]
-        internal class PowerShellHistoryFormatter : TextFormatterBase
-        {
-            public PowerShellHistoryFormatter(ITextWriter writer) : base(writer)
+            public PowerShellHistoryDTO(string? userName, string? fileName, string? match, string? context)
             {
+                UserName = userName;
+                FileName = fileName;
+                Match = match;
+                Context = context;
             }
 
-            public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
-            {
-                var dto = (PowerShellHistoryDTO)result;
-                if (dto.Error.Length > 0)
-                {
-                    WriteLine($"An error has occurred when attempting to read the history of local user: {dto.User} error: {dto.Error}.");
-                }
-                else
-                {
-                    WriteLine($"PowerShell Console History for local user: {dto.User}: \n");
-                    WriteLine(dto.Content);
-                }
-            }
-
+            public string? UserName { get; set; }
+            public string? FileName { get; set; }
+            public string? Match { get; set; }
+            public string? Context { get; set; }
         }
     }
 }

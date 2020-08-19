@@ -26,7 +26,7 @@ namespace Seatbelt.Util
 
             Regex[] processCmdLineRegex =
             {
-                new Regex(@"(New-Object.*System.Management.Automation.PSCredential.*)", RegexOptions.IgnoreCase & RegexOptions.Multiline),
+                //new Regex(@"(New-Object.*System.Management.Automation.PSCredential.*)", RegexOptions.IgnoreCase & RegexOptions.Multiline),
                 new Regex(@"(ConvertTo-SecureString.*AsPlainText.*)", RegexOptions.IgnoreCase & RegexOptions.Multiline),
                 new Regex(@"(net(.exe)?.*user .*)", RegexOptions.IgnoreCase & RegexOptions.Multiline),
                 new Regex(@"(net(.exe)?.*use .*)", RegexOptions.IgnoreCase & RegexOptions.Multiline),

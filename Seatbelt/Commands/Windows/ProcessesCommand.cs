@@ -21,7 +21,7 @@ namespace Seatbelt.Commands.Windows
             ModuleFileName = moduleFileName;
             ModuleFileDescription = moduleFileDescription;
             ModuleOriginalFilename = moduleOriginalFilename;
-            ModuleCompanyName = moduleCompanyName;  
+            ModuleCompanyName = moduleCompanyName;
         }
         public string ModuleName { get; set; }
         public string ModuleFileName { get; set; }
@@ -34,7 +34,7 @@ namespace Seatbelt.Commands.Windows
     {
         public override string Command => "Processes";
         public override string Description => "Running processes with file info company names that don't contain 'Microsoft', \"-full\" enumerates all processes";
-        public override CommandGroup[] Group => new[] {CommandGroup.System};
+        public override CommandGroup[] Group => new[] { CommandGroup.System };
         public override bool SupportRemote => false; // other local Process" stuff prevents this
 
         public ProcessesCommand(Runtime runtime) : base(runtime)
@@ -74,6 +74,8 @@ namespace Seatbelt.Commands.Windows
                     {
                         var isDotNet = false;
                         string? companyName = null;
+                        string? description = null;
+                        string? version = null;
 
                         if (item.Path != null)
                         {
@@ -83,9 +85,11 @@ namespace Seatbelt.Commands.Windows
                             {
                                 var myFileVersionInfo = FileVersionInfo.GetVersionInfo(item.Path);
                                 companyName = myFileVersionInfo.CompanyName;
-                            } catch
+                                description = myFileVersionInfo.FileDescription;
+                                version = myFileVersionInfo.FileVersion;
+                            }
+                            catch
                             {
-                                companyName = null;
                             }
                         }
 
@@ -125,8 +129,10 @@ namespace Seatbelt.Commands.Windows
 
                         yield return new ProcessesDTO(
                             item.Process.ProcessName,
-                            companyName,
                             item.Process.Id,
+                            companyName,
+                            description,
+                            version,
                             item.Path,
                             item.CommandLine,
                             isDotNet,
@@ -140,18 +146,22 @@ namespace Seatbelt.Commands.Windows
 
     internal class ProcessesDTO : CommandDTOBase
     {
-        public ProcessesDTO(string processName, string? companyName, int processId, string? path, string commandLine, bool? isDotNet, List<Module> modules)
+        public ProcessesDTO(string processName, int processId, string? companyName, string? description, string? version, string? path, string commandLine, bool? isDotNet, List<Module> modules)
         {
             ProcessName = processName;
-            CompanyName = companyName;
             ProcessId = processId;
+            CompanyName = companyName;
+            Description = description;
+            Version = version;
             Path = path;
             CommandLine = commandLine;
             IsDotNet = isDotNet;
-            Modules = modules;  
+            Modules = modules;
         }
         public string ProcessName { get; set; }
         public string? CompanyName { get; set; }
+        public string? Description { get; set; }
+        public string? Version { get; set; }
         public int ProcessId { get; set; }
         public string? Path { get; set; }
         public string CommandLine { get; set; }
@@ -171,8 +181,10 @@ namespace Seatbelt.Commands.Windows
             var dto = (ProcessesDTO)result;
 
             WriteLine(" {0,-40} : {1}", "ProcessName", dto.ProcessName);
-            WriteLine(" {0,-40} : {1}", "CompanyName", dto.CompanyName);
             WriteLine(" {0,-40} : {1}", "ProcessId", dto.ProcessId);
+            WriteLine(" {0,-40} : {1}", "CompanyName", dto.CompanyName);
+            WriteLine(" {0,-40} : {1}", "Description", dto.Description);
+            WriteLine(" {0,-40} : {1}", "Version", dto.Version);
             WriteLine(" {0,-40} : {1}", "Path", dto.Path);
             WriteLine(" {0,-40} : {1}", "CommandLine", dto.CommandLine);
             WriteLine(" {0,-40} : {1}", "IsDotNet", dto.IsDotNet);

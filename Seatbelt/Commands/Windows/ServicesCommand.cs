@@ -13,7 +13,7 @@ namespace Seatbelt.Commands.Windows
     {
         public override string Command => "Services";
         public override string Description => "Services with file info company names that don't contain 'Microsoft', \"-full\" dumps all processes";
-        public override CommandGroup[] Group => new[] {CommandGroup.System};
+        public override CommandGroup[] Group => new[] { CommandGroup.System };
         public override bool SupportRemote => false; // tracking back some of the  service stuff needs local API calls
 
         public ServicesCommand(Runtime runtime) : base(runtime)
@@ -22,7 +22,7 @@ namespace Seatbelt.Commands.Windows
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            // lists installed servics that don't have "Microsoft Corporation" as the company name in their file info
+            // lists installed services that don't have "Microsoft Corporation" as the company name in their file info
             //      or all services if "-full" is passed
 
             WriteHost(Runtime.FilterResults ? "Non Microsoft Services (via WMI)\n" : "All Services (via WMI)\n");
@@ -33,7 +33,9 @@ namespace Seatbelt.Commands.Windows
             foreach (ManagementObject result in data)
             {
                 var serviceName = result["Name"] == null ? null : (string)result["Name"];
-                string companyName = null;
+                string? companyName = null;
+                string? description = null;
+                string? version = null;
                 string binaryPathSddl = null;
                 string serviceSddl = null;
                 bool? isDotNet = null;
@@ -52,7 +54,17 @@ namespace Seatbelt.Commands.Windows
 
                 if (!string.IsNullOrEmpty(binaryPath) && File.Exists(binaryPath))
                 {
-                    companyName = GetCompanyName(binaryPath);
+                    try
+                    {
+                        var myFileVersionInfo = FileVersionInfo.GetVersionInfo(binaryPath);
+                        companyName = myFileVersionInfo.CompanyName;
+                        description = myFileVersionInfo.FileDescription;
+                        version = myFileVersionInfo.FileVersion;
+                    }
+                    catch
+                    {
+                    }
+
 
                     if (Runtime.FilterResults)
                     {
@@ -91,6 +103,8 @@ namespace Seatbelt.Commands.Windows
                     ServiceDll = serviceDll,
                     ServiceSDDL = serviceSddl,
                     CompanyName = companyName,
+                    FileDescription = description,
+                    Version = version,
                     IsDotNet = isDotNet
                 };
             }
@@ -98,18 +112,6 @@ namespace Seatbelt.Commands.Windows
             // yield return null;
         }
 
-        private string? GetCompanyName(string path)
-        {
-            try
-            {
-                var myFileVersionInfo = FileVersionInfo.GetVersionInfo(path);
-                return myFileVersionInfo.CompanyName;
-            }
-            catch
-            {
-                return null;
-            }
-        }
 
         private string? GetServiceDll(string serviceName)
         {
@@ -236,6 +238,8 @@ namespace Seatbelt.Commands.Windows
         public string ServiceDll { get; set; }
         public string ServiceSDDL { get; set; }
         public string CompanyName { get; set; }
+        public string? FileDescription { get; set; }
+        public string? Version { get; set; }
         public bool? IsDotNet { get; set; }
     }
 }

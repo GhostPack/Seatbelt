@@ -59,6 +59,11 @@ namespace Seatbelt.Commands.Windows
                 ));
             }
 
+            foreach (var value in RegistryUtil.GetValues(RegistryHive.LocalMachine, $"{asrKeyPath}\\ASROnlyExclusions"))
+            {
+                asrSettings.Exclusions.Add(value.Key);
+            }
+
             yield return new WindowsDefenderDTO(
                 pathExclusions,
                 processExclusions,
@@ -83,10 +88,12 @@ namespace Seatbelt.Commands.Windows
             {
                 Enabled = enabled;
                 Rules = new List<AsrRule>();
+                Exclusions = new List<string>();
             }
 
             public bool Enabled { get; }
             public List<AsrRule> Rules { get; }
+            public List<string> Exclusions { get;  }
         }
 
         internal class WindowsDefenderDTO : CommandDTOBase
@@ -141,7 +148,7 @@ namespace Seatbelt.Commands.Windows
 
                 if (pathExclusions.Count != 0)
                 {
-                    WriteLine("\r\nPathExclusions:");
+                    WriteLine("\r\nPath Exclusions:");
                     foreach (var path in pathExclusions)
                     {
                         WriteLine($"  {path}");
@@ -150,7 +157,7 @@ namespace Seatbelt.Commands.Windows
 
                 if (processExclusions.Count != 0)
                 {
-                    WriteLine("\r\nProcessExclusions");
+                    WriteLine("\r\nProcess Exclusions");
                     foreach (var process in processExclusions)
                     {
                         WriteLine($"  {process}");
@@ -159,7 +166,7 @@ namespace Seatbelt.Commands.Windows
 
                 if (extensionExclusions.Count != 0)
                 {
-                    WriteLine("\r\nExtensionExclusions");
+                    WriteLine("\r\nExtension Exclusions");
                     foreach (var ext in extensionExclusions)
                     {
                         WriteLine($"  {ext}");
@@ -188,6 +195,12 @@ namespace Seatbelt.Commands.Windows
                             : $"{rule.Rule} - Please report this";
 
                         WriteLine($"  {state,-10} {asrRule}");
+                    }
+
+                    WriteLine("\nASR Exclusions:");
+                    foreach (var exclusion in asrSettings.Exclusions)
+                    {
+                        WriteLine($"  {exclusion}");
                     }
                 }
             }

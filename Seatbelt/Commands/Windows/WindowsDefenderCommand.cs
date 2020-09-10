@@ -23,63 +23,9 @@ namespace Seatbelt.Commands.Windows
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            var pathExclusionData = ThisRunTime.GetValues(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows Defender\Exclusions\Paths");
-            var pathExclusions = new List<string>();
-            foreach (var kvp in pathExclusionData)
-            {
-                pathExclusions.Add(kvp.Key);
-            }
-
-            List<string> excludedPathsList = new List<string>();
-            var excludedPaths = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Windows Defender\Policy Manager", "ExcludedPaths");
-            if (excludedPaths != null)
-            {
-                foreach (var s in excludedPaths.Split('|'))
-                {
-                    excludedPathsList.Add(s);
-                }
-            }
-
-            var processExclusionData = ThisRunTime.GetValues(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows Defender\Exclusions\Processes");
-            var processExclusions = new List<string>();
-            foreach (var kvp in processExclusionData)
-            {
-                processExclusions.Add(kvp.Key);
-            }
-
-            var extensionExclusionData = ThisRunTime.GetValues(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows Defender\Exclusions\Extensions");
-            var extensionExclusions = new List<string>();
-            foreach (var kvp in extensionExclusionData)
-            {
-                extensionExclusions.Add(kvp.Key);
-            }
-
-            var asrKeyPath = @"Software\Policies\Microsoft\Windows Defender\Windows Defender Exploit Guard\ASR";
-            var asrEnabled = RegistryUtil.GetDwordValue(RegistryHive.LocalMachine, asrKeyPath, "ExploitGuard_ASR_Rules");
-
-            var asrSettings = new AsrSettings(
-                asrEnabled != null && (asrEnabled != 0)
-                );
-
-            foreach (var value in RegistryUtil.GetValues(RegistryHive.LocalMachine, $"{asrKeyPath}\\Rules"))
-            {
-                asrSettings.Rules.Add(new AsrRule(
-                    new Guid(value.Key),
-                    int.Parse((string)value.Value)
-                ));
-            }
-
-            foreach (var value in RegistryUtil.GetValues(RegistryHive.LocalMachine, $"{asrKeyPath}\\ASROnlyExclusions"))
-            {
-                asrSettings.Exclusions.Add(value.Key);
-            }
-
             yield return new WindowsDefenderDTO(
-                pathExclusions,
-                excludedPathsList,
-                processExclusions,
-                extensionExclusions,
-                asrSettings
+                new WindowsDefenderSettings(@"SOFTWARE\Microsoft\Windows Defender\", ThisRunTime), 
+                new WindowsDefenderSettings(@"SOFTWARE\Policies\Microsoft\Windows Defender\", ThisRunTime)
             );
         }
     }
@@ -110,14 +56,72 @@ namespace Seatbelt.Commands.Windows
 
     internal class WindowsDefenderDTO : CommandDTOBase
     {
-        public WindowsDefenderDTO(List<string> pathExclusions, List<string> policyManagerPathExclusions, List<string> processExclusions, List<string> extensionExclusions, AsrSettings asrSettings)
+        public WindowsDefenderDTO(WindowsDefenderSettings localSettings, WindowsDefenderSettings groupPolicySettings)
         {
-            PathExclusions = pathExclusions;
-            PolicyManagerPathExclusions = policyManagerPathExclusions;
-            ProcessExclusions = processExclusions;
-            ExtensionExclusions = extensionExclusions;
-            AsrSettings = asrSettings;
+            LocalSettings = localSettings;
+            GroupPolicySettings = groupPolicySettings;  
         }
+        public WindowsDefenderSettings LocalSettings { get; set; }
+        public WindowsDefenderSettings GroupPolicySettings { get; set; }
+    }
+
+    internal class WindowsDefenderSettings
+    {
+        public WindowsDefenderSettings(string defenderKeyPath, Runtime runtime)
+        {
+            var pathExclusionData = runtime.GetValues(RegistryHive.LocalMachine, $"{ defenderKeyPath}\\Exclusions\\Paths");
+            PathExclusions = new List<string>();
+            foreach (var kvp in pathExclusionData)
+            {
+                PathExclusions.Add(kvp.Key);
+            }
+
+
+            PolicyManagerPathExclusions = new List<string>();
+            var excludedPaths = runtime.GetStringValue(RegistryHive.LocalMachine, $"{defenderKeyPath}\\Policy Manager", "ExcludedPaths");
+            if (excludedPaths != null)
+            {
+                foreach (var s in excludedPaths.Split('|'))
+                {
+                    PolicyManagerPathExclusions.Add(s);
+                }
+            }
+
+            var processExclusionData = runtime.GetValues(RegistryHive.LocalMachine, $"{defenderKeyPath}\\Exclusions\\Processes");
+            ProcessExclusions = new List<string>();
+            foreach (var kvp in processExclusionData)
+            {
+                ProcessExclusions.Add(kvp.Key);
+            }
+
+            var extensionExclusionData = runtime.GetValues(RegistryHive.LocalMachine, $"{defenderKeyPath}\\Exclusions\\Extensions");
+            ExtensionExclusions = new List<string>();
+            foreach (var kvp in extensionExclusionData)
+            {
+                ExtensionExclusions.Add(kvp.Key);
+            }
+
+            var asrKeyPath = $"{defenderKeyPath}\\Windows Defender Exploit Guard\\ASR";
+            var asrEnabled = RegistryUtil.GetDwordValue(RegistryHive.LocalMachine, asrKeyPath, "ExploitGuard_ASR_Rules");
+
+            AsrSettings = new AsrSettings(
+                asrEnabled != null && (asrEnabled != 0)
+                );
+
+            foreach (var value in RegistryUtil.GetValues(RegistryHive.LocalMachine, $"{asrKeyPath}\\Rules"))
+            {
+                AsrSettings.Rules.Add(new AsrRule(
+                    new Guid(value.Key),
+                    int.Parse((string)value.Value)
+                ));
+            }
+
+            foreach (var value in RegistryUtil.GetValues(RegistryHive.LocalMachine, $"{asrKeyPath}\\ASROnlyExclusions"))
+            {
+                AsrSettings.Exclusions.Add(value.Key);
+            }
+        }
+
         public List<string> PathExclusions { get; }
         public List<string> PolicyManagerPathExclusions { get; }
         public List<string> ProcessExclusions { get; }
@@ -155,52 +159,61 @@ namespace Seatbelt.Commands.Windows
         {
             var dto = (WindowsDefenderDTO)result;
 
-            var pathExclusions = dto.PathExclusions;
-            var processExclusions = dto.ProcessExclusions;
-            var extensionExclusions = dto.ExtensionExclusions;
-            var asrSettings = dto.AsrSettings;
+            WriteLine("Locally-defined Settings:");
+            DisplayDefenderSettings(dto.LocalSettings);
+
+            WriteLine("\n\n\nGPO-defined Settings:");
+            DisplayDefenderSettings(dto.GroupPolicySettings);
+        }
+
+        void DisplayDefenderSettings(WindowsDefenderSettings settings)
+        {
+            var pathExclusions = settings.PathExclusions;
+            var processExclusions = settings.ProcessExclusions;
+            var extensionExclusions = settings.ExtensionExclusions;
+            var asrSettings = settings.AsrSettings;
 
             if (pathExclusions.Count != 0)
             {
-                WriteLine("\r\nPath Exclusions:");
+                WriteLine("\n  Path Exclusions:");
                 foreach (var path in pathExclusions)
                 {
-                    WriteLine($"  {path}");
+                    WriteLine($"    {path}");
                 }
             }
 
             if (pathExclusions.Count != 0)
             {
-                WriteLine("\r\nPolicyManagerPathExclusions      : ");
+                WriteLine("\n  PolicyManagerPathExclusions:");
                 foreach (var path in pathExclusions)
                 {
-                    WriteLine($"  {path}");
+                    WriteLine($"    {path}");
                 }
             }
 
             if (processExclusions.Count != 0)
             {
-                WriteLine("\r\nProcess Exclusions");
+                WriteLine("\n  Process Exclusions");
                 foreach (var process in processExclusions)
                 {
-                    WriteLine($"  {process}");
+                    WriteLine($"    {process}");
                 }
             }
 
             if (extensionExclusions.Count != 0)
             {
-                WriteLine("\r\nExtension Exclusions");
+                WriteLine("\n  Extension Exclusions");
                 foreach (var ext in extensionExclusions)
                 {
-                    WriteLine($"  {ext}");
+                    WriteLine($"    {ext}");
                 }
             }
 
             if (asrSettings.Enabled)
             {
-                WriteLine("\r\nAttack Surface Reduction Rules:\n");
+                WriteLine("\n  Attack Surface Reduction Rules:\n");
 
-                WriteLine($"  {"State",-10} Rule\n");
+                WriteLine($"    {"State",-10} Rule\n");
                 foreach (var rule in asrSettings.Rules)
                 {
                     string state;
@@ -217,13 +230,16 @@ namespace Seatbelt.Commands.Windows
                         ? _AsrGuids[rule.Rule.ToString()]
                         : $"{rule.Rule} - Please report this";
 
-                    WriteLine($"  {state,-10} {asrRule}");
+                    WriteLine($"    {state,-10} {asrRule}");
                 }
 
-                WriteLine("\nASR Exclusions:");
-                foreach (var exclusion in asrSettings.Exclusions)
+                if (asrSettings.Exclusions.Count > 0)
                 {
-                    WriteLine($"  {exclusion}");
+                    WriteLine("\n  ASR Exclusions:");
+                    foreach (var exclusion in asrSettings.Exclusions)
+                    {
+                        WriteLine($"    {exclusion}");
+                    }
                 }
             }
         }

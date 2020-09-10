@@ -84,6 +84,7 @@
     <Compile Include="Commands\Windows\HotfixesCommand.cs" />
     <Compile Include="Commands\Windows\MicrosoftUpdatesCommand.cs" />
     <Compile Include="Commands\Windows\PowerShellHistory.cs" />
+    <Compile Include="Commands\Windows\RDPSessionsCommand.cs" />
     <Compile Include="SeatbeltArgumentParser.cs" />
     <Compile Include="Commands\Browser\ChromeBookmarksCommand.cs" />
     <Compile Include="Commands\Browser\ChromeHistoryCommand.cs" />
@@ -166,7 +167,7 @@
     <Compile Include="Commands\Windows\OSInfoCommand.cs" />
     <Compile Include="Commands\Windows\PowerShellCommand.cs" />
     <Compile Include="Commands\Windows\InterestingProcessesCommand.cs" />
-    <Compile Include="Commands\Windows\RDPSessionsCommand.cs" />
+    <Compile Include="Commands\Windows\RDPSettingsCommand.cs" />
     <Compile Include="Commands\Windows\EventLogs\PoweredOnEventsCommand.cs" />
     <Compile Include="Commands\Windows\RecycleBinCommand.cs" />
     <Compile Include="Commands\Products\RemoteDesktopConnectionManagerCommand.cs" />

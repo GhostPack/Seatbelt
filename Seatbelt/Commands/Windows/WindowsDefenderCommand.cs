@@ -71,54 +71,55 @@ namespace Seatbelt.Commands.Windows
                 asrSettings
             );
         }
+    }
 
-        internal class AsrRule
+    internal class AsrRule
+    {
+        public AsrRule(Guid rule, int state)
         {
-            public AsrRule(Guid rule, int state)
-            {
-                Rule = rule;
-                State = state;
-            }
-            public Guid Rule { get; }
-            public int State { get; }
+            Rule = rule;
+            State = state;
         }
-        internal class AsrSettings
+        public Guid Rule { get; }
+        public int State { get; }
+    }
+    internal class AsrSettings
+    {
+        public AsrSettings(bool enabled)
         {
-            public AsrSettings(bool enabled)
-            {
-                Enabled = enabled;
-                Rules = new List<AsrRule>();
-                Exclusions = new List<string>();
-            }
-
-            public bool Enabled { get; }
-            public List<AsrRule> Rules { get; }
-            public List<string> Exclusions { get;  }
+            Enabled = enabled;
+            Rules = new List<AsrRule>();
+            Exclusions = new List<string>();
         }
 
-        internal class WindowsDefenderDTO : CommandDTOBase
+        public bool Enabled { get; }
+        public List<AsrRule> Rules { get; }
+        public List<string> Exclusions { get; }
+    }
+
+    internal class WindowsDefenderDTO : CommandDTOBase
+    {
+        public WindowsDefenderDTO(List<string> pathExclusions, List<string> processExclusions, List<string> extensionExclusions, AsrSettings asrSettings)
         {
-            public WindowsDefenderDTO(List<string> pathExclusions, List<string> processExclusions, List<string> extensionExclusions, AsrSettings asrSettings)
-            {
-                PathExclusions = pathExclusions;
-                ProcessExclusions = processExclusions;
-                ExtensionExclusions = extensionExclusions;
-                AsrSettings = asrSettings;
-            }
-            public List<string> PathExclusions { get; }
-            public List<string> ProcessExclusions { get; }
-            public List<string> ExtensionExclusions { get; }
-            public AsrSettings AsrSettings { get; }
+            PathExclusions = pathExclusions;
+            ProcessExclusions = processExclusions;
+            ExtensionExclusions = extensionExclusions;
+            AsrSettings = asrSettings;
+        }
+        public List<string> PathExclusions { get; }
+        public List<string> ProcessExclusions { get; }
+        public List<string> ExtensionExclusions { get; }
+        public AsrSettings AsrSettings { get; }
+    }
+
+    [CommandOutputType(typeof(WindowsDefenderDTO))]
+    internal class WindowsDefenderFormatter : TextFormatterBase
+    {
+        public WindowsDefenderFormatter(ITextWriter writer) : base(writer)
+        {
         }
 
-        [CommandOutputType(typeof(WindowsDefenderDTO))]
-        internal class WindowsDefenderFormatter : TextFormatterBase
-        {
-            public WindowsDefenderFormatter(ITextWriter writer) : base(writer)
-            {
-            }
-
-            private Dictionary<string, string> _AsrGuids = new Dictionary<string, string>
+        private Dictionary<string, string> _AsrGuids = new Dictionary<string, string>
             {
                 { "d4f940ab-401b-4efc-aadc-ad5f3c50688a" ,"Block all Office applications from creating child processes"},
                 { "5beb7efe-fd9a-4556-801d-275e5ffc04cc" , "Block execution of potentially obfuscated scripts"},
@@ -137,71 +138,70 @@ namespace Seatbelt.Commands.Windows
                 { "e6db77e5-3df2-4cf1-b95a-636979351e5b" , "Block persistence through WMI event subscription"},
             };
 
-            public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
+        public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
+        {
+            var dto = (WindowsDefenderDTO)result;
+
+            var pathExclusions = dto.PathExclusions;
+            var processExclusions = dto.ProcessExclusions;
+            var extensionExclusions = dto.ExtensionExclusions;
+            var asrSettings = dto.AsrSettings;
+
+            if (pathExclusions.Count != 0)
             {
-                var dto = (WindowsDefenderDTO)result;
-
-                var pathExclusions = dto.PathExclusions;
-                var processExclusions = dto.ProcessExclusions;
-                var extensionExclusions = dto.ExtensionExclusions;
-                var asrSettings = dto.AsrSettings;
-
-                if (pathExclusions.Count != 0)
+                WriteLine("\r\nPath Exclusions:");
+                foreach (var path in pathExclusions)
                 {
-                    WriteLine("\r\nPath Exclusions:");
-                    foreach (var path in pathExclusions)
-                    {
-                        WriteLine($"  {path}");
-                    }
+                    WriteLine($"  {path}");
+                }
+            }
+
+            if (processExclusions.Count != 0)
+            {
+                WriteLine("\r\nProcess Exclusions");
+                foreach (var process in processExclusions)
+                {
+                    WriteLine($"  {process}");
+                }
+            }
+
+            if (extensionExclusions.Count != 0)
+            {
+                WriteLine("\r\nExtension Exclusions");
+                foreach (var ext in extensionExclusions)
+                {
+                    WriteLine($"  {ext}");
+                }
+            }
+
+            if (asrSettings.Enabled)
+            {
+                WriteLine("\r\nAttack Surface Reduction Rules:\n");
+
+                WriteLine($"  {"State",-10} Rule\n");
+                foreach (var rule in asrSettings.Rules)
+                {
+                    string state;
+                    if (rule.State == 0)
+                        state = "Disabled";
+                    else if (rule.State == 1)
+                        state = "Blocked";
+                    else if (rule.State == 2)
+                        state = "Audited";
+                    else
+                        state = $"{rule.State} - Unknown";
+
+                    var asrRule = _AsrGuids.ContainsKey(rule.Rule.ToString())
+                        ? _AsrGuids[rule.Rule.ToString()]
+                        : $"{rule.Rule} - Please report this";
+
+                    WriteLine($"  {state,-10} {asrRule}");
                 }
 
-                if (processExclusions.Count != 0)
+                WriteLine("\nASR Exclusions:");
+                foreach (var exclusion in asrSettings.Exclusions)
                 {
-                    WriteLine("\r\nProcess Exclusions");
-                    foreach (var process in processExclusions)
-                    {
-                        WriteLine($"  {process}");
-                    }
-                }
-
-                if (extensionExclusions.Count != 0)
-                {
-                    WriteLine("\r\nExtension Exclusions");
-                    foreach (var ext in extensionExclusions)
-                    {
-                        WriteLine($"  {ext}");
-                    }
-                }
-
-                if (asrSettings.Enabled)
-                {
-                    WriteLine("\r\nAttack Surface Reduction Rules:\n");
-
-                    WriteLine($"  {"State",-10} Rule\n");
-                    foreach (var rule in asrSettings.Rules)
-                    {
-                        string state;
-                        if (rule.State == 0)
-                            state = "Disabled";
-                        else if (rule.State == 1)
-                            state = "Blocked";
-                        else if (rule.State == 2)
-                            state = "Audited";
-                        else
-                            state = $"{rule.State} - Unknown";
-
-                        var asrRule = _AsrGuids.ContainsKey(rule.Rule.ToString())
-                            ? _AsrGuids[rule.Rule.ToString()]
-                            : $"{rule.Rule} - Please report this";
-
-                        WriteLine($"  {state,-10} {asrRule}");
-                    }
-
-                    WriteLine("\nASR Exclusions:");
-                    foreach (var exclusion in asrSettings.Exclusions)
-                    {
-                        WriteLine($"  {exclusion}");
-                    }
+                    WriteLine($"  {exclusion}");
                 }
             }
         }

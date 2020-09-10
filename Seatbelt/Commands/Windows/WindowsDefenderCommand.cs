@@ -30,6 +30,16 @@ namespace Seatbelt.Commands.Windows
                 pathExclusions.Add(kvp.Key);
             }
 
+            List<string> excludedPathsList = new List<string>();
+            var excludedPaths = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Windows Defender\Policy Manager", "ExcludedPaths");
+            if (excludedPaths != null)
+            {
+                foreach (var s in excludedPaths.Split('|'))
+                {
+                    excludedPathsList.Add(s);
+                }
+            }
+
             var processExclusionData = ThisRunTime.GetValues(RegistryHive.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows Defender\Exclusions\Processes");
             var processExclusions = new List<string>();
             foreach (var kvp in processExclusionData)
@@ -66,6 +76,7 @@ namespace Seatbelt.Commands.Windows
 
             yield return new WindowsDefenderDTO(
                 pathExclusions,
+                excludedPathsList,
                 processExclusions,
                 extensionExclusions,
                 asrSettings
@@ -99,14 +110,16 @@ namespace Seatbelt.Commands.Windows
 
     internal class WindowsDefenderDTO : CommandDTOBase
     {
-        public WindowsDefenderDTO(List<string> pathExclusions, List<string> processExclusions, List<string> extensionExclusions, AsrSettings asrSettings)
+        public WindowsDefenderDTO(List<string> pathExclusions, List<string> policyManagerPathExclusions, List<string> processExclusions, List<string> extensionExclusions, AsrSettings asrSettings)
         {
             PathExclusions = pathExclusions;
+            PolicyManagerPathExclusions = policyManagerPathExclusions;
             ProcessExclusions = processExclusions;
             ExtensionExclusions = extensionExclusions;
             AsrSettings = asrSettings;
         }
         public List<string> PathExclusions { get; }
+        public List<string> PolicyManagerPathExclusions { get; }
         public List<string> ProcessExclusions { get; }
         public List<string> ExtensionExclusions { get; }
         public AsrSettings AsrSettings { get; }
@@ -150,6 +163,15 @@ namespace Seatbelt.Commands.Windows
             if (pathExclusions.Count != 0)
             {
                 WriteLine("\r\nPath Exclusions:");
+                foreach (var path in pathExclusions)
+                {
+                    WriteLine($"  {path}");
+                }
+            }
+
+            if (pathExclusions.Count != 0)
+            {
+                WriteLine("\r\nPolicyManagerPathExclusions      : ");
                 foreach (var path in pathExclusions)
                 {
                     WriteLine($"  {path}");

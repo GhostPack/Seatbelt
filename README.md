@@ -450,5 +450,7 @@ Seatbelt incorporates various collection items, code C# snippets, and bits of Po
 * This Specops [post on group policy caching](https://specopssoft.com/blog/things-work-group-policy-caching/)
 * sa_ddam213's StackOverflow post on [enumerating items in the Recycle Bin](https://stackoverflow.com/questions/18071412/list-filenames-in-the-recyclebin-with-c-sharp-without-using-any-external-files)
 * Kirill Osenkov's [code for managed assembly detection](https://stackoverflow.com/a/15608028)
+* The [Mono project](https://github.com/mono/linux-packaging-mono/blob/d356d2b7db91d62b80a61eeb6fbc70a402ac3cac/external/corefx/LICENSE.TXT) for the SecBuffer/SecBufferDesc classes
+* [Elad Shamir](https://twitter.com/elad_shamir) and his [Internal-Monologue](https://github.com/eladshamir/Internal-Monologue/) project, [Vincent Le Toux](https://twitter.com/mysmartlogon) for his [DetectPasswordViaNTLMInFlow](https://github.com/vletoux/DetectPasswordViaNTLMInFlow/) project, and Lee Christensen for this [GetNTLMChallenge](https://github.com/leechristensen/GetNTLMChallenge/) project. All of these served as inspiration int he SecPackageCreds command.
 
 We've tried to do our due diligence for citations, but if we've left someone/something out, please let us know!

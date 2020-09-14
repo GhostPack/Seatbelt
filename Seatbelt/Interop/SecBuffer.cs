@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Seatbelt.Commands.Windows.SecurityPackageCredentials
+namespace Seatbelt.Interop
 {
     // From https://github.com/mono/linux-packaging-mono/blob/d356d2b7db91d62b80a61eeb6fbc70a402ac3cac/external/corefx/src/System.Data.SqlClient/tests/Tools/TDS/TDS.EndPoint/SSPI/SecBufferType.cs
     [StructLayout(LayoutKind.Sequential)]
-    internal struct SecBuffer : IDisposable
+    public struct SecBuffer : IDisposable
     {
         public int BufferSize;
         public int BufferType;

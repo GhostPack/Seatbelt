@@ -31,6 +31,65 @@ namespace Seatbelt.Interop
 
         [DllImport("Secur32.dll")]
         public static extern int FreeContextBuffer(IntPtr pvContextBuffer);
+
+        [DllImport("secur32.dll", CharSet = CharSet.Unicode)]
+        public static extern uint AcquireCredentialsHandle(
+            IntPtr pszPrincipal,
+            string pszPackage,
+            int fCredentialUse,
+            IntPtr PAuthenticationID,
+            IntPtr pAuthData,
+            int pGetKeyFn,
+            IntPtr pvGetKeyArgument,
+            ref SECURITY_HANDLE phCredential,
+            ref SECURITY_INTEGER ptsExpiry);
+
+        [DllImport("secur32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern uint InitializeSecurityContext(
+            ref SECURITY_HANDLE phCredential,
+            IntPtr phContext,
+            IntPtr pszTargetName,
+            int fContextReq,
+            int Reserved1,
+            int TargetDataRep,
+            IntPtr pInput,
+            int Reserved2,
+            out SECURITY_HANDLE phNewContext,
+            out SecBufferDesc pOutput,
+            out uint pfContextAttr,
+            out SECURITY_INTEGER ptsExpiry);
+
+        [DllImport("secur32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern uint InitializeSecurityContext(
+            ref SECURITY_HANDLE phCredential,
+            ref SECURITY_HANDLE phContext,
+            IntPtr pszTargetName,
+            int fContextReq,
+            int Reserved1,
+            int TargetDataRep,
+            ref SecBufferDesc pInput,
+            int Reserved2,
+            out SECURITY_HANDLE phNewContext,
+            out SecBufferDesc pOutput,
+            out uint pfContextAttr,
+            out SECURITY_INTEGER ptsExpiry);
+
+        [DllImport("secur32.dll", SetLastError = true)]
+        public static extern uint AcceptSecurityContext(
+            ref SECURITY_HANDLE phCredential,
+            IntPtr phContext,
+            ref SecBufferDesc pInput,
+            uint fContextReq,
+            uint TargetDataRep,
+            out SECURITY_HANDLE phNewContext,
+            out SecBufferDesc pOutput,
+            out uint pfContextAttr,
+            out SECURITY_INTEGER ptsTimeStamp);
+
+        [DllImport("secur32.dll", SetLastError = true)]
+        public static extern uint DeleteSecurityContext(ref SECURITY_HANDLE phCredential);
+        [DllImport("secur32.dll", SetLastError = true)]
+        public static extern uint FreeCredentialsHandle(ref SECURITY_HANDLE phCredential);
         #endregion
 
         #region Structure Defintions
@@ -235,6 +294,13 @@ namespace Seatbelt.Interop
 
         [StructLayout(LayoutKind.Sequential)]
         public struct SECURITY_HANDLE
+        {
+            public IntPtr LowPart;
+            public IntPtr HighPart;
+        };
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SECURITY_INTEGER
         {
             public IntPtr LowPart;
             public IntPtr HighPart;

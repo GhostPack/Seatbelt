@@ -1,5 +1,4 @@
-﻿#nullable disable
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System.Collections.Generic;
 
 namespace Seatbelt.Commands.Windows
@@ -19,7 +18,7 @@ namespace Seatbelt.Commands.Windows
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            var providers = ThisRunTime.GetSubkeyNames(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\AMSI\Providers");
+            var providers = ThisRunTime.GetSubkeyNames(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\AMSI\Providers") ?? new string[] {};
             foreach (var provider in providers)
             {
                 var ProviderPath = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, $"SOFTWARE\\Classes\\CLSID\\{provider}\\InprocServer32", "");
@@ -43,4 +42,3 @@ namespace Seatbelt.Commands.Windows
         }
     }
 }
-#nullable enable

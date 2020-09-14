@@ -2,12 +2,12 @@
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Seatbelt.Commands.Windows.SecurityPackageCredentials
+namespace Seatbelt.Interop
 {
     // SecBufferDesc structure - https://docs.microsoft.com/en-us/windows/win32/api/sspi/ns-sspi-secbufferdesc
     // From https://github.com/mono/linux-packaging-mono/blob/d356d2b7db91d62b80a61eeb6fbc70a402ac3cac/external/corefx/src/System.Data.SqlClient/tests/Tools/TDS/TDS.EndPoint/SSPI/SecBufferDesc.cs
     [StructLayout(LayoutKind.Sequential)]
-    internal struct SecBufferDesc : IDisposable
+    public struct SecBufferDesc : IDisposable
     {
         public int Version;
         public int BufferCount;

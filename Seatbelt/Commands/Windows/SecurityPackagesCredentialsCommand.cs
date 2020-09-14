@@ -5,10 +5,10 @@ using System.Text;
 using Seatbelt.Interop;
 using static Seatbelt.Interop.Secur32;
 
-namespace Seatbelt.Commands.Windows.SecurityPackageCredentials
+namespace Seatbelt.Commands.Windows
 {
     // Heavily based on code from Internal Monologue - https://github.com/eladshamir/Internal-Monologue/blob/85134e4ebe5ea9e7f6b39d4b4ad467e40a0c9eca/InternalMonologue/InternalMonologue.cs#L465-L827
-    internal class SecPackageCredsCommand : CommandBase
+    internal class SecurityPackagesCredentialsCommand : CommandBase
     {
         public override string Command => "SecPackageCreds";
         public override string Description => "Obtains credentials from security packages";
@@ -22,7 +22,7 @@ namespace Seatbelt.Commands.Windows.SecurityPackageCredentials
         private const uint SEC_I_CONTINUE_NEEDED = 0x90312;
 
 
-        public SecPackageCredsCommand(Runtime runtime) : base(runtime)
+        public SecurityPackagesCredentialsCommand(Runtime runtime) : base(runtime)
         {
             ThisRunTime = runtime;
         }

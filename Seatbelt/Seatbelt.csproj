@@ -83,6 +83,9 @@
     <Compile Include="Commands\Misc\HuntLOLBAS.cs" />
     <Compile Include="Commands\Windows\HotfixesCommand.cs" />
     <Compile Include="Commands\Windows\MicrosoftUpdatesCommand.cs" />
+    <Compile Include="Commands\Windows\SecurityPackageCredentials\SecPackageCredsCommand.cs" />
+    <Compile Include="Commands\Windows\SecurityPackageCredentials\SecBuffer.cs" />
+    <Compile Include="Commands\Windows\SecurityPackageCredentials\SecBufferDesc.cs" />
     <Compile Include="Commands\Windows\PowerShellHistory.cs" />
     <Compile Include="Commands\Windows\RDPSessionsCommand.cs" />
     <Compile Include="SeatbeltArgumentParser.cs" />

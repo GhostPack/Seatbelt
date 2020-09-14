@@ -83,6 +83,9 @@
     <Compile Include="Commands\Misc\HuntLOLBAS.cs" />
     <Compile Include="Commands\Windows\HotfixesCommand.cs" />
     <Compile Include="Commands\Windows\MicrosoftUpdatesCommand.cs" />
+    <Compile Include="Commands\Windows\SecurityPackagesCredentialsCommand.cs" />
+    <Compile Include="Interop\SecBuffer.cs" />
+    <Compile Include="Interop\SecBufferDesc.cs" />
     <Compile Include="Commands\Windows\PowerShellHistory.cs" />
     <Compile Include="Commands\Windows\RDPSessionsCommand.cs" />
     <Compile Include="SeatbeltArgumentParser.cs" />
@@ -232,7 +235,9 @@
   <ItemGroup>
     <None Include="app.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Commands\Windows\SecurityPackageCredentials\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

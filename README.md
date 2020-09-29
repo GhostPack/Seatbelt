@@ -452,5 +452,7 @@ Seatbelt incorporates various collection items, code C# snippets, and bits of Po
 * Kirill Osenkov's [code for managed assembly detection](https://stackoverflow.com/a/15608028)
 * The [Mono project](https://github.com/mono/linux-packaging-mono/blob/d356d2b7db91d62b80a61eeb6fbc70a402ac3cac/external/corefx/LICENSE.TXT) for the SecBuffer/SecBufferDesc classes
 * [Elad Shamir](https://twitter.com/elad_shamir) and his [Internal-Monologue](https://github.com/eladshamir/Internal-Monologue/) project, [Vincent Le Toux](https://twitter.com/mysmartlogon) for his [DetectPasswordViaNTLMInFlow](https://github.com/vletoux/DetectPasswordViaNTLMInFlow/) project, and Lee Christensen for this [GetNTLMChallenge](https://github.com/leechristensen/GetNTLMChallenge/) project. All of these served as inspiration int he SecPackageCreds command.
+* @leftp and @eksperience's [Gopher project](https://github.com/EncodeGroup/Gopher) for inspiration for the FileZilla and SuperPutty commands
+* @funoverip for the original McAfee SiteList.xml decryption code
 
 We've tried to do our due diligence for citations, but if we've left someone/something out, please let us know!

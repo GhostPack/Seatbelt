@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Seatbelt.Util
@@ -15,6 +18,49 @@ namespace Seatbelt.Util
             catch
             {
                 return epoch;
+            }
+        }
+
+        public static byte[] Combine(byte[] first, byte[] second)
+        {
+            return first.Concat(second).ToArray();
+        }
+
+        public static bool IsBase64String(string s)
+        {
+            s = s.Trim();
+            return (s.Length % 4 == 0) && Regex.IsMatch(s, @"^[a-zA-Z0-9\+/]*={0,3}$", RegexOptions.None);
+        }
+
+        // from https://stackoverflow.com/questions/2106877/is-there-a-faster-way-than-this-to-find-all-the-files-in-a-directory-and-all-sub
+        public static IEnumerable<string> GetFileList(string fileSearchPattern, string rootFolderPath)
+        {
+            if (Directory.Exists(rootFolderPath))
+            {
+                Queue<string> pending = new Queue<string>();
+                pending.Enqueue(rootFolderPath);
+                string[] tmp;
+                while (pending.Count > 0)
+                {
+                    rootFolderPath = pending.Dequeue();
+                    try
+                    {
+                        tmp = Directory.GetFiles(rootFolderPath, fileSearchPattern);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        continue;
+                    }
+                    for (int i = 0; i < tmp.Length; i++)
+                    {
+                        yield return tmp[i];
+                    }
+                    tmp = Directory.GetDirectories(rootFolderPath);
+                    for (int i = 0; i < tmp.Length; i++)
+                    {
+                        pending.Enqueue(tmp[i]);
+                    }
+                }
             }
         }
 

@@ -86,7 +86,7 @@ namespace Seatbelt.Commands
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
             // paths that might contain SiteList.xml files
-            string[] paths = { @"C:\Program Files\", @"C:\Program Files (x86)\", @"C:\Documents and Settings\", @"C:\Users\" };
+            string[] paths = { @"C:\Program Files\", @"C:\Program Files (x86)\", @"C:\ProgramData\", @"C:\Documents and Settings\", @"C:\Users\" };
             foreach (string path in paths)
             {
                 foreach (string foundFile in MiscUtil.GetFileList(@"SiteList.xml", path))

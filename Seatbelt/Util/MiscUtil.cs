@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Collections;
 
 namespace Seatbelt.Util
 {
@@ -33,8 +34,11 @@ namespace Seatbelt.Util
         }
 
         // from https://stackoverflow.com/questions/2106877/is-there-a-faster-way-than-this-to-find-all-the-files-in-a-directory-and-all-sub
-        public static IEnumerable<string> GetFileList(string fileSearchPattern, string rootFolderPath)
+        public static IEnumerable<string> GetFileList(string fileSearchPatterns, string rootFolderPath)
         {
+            // |-delineated search terms
+            string[] searchPatterns = fileSearchPatterns.Split('|');
+
             if (Directory.Exists(rootFolderPath))
             {
                 Queue<string> pending = new Queue<string>();
@@ -43,19 +47,31 @@ namespace Seatbelt.Util
                 while (pending.Count > 0)
                 {
                     rootFolderPath = pending.Dequeue();
+
+                    foreach (string searchPattern in searchPatterns)
+                    {
+                        try
+                        {
+                            tmp = Directory.GetFiles(rootFolderPath, searchPattern);
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+                        for (int i = 0; i < tmp.Length; i++)
+                        {
+                            yield return tmp[i];
+                        }
+                    }
+
                     try
                     {
-                        tmp = Directory.GetFiles(rootFolderPath, fileSearchPattern);
+                        tmp = Directory.GetDirectories(rootFolderPath);
                     }
-                    catch (UnauthorizedAccessException)
+                    catch
                     {
                         continue;
                     }
-                    for (int i = 0; i < tmp.Length; i++)
-                    {
-                        yield return tmp[i];
-                    }
-                    tmp = Directory.GetDirectories(rootFolderPath);
                     for (int i = 0; i < tmp.Length; i++)
                     {
                         pending.Enqueue(tmp[i]);

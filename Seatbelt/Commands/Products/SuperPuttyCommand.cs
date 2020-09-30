@@ -31,7 +31,7 @@ namespace Seatbelt.Commands
     internal class SuperPuttyCommand : CommandBase
     {
         public override string Command => "SuperPutty";
-        public override string Description => "SuperPutty configuration files.";
+        public override string Description => "SuperPutty configuration files";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
         public override bool SupportRemote => false;
 

@@ -9,7 +9,7 @@ namespace Seatbelt.Commands.Windows
 {
     internal class RDPSettings : CommandBase
     {
-        public override string Command => "rdpsettings";
+        public override string Command => "RDPsettings";
         public override string Description => "Remote Desktop Server/Client Settings";
         public override CommandGroup[] Group => new[] { CommandGroup.System, CommandGroup.Remote };
         public override bool SupportRemote => true;

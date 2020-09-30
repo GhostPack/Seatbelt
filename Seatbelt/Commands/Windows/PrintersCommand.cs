@@ -10,7 +10,7 @@ namespace Seatbelt.Commands.Windows
     {
         public override string Command => "Printers";
         public override string Description => "Installed Printers (via WMI)";
-        public override CommandGroup[] Group => new[] { CommandGroup.System };
+        public override CommandGroup[] Group => new[] { CommandGroup.Misc };
         public override bool SupportRemote => false; // could if it wasn't for the SDDL
 
         public PrintersCommand(Runtime runtime) : base(runtime)

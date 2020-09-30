@@ -29,7 +29,7 @@ namespace Seatbelt.Commands
     internal class FileZillaCommand : CommandBase
     {
         public override string Command => "FileZilla";
-        public override string Description => "FileZilla configuration files.";
+        public override string Description => "FileZilla configuration files";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
         public override bool SupportRemote => false;
 

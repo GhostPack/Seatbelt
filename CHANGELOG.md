@@ -5,6 +5,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.1.0] - 2020-09-30
+
+### Added
+
+* Added the following commands:
+    * Hotfixes - installed hotfixes (via WMI)
+    * MicrosoftUpdates - all Microsoft updates (via COM)
+    * HuntLolbas - hunt for living-off-the-land binaries (from @NotoriousRebel)
+    * PowerShellHistory - searches PowerShell console history files for sensitive regex matches (adapted from @NotoriousRebel)
+    * RDPSettings - Remote Desktop Server/Client Settings
+    * SecPackageCreds - obtains credentials from security packages (InternalMonologue for the current user)
+    * FileZilla - files user FileZilla configuration files/passwords
+    * SuperPutty - files user SuperPutty configuration files
+    * McAfeeSiteList - finds/decrypts McAfee SiteList.xml files
+    * McAfeeConfigs- finds McAfee configuration files
+
+### Changed
+
+* Added CLR version enumeration to "DotNet" and "PowerShell" commands
+* Updated LSASettings to detect restricted admin mode
+* Added ZoneMapKey & Auth settings to "InternetSettings" (Francis Lacoste)
+* Added support for ByteArrays in "WindowsVault"
+* Redid assembly detection to (hopefully) prevent image load events
+* Added version/description fields to processes and services
+* Added ASR rules to "WindowsDefender" command
+
+### Fixed
+
+* Big fix for event log searching
+* Fix for sensitive command line scraping
+* Code cleanup/dead code removal
+* Allow empty companyname the Services command
+* Better exception handling
+* Various fixes/expansions for the "WindowsVault" command
+* Added disposing of output sinks
+* Other misc. bug fixes
+
+
 ## [1.0.0] - 2020-05-26
 
 ### Added

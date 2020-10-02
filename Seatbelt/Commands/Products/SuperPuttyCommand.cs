@@ -10,6 +10,17 @@ namespace Seatbelt.Commands
 {
     class SuperPuttyConfig
     {
+        public SuperPuttyConfig(string filePath, string sessionId, string sessionName, string host, string port, string protocol, string userName, string extraArgs)
+        {
+            FilePath = filePath;
+            SessionID = sessionId;
+            SessionName = sessionName;
+            Host = host;
+            Port = port;
+            Protocol = protocol;
+            UserName = userName;
+            ExtraArgs = extraArgs;  
+        }
         public string FilePath { get; set; }
 
         public string SessionID { get; set; }
@@ -62,7 +73,6 @@ namespace Seatbelt.Commands
                     if (!File.Exists(path))
                         continue;
                     
-                    var config = new SuperPuttyConfig();
 
                     var xmlDoc = new XmlDocument();
                     xmlDoc.Load(path);
@@ -74,14 +84,25 @@ namespace Seatbelt.Commands
 
                     foreach (XmlNode session in sessions)
                     {
-                        config.FilePath = path;
-                        config.SessionID = session.Attributes["SessionId"].Value;
-                        config.SessionName = session.Attributes["SessionName"].Value;
-                        config.Host = session.Attributes["Host"].Value;
-                        config.Port = session.Attributes["Port"].Value;
-                        config.Protocol = session.Attributes["Proto"].Value;
-                        config.UserName = session.Attributes["Username"].Value;
-                        config.ExtraArgs = session.Attributes["ExtraArgs"].Value;
+                        var filePath = path;
+                        var sessionID = session.Attributes["SessionId"].Value;
+                        var sessionName = session.Attributes["SessionName"].Value;
+                        var host = session.Attributes["Host"].Value;
+                        var port = session.Attributes["Port"].Value;
+                        var protocol = session.Attributes["Proto"].Value;
+                        var user = session.Attributes["Username"].Value;
+                        var extraArgs = session.Attributes["ExtraArgs"].Value;
+
+                        var config = new SuperPuttyConfig(
+                            filePath,
+                            sessionID,
+                            sessionName,
+                            host,
+                            port,
+                            protocol,
+                            user,
+                            extraArgs
+                            );
 
                         configs.Add(config);
                     }
@@ -89,17 +110,21 @@ namespace Seatbelt.Commands
 
                 if (configs.Count > 0)
                 {
-                    yield return new SuperPuttyDTO()
-                    {
-                        UserName = userName,
-                        Configs = configs
-                    };
+                    yield return new SuperPuttyDTO(
+                        userName,
+                        configs
+                    );
                 }
             }
         }
 
         internal class SuperPuttyDTO : CommandDTOBase
         {
+            public SuperPuttyDTO(string userName, List<SuperPuttyConfig> configs)
+            {
+                UserName = userName;
+                Configs = configs;
+            }
             public string UserName { get; set; }
             public List<SuperPuttyConfig> Configs { get; set; }
         }

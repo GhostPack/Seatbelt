@@ -11,6 +11,18 @@ namespace Seatbelt.Commands
 {
     class McAfeeSite
     {
+        public McAfeeSite(string type, string name, string server, string relativePath, string shareName, string userName, string domainName, string encPassword, string decPassword)
+        {
+            Type = type;
+            Name = name;
+            Server = server;
+            RelativePath = relativePath;
+            ShareName = shareName;
+            UserName = userName;
+            DomainName = domainName;
+            EncPassword = encPassword;
+            DecPassword = decPassword;  
+        }
         public string Type { get; set; }
 
         public string Name { get; set; }
@@ -56,8 +68,8 @@ namespace Seatbelt.Commands
             byte[] XORKey = { 0x12, 0x15, 0x0F, 0x10, 0x11, 0x1C, 0x1A, 0x06, 0x0A, 0x1F, 0x1B, 0x18, 0x17, 0x16, 0x05, 0x19 };
 
             // xor the input b64 string with the static XOR key
-            byte[] passwordBytes = System.Convert.FromBase64String(b64password);
-            for (int i = 0; i < passwordBytes.Length; i++)
+            var passwordBytes = System.Convert.FromBase64String(b64password);
+            for (var i = 0; i < passwordBytes.Length; i++)
             {
                 passwordBytes[i] = (byte)(passwordBytes[i] ^ XORKey[i % XORKey.Length]);
             }
@@ -68,7 +80,7 @@ namespace Seatbelt.Commands
             var tDESKey = MiscUtil.Combine(crypto.ComputeHash(System.Text.Encoding.ASCII.GetBytes("<!@#$%^>")), new byte[] { 0x00, 0x00, 0x00, 0x00 });
 
             // set the options we need
-            TripleDESCryptoServiceProvider tDESalg = new TripleDESCryptoServiceProvider();
+            var tDESalg = new TripleDESCryptoServiceProvider();
             tDESalg.Mode = CipherMode.ECB;
             tDESalg.Padding = PaddingMode.None;
             tDESalg.Key = tDESKey;
@@ -87,11 +99,11 @@ namespace Seatbelt.Commands
         {
             // paths that might contain SiteList.xml files
             string[] paths = { @"C:\Program Files\", @"C:\Program Files (x86)\", @"C:\ProgramData\", @"C:\Documents and Settings\", @"C:\Users\" };
-            foreach (string path in paths)
+            foreach (var path in paths)
             {
-                foreach (string foundFile in MiscUtil.GetFileList(@"SiteList.xml", path))
+                foreach (var foundFile in MiscUtil.GetFileList(@"SiteList.xml", path))
                 {
-                    string xmlString = File.ReadAllText(foundFile);
+                    var xmlString = File.ReadAllText(foundFile);
 
                     // things crash with this header, so have to remove it
                     xmlString = xmlString.Replace("<?xml version=\"1.0\" encoding=\"UTF-8\"?>", "");
@@ -104,58 +116,74 @@ namespace Seatbelt.Commands
                     if (sites[0].ChildNodes.Count == 0)
                         continue;
 
-                    var McAfeeSites = new List<McAfeeSite>();
+                    var mcafeeSites = new List<McAfeeSite>();
 
                     foreach (XmlNode site in sites[0].ChildNodes)
                     {
-                        var config = new McAfeeSite();
 
-                        config.Type = site.Name;
-                        config.Name = site.Attributes["Name"].Value;
-                        config.Server = site.Attributes["Server"].Value;
+                        var type = site.Name;
+                        var name = site.Attributes["Name"].Value;
+                        var server = site.Attributes["Server"].Value;
+                        var relativePath = "";
+                        var shareName = "";
+                        var user = "";
+                        var encPassword = "";
+                        var decPassword = "";
+                        var domainName = "";
 
-                        foreach (System.Xml.XmlElement attribute in site.ChildNodes)
+                        foreach (XmlElement attribute in site.ChildNodes)
                         {
                             switch (attribute.Name)
                             {
                                 case "RelativePath":
-                                    config.RelativePath = attribute.InnerText;
+                                    relativePath = attribute.InnerText;
                                     break;
                                 case "ShareName":
-                                    config.ShareName = attribute.InnerText;
+                                    shareName = attribute.InnerText;
                                     break;
                                 case "UserName":
-                                    config.UserName = attribute.InnerText;
+                                    user = attribute.InnerText;
                                     break;
                                 case "Password":
                                     if(MiscUtil.IsBase64String(attribute.InnerText))
                                     {
-                                        config.EncPassword = attribute.InnerText;
-                                        config.DecPassword = DecryptSiteListPassword(config.EncPassword);
+                                        encPassword = attribute.InnerText;
+                                        decPassword = DecryptSiteListPassword(encPassword);
                                     }
                                     else
                                     {
-                                        config.DecPassword = attribute.InnerText;
+                                        decPassword = attribute.InnerText;
                                     }
                                     break;
                                 case "DomainName":
-                                    config.DomainName = attribute.InnerText;
+                                    domainName = attribute.InnerText;
                                     break;
                                 default:
                                     break;
                             }
                         }
 
-                        McAfeeSites.Add(config);
+                        var config = new McAfeeSite(
+                            type,
+                            name,
+                            server,
+                            relativePath,
+                            shareName,
+                            user,
+                            domainName,
+                            encPassword,
+                            decPassword
+                            );
+
+                        mcafeeSites.Add(config);
                     }
 
-                    if (McAfeeSites.Count > 0)
+                    if (mcafeeSites.Count > 0)
                     {
-                        yield return new McAfeeSiteListDTO()
-                        {
-                            Path = foundFile,
-                            Sites = McAfeeSites
-                        };
+                        yield return new McAfeeSiteListDTO(
+                            foundFile,
+                            mcafeeSites
+                        );
                     }
                 }
 
@@ -166,6 +194,11 @@ namespace Seatbelt.Commands
 
         internal class McAfeeSiteListDTO : CommandDTOBase
         {
+            public McAfeeSiteListDTO(string path, List<McAfeeSite> sites)
+            {
+                Path = path;
+                Sites = sites;  
+            }
             public string Path { get; set; }
             public List<McAfeeSite> Sites { get; set; }
         }

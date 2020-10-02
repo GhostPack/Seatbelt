@@ -10,6 +10,16 @@ namespace Seatbelt.Commands
 {
     class FileZillaConfig
     {
+        public FileZillaConfig(string filePath, string name, string host, string port, string protocol, string userName, string password)
+        {
+            FilePath = filePath;
+            Name = name;
+            Host = host;
+            Port = port;
+            Protocol = protocol;
+            UserName = userName;
+            Password = password;    
+        }
         public string FilePath { get; set; }
 
         public string Name { get; set; }
@@ -77,35 +87,42 @@ namespace Seatbelt.Commands
 
                     foreach (XmlNode server in servers[0].ChildNodes)
                     {
-                        var config = new FileZillaConfig();
-
-                        config.FilePath = path;
-
-                        config.Name = "<RECENT SERVER>";
+                        var name = "<RECENT SERVER>";
                         var tempName = server.SelectSingleNode("Name");
-                        if(tempName != null)
+                        if (tempName != null)
                         {
-                            config.Name = server.SelectSingleNode("Name").InnerText;
+                            name = server.SelectSingleNode("Name").InnerText;
                         }
 
-                        config.Host = server.SelectSingleNode("Host").InnerText;
-                        config.Port = server.SelectSingleNode("Port").InnerText;
-                        config.Protocol = server.SelectSingleNode("Protocol").InnerText;
-                        config.UserName = server.SelectSingleNode("User").InnerText;
-                        var tempPassword = server.SelectSingleNode("Pass");
-                        config.Password = "<NULL>";
+                        var host = server.SelectSingleNode("Host").InnerText;
+                        var port = server.SelectSingleNode("Port").InnerText;
+                        var protocol = server.SelectSingleNode("Protocol").InnerText;
+                        var user = server.SelectSingleNode("User").InnerText;
 
-                        if(tempPassword != null)
+                        var tempPassword = server.SelectSingleNode("Pass");
+                        var password = "<NULL>";
+
+                        if (tempPassword != null)
                         {
-                            if(tempPassword.Attributes["encoding"].Value == "base64")
+                            if (tempPassword.Attributes["encoding"].Value == "base64")
                             {
-                                config.Password = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(tempPassword.InnerText));
+                                password = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(tempPassword.InnerText));
                             }
                             else
                             {
-                                config.Password = "<PROTECTED BY MASTERKEY>";
+                                password = "<PROTECTED BY MASTERKEY>";
                             }
                         }
+
+                        var config = new FileZillaConfig(
+                            path,
+                            name,
+                            host,
+                            port,
+                            protocol,
+                            user,
+                            password
+                            );
 
                         configs.Add(config);
                     }
@@ -113,17 +130,21 @@ namespace Seatbelt.Commands
 
                 if (configs.Count > 0)
                 {
-                    yield return new FileZillaDTO()
-                    {
-                        UserName = userName,
-                        Configs = configs
-                    };
+                    yield return new FileZillaDTO(
+                        userName,
+                        configs
+                    );
                 }
             }
         }
 
         internal class FileZillaDTO : CommandDTOBase
         {
+            public FileZillaDTO(string userName, List<FileZillaConfig> configs)
+            {
+                UserName = userName;
+                Configs = configs;  
+            }
             public string UserName { get; set; }
             public List<FileZillaConfig> Configs { get; set; }
         }

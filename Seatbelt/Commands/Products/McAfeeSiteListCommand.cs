@@ -120,7 +120,10 @@ namespace Seatbelt.Commands
 
                     foreach (XmlNode site in sites[0].ChildNodes)
                     {
-
+                        if (site.Attributes["Name"] == null || site.Attributes["Server"] == null)
+                        {
+                            continue;
+                        }
                         var type = site.Name;
                         var name = site.Attributes["Name"].Value;
                         var server = site.Attributes["Server"].Value;

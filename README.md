@@ -32,6 +32,7 @@ Seatbelt is licensed under the BSD 3-Clause license.
 ## Command Line Usage
 
 ```
+
                             %&&@@@&&
                             &&&&&&&%%%,                       #&&@@@@@@%%%%%%###############%
                             &%&   %&%%                        &////(((&%%%%%#%################//((((###%%%%%%%%%%%%%%%
@@ -72,17 +73,19 @@ Seatbelt is licensed under the BSD 3-Clause license.
           ExplorerMRUs           - Explorer most recently used files (last 7 days, argument == last X days)
         + ExplorerRunCommands    - Recent Explorer "run" commands
           FileInfo               - Information about a file (version information, timestamps, basic PE info, etc. argument(s) == file path(s)
+          FileZilla              - FileZilla configuration files.
           FirefoxHistory         - Parses any found FireFox history files
           FirefoxPresence        - Checks if interesting Firefox files exist
+        + Hotfixes               - Installed hotfixes (via WMI)
+          HuntLolbas             - Locates Living Off The Land Binaries and Scripts (LOLBAS) on the system. Note: takes non-trivial time.
           IdleTime               - Returns the number of seconds since the current user's last input.
           IEFavorites            - Internet Explorer favorites
           IETabs                 - Open Internet Explorer tabs
           IEUrls                 - Internet Explorer typed URLs (last 7 days, argument == last X days)
-          HuntLolbas             - Locates Living Off The Land Binaries and Scripts (LOLBAS) on the system. Note: takes non-trivial time.
           InstalledProducts      - Installed products via the registry
           InterestingFiles       - "Interesting" files matching various patterns in the user's folder. Note: takes non-trivial time.
         + InterestingProcesses   - "Interesting" processes - defensive products and admin tools
-          InternetSettings       - Internet settings including proxy configs
+          InternetSettings       - Internet settings including proxy configs and zones configuration
         + LAPS                   - LAPS settings, if installed
         + LastShutdown           - Returns the DateTime of the last system shutdown (via the registry).
           LocalGPOs              - Local Group Policy settings applied to the machine/local users
@@ -92,6 +95,9 @@ Seatbelt is licensed under the BSD 3-Clause license.
         + LogonSessions          - Windows logon sessions
         + LSASettings            - LSA settings (including auth packages)
         + MappedDrives           - Users' mapped drives (via WMI)
+          McAfeeConfigs          - Finds McAfee configuration files
+          McAfeeSiteList         - Decrypt any found McAfee SiteList.xml configuration files.
+          MicrosoftUpdates       - All Microsoft updates (via COM)
           NamedPipes             - Named pipe names and any readable ACL information.
         + NetworkProfiles        - Windows network profiles
         + NetworkShares          - Network shares exposed by the machine (via WMI)
@@ -102,7 +108,7 @@ Seatbelt is licensed under the BSD 3-Clause license.
           PoweredOnEvents        - Reboot and sleep schedule based on the System event log EIDs 1, 12, 13, 42, and 6008. Default of 7 days, argument == last X days.
         + PowerShell             - PowerShell versions and security settings
           PowerShellEvents       - PowerShell script block logs (4104) with sensitive data.
-          PowerShellHistory      - Iterates through every local user and attempts to read their PowerShell console history if successful will print it.
+          PowerShellHistory      - Searches PowerShell console history files for sensitive regex matches.
           Printers               - Installed Printers (via WMI)
           ProcessCreationEvents  - Process creation logs (4688) with sensitive data.
           Processes              - Running processes with file info company names that don't contain 'Microsoft', "-full" enumerates all processes
@@ -113,17 +119,20 @@ Seatbelt is licensed under the BSD 3-Clause license.
           RDCManFiles            - Windows Remote Desktop Connection Manager settings files
         + RDPSavedConnections    - Saved RDP connections stored in the registry
         + RDPSessions            - Current incoming RDP sessions (argument == computername to enumerate)
+        + RDPsettings            - Remote Desktop Server/Client Settings
           RecycleBin             - Items in the Recycle Bin deleted in the last 30 days - only works from a user context!
           reg                    - Registry key values (HKLM\Software by default) argument == [Path] [intDepth] [Regex] [boolIgnoreErrors]
           RPCMappedEndpoints     - Current RPC endpoints mapped
         + SCCM                   - System Center Configuration Manager (SCCM) settings, if applicable
         + ScheduledTasks         - Scheduled tasks (via WMI) that aren't authored by 'Microsoft', "-full" dumps all Scheduled tasks
           SearchIndex            - Query results from the Windows Search Index, default term of 'passsword'. (argument(s) == <search path> <pattern1,pattern2,...>
+          SecPackageCreds        - Obtains credentials from security packages
           SecurityPackages       - Enumerates the security packages currently available using EnumerateSecurityPackagesA()
           Services               - Services with file info company names that don't contain 'Microsoft', "-full" dumps all processes
           SlackDownloads         - Parses any found 'slack-downloads' files
           SlackPresence          - Checks if interesting Slack files exist
           SlackWorkspaces        - Parses any found 'slack-workspaces' files
+          SuperPutty             - SuperPutty configuration files.
         + Sysmon                 - Sysmon configuration from the registry
           SysmonEvents           - Sysmon process creation logs (1) with sensitive data.
           TcpConnections         - Current TCP connections and their associated processes and services
@@ -153,26 +162,28 @@ Seatbelt is licensed under the BSD 3-Clause license.
        "Seatbelt.exe -group=user" runs the following commands:
 
             ChromePresence, CloudCredentials, CredEnum, dir, DpapiMasterKeys,
-            ExplorerMRUs, ExplorerRunCommands, FirefoxPresence, IdleTime,
-            IEFavorites, IETabs, IEUrls, MappedDrives,
-            OfficeMRUs, PowerShellHistory, PuttyHostKeys, PuttySessions, RDCManFiles,
-            RDPSavedConnections, SlackDownloads, SlackPresence, SlackWorkspaces,
+            ExplorerMRUs, ExplorerRunCommands, FileZilla, FirefoxPresence,
+            IdleTime, IEFavorites, IETabs, IEUrls,
+            MappedDrives, OfficeMRUs, PowerShellHistory, PuttyHostKeys,
+            PuttySessions, RDCManFiles, RDPSavedConnections, SecPackageCreds,
+            SlackDownloads, SlackPresence, SlackWorkspaces, SuperPutty,
             TokenGroups, WindowsCredentialFiles, WindowsVault
 
        "Seatbelt.exe -group=system" runs the following commands:
 
             AMSIProviders, AntiVirus, AppLocker, ARPTable, AuditPolicies,
             AuditPolicyRegistry, AutoRuns, CredGuard, DNSCache,
-            DotNet, EnvironmentPath, EnvironmentVariables, InterestingProcesses,
-            InternetSettings, LAPS, LastShutdown, LocalGPOs,
-            LocalGroups, LocalUsers, LogonSessions, LSASettings,
-            NamedPipes, NetworkProfiles, NetworkShares, NTLMSettings,
-            OSInfo, PoweredOnEvents, PowerShell, Printers,
-            Processes, PSSessionSettings, RDPSessions, SCCM,
-            Services, Sysmon, TcpConnections, TokenPrivileges,
-            UAC, UdpConnections, UserRightAssignments, WindowsAutoLogon,
-            WindowsDefender, WindowsEventForwarding, WindowsFirewall, WMIEventConsumer,
-            WMIEventFilter, WMIFilterBinding, WSUS
+            DotNet, EnvironmentPath, EnvironmentVariables, Hotfixes,
+            InterestingProcesses, InternetSettings, LAPS, LastShutdown,
+            LocalGPOs, LocalGroups, LocalUsers, LogonSessions,
+            LSASettings, McAfeeConfigs, NamedPipes, NetworkProfiles,
+            NetworkShares, NTLMSettings, OSInfo, PoweredOnEvents,
+            PowerShell, Processes, PSSessionSettings, RDPSessions,
+            RDPsettings, SCCM, Services, Sysmon,
+            TcpConnections, TokenPrivileges, UAC, UdpConnections,
+            UserRightAssignments, WindowsAutoLogon, WindowsDefender, WindowsEventForwarding,
+            WindowsFirewall, WMIEventConsumer, WMIEventFilter, WMIFilterBinding,
+            WSUS
 
        "Seatbelt.exe -group=slack" runs the following commands:
 
@@ -184,18 +195,19 @@ Seatbelt is licensed under the BSD 3-Clause license.
 
        "Seatbelt.exe -group=remote" runs the following commands:
 
-            AMSIProviders, AntiVirus, DotNet, ExplorerRunCommands, InterestingProcesses,
-            LastShutdown, LogonSessions, LSASettings, MappedDrives,
-            NetworkProfiles, NetworkShares, NTLMSettings, PowerShell,
-            ProcessOwners, PuttyHostKeys, PuttySessions, RDPSavedConnections,
-            RDPSessions, Sysmon, WindowsDefender, WindowsEventForwarding,
-            WindowsFirewall
+            AMSIProviders, AntiVirus, DotNet, ExplorerRunCommands, Hotfixes,
+            InterestingProcesses, LastShutdown, LogonSessions, LSASettings,
+            MappedDrives, NetworkProfiles, NetworkShares, NTLMSettings,
+            PowerShell, ProcessOwners, PuttyHostKeys, PuttySessions,
+            RDPSavedConnections, RDPSessions, RDPsettings, Sysmon,
+            WindowsDefender, WindowsEventForwarding, WindowsFirewall
 
        "Seatbelt.exe -group=misc" runs the following commands:
 
-            ChromeBookmarks, ChromeHistory, ExplicitLogonEvents, FileInfo, FirefoxHistory, HuntLolbas,
-            InstalledProducts, InterestingFiles, LogonEvents, OutlookDownloads,
-            PowerShellEvents, ProcessCreationEvents, ProcessOwners, RecycleBin,
+            ChromeBookmarks, ChromeHistory, ExplicitLogonEvents, FileInfo, FirefoxHistory,
+            HuntLolbas, InstalledProducts, InterestingFiles, LogonEvents,
+            McAfeeSiteList, MicrosoftUpdates, OutlookDownloads, PowerShellEvents,
+            Printers, ProcessCreationEvents, ProcessOwners, RecycleBin,
             reg, RPCMappedEndpoints, ScheduledTasks, SearchIndex,
             SecurityPackages, SysmonEvents
 
@@ -209,6 +221,7 @@ Seatbelt is licensed under the BSD 3-Clause license.
         'Seatbelt.exe -group=remote -computername=COMPUTER.DOMAIN.COM [-username=DOMAIN\USER -password=PASSWORD]' will run remote specific checks
         'Seatbelt.exe -group=system -outputfile="C:\Temp\out.txt"' will run system checks and output to a .txt file.
         'Seatbelt.exe -group=user -q -outputfile="C:\Temp\out.json"' will run in quiet mode with user checks and output to a .json file.
+
 ```
 
 **Note:** searches that target users will run for the current user if not-elevated and for ALL users if elevated.
@@ -237,13 +250,14 @@ Executed with: `Seatbelt.exe -group=system`
 | AppLocker | AppLocker settings, if installed |
 | ARPTable | Lists the current ARP table and adapter information(equivalent to arp -a) |
 | AuditPolicies | Enumerates classic and advanced audit policy settings |
-| AuditSettings | Audit settings via the registry |
+| AuditPolicyRegistry | Audit settings via the registry |
 | AutoRuns | Auto run executables/scripts/programs |
 | CredGuard | CredentialGuard configuration |
 | DNSCache | DNS cache entries (via WMI) |
 | DotNet | DotNet versions |
 | EnvironmentPath | Current environment %PATH$ folders and SDDL information |
 | EnvironmentVariables | Current user environment variables |
+| Hotfixes | Installed hotfixes (via WMI) |
 | InterestingProcesses | "Interesting" processes - defensive products and admin tools |
 | InternetSettings | Internet settings including proxy configs |
 | LAPS | LAPS settings, if installed |
@@ -253,6 +267,7 @@ Executed with: `Seatbelt.exe -group=system`
 | LocalUsers | Local users, whether they're active/disabled, and pwd last set (argument == computername to enumerate) |
 | LogonSessions | Logon events (Event ID 4624) from the security event log. Default of 10 days, argument == last X days. |
 | LSASettings | LSA settings (including auth packages) |
+| McAfeeConfigs | Finds McAfee configuration files |
 | NamedPipes | Named pipe names and any readable ACL information |
 | NetworkProfiles | Windows network profiles |
 | NetworkShares |  Network shares exposed by the machine (via WMI) |
@@ -263,6 +278,7 @@ Executed with: `Seatbelt.exe -group=system`
 | Processes | Running processes with file info company names that don't contain 'Microsoft', "full" enumerates all processes |
 | PSSessionSettings | Enumerates PS Session Settings from the registry |
 | RDPSessions | Current incoming RDP sessions (argument == computername to enumerate) |
+| RDPsettings | Remote Desktop Server/Client Settings |
 | SCCM | System Center Configuration Manager (SCCM) settings, if applicable |
 | Services | Services with file info company names that don't contain 'Microsoft', "full" dumps all processes |
 | Sysmon | Sysmon configuration from the registry |
@@ -295,6 +311,8 @@ Executed with: `Seatbelt.exe -group=user`
 | dir | Lists files/folders. By default, lists users' downloads, documents, and desktop folders (arguments == \<directory\> \<depth\> \<regex\> |
 | DpapiMasterKeys | List DPAPI master keys |
 | ExplorerMRUs | Explorer most recently used files (last 7 days, argument == last X days) |
+| ExplorerRunCommands | Recent Explorer "run" commands |
+| FileZilla | FileZilla configuration files |
 | FirefoxPresence | Checks if interesting Firefox files exist |
 | IdleTime | Returns the number of seconds since the current user's last input. |
 | IEFavorites | Internet Explorer favorites |
@@ -307,8 +325,11 @@ Executed with: `Seatbelt.exe -group=user`
 | PuttySessions | Saved Putty configuration (interesting fields) and SSH host keys |
 | RDCManFiles | Windows Remote Desktop Connection Manager settings files |
 | RDPSavedConnections | Saved RDP connections stored in the registry |
-| RecentRunCommands | Recent Explorer "run" commands |
+| SecPackageCreds | Obtains credentials from security packages |
+| SlackDownloads | Parses any found 'slack-downloads' files |
 | SlackPresence | Checks if interesting Slack files exist |
+| SlackWorkspaces | Parses any found 'slack-workspaces' files |
+| SuperPutty | SuperPutty configuration files |
 | TokenGroups | The current token's local and domain groups |
 | WindowsCredentialFiles | Windows credential DPAPI blobs |
 | WindowsVault | Credentials saved in the Windows Vault (i.e. logins from Internet Explorer and Edge). |
@@ -331,10 +352,12 @@ Executed with: `Seatbelt.exe -group=misc`
 | InstalledProducts | Installed products via the registry |
 | InterestingFiles | "Interesting" files matching various patterns in the user's folder. Note: takes non-trivial time. |
 | LogonEvents | Logon events (Event ID 4624) from the security event log. Default of 10 days, argument == last X days. |
+| McAfeeSiteList | Decrypt any found McAfee SiteList.xml configuration files. |
+| MicrosoftUpdates | All Microsoft updates (via COM) |
 | OutlookDownloads | List files downloaded by Outlook |
 | PowerShellEvents | PowerShell script block logs (4104) with sensitive data. |
 | Printers | Installed Printers (via WMI) |
-| ProcessCreation | Process creation logs (4688) with sensitive data. |
+| ProcessCreationEvents | Process creation logs (4688) with sensitive data. |
 | ProcessOwners | Running non-session 0 process list with owners. For remote use. |
 | RecycleBin | Items in the Recycle Bin deleted in the last 30 days - only works from a user context! |
 | reg | Registry key values (HKLM\Software by default) argument == [Path] [intDepth] [Regex] [boolIgnoreErrors] |
@@ -342,8 +365,6 @@ Executed with: `Seatbelt.exe -group=misc`
 | ScheduledTasks | Scheduled tasks (via WMI) that aren't authored by 'Microsoft', "full" dumps all Scheduled tasks |
 | SearchIndex | Query results from the Windows Search Index, default term of 'passsword'. (argument(s) == \<search path\> \<pattern1,pattern2,...\> |
 | SecurityPackages | Enumerates the security packages currently available using EnumerateSecurityPackagesA() |
-| SlackDownloads | Parses any found 'slack-downloads' files |
-| SlackWorkspaces | Parses any found 'slack-workspaces' files |
 | SysmonEvents | Sysmon process creation logs (1) with sensitive data. |
 
 
@@ -355,7 +376,7 @@ Executed with: `Seatbelt.exe -group=GROUPNAME`
 | ----------- | ----------- |
 | Slack | Runs modules that start with "Slack*" |
 | Chrome | Runs modules that start with "Chrome*" |
-| Remote | Runs the following modules (for use against a remote system): AMSIProviders, AntiVirus, AuditSettings, DotNet, InterestingProcesses, LastShutdown, LogonSessions, LSASettings, MappedDrives, NetworkProfiles, NetworkShares, NTLMSettings, PowerShell, PuttyHostKeys, PuttySessions, RDPSavedConnections, RDPSessions, RecentRunCommands, Sysmon, WindowsDefender, WindowsEventForwarding, WindowsFirewall |
+| Remote | Runs the following modules (for use against a remote system): AMSIProviders, AntiVirus, DotNet, ExplorerRunCommands, Hotfixes, InterestingProcesses, LastShutdown, LogonSessions, LSASettings, MappedDrives, NetworkProfiles, NetworkShares, NTLMSettings, PowerShell, ProcessOwners, PuttyHostKeys, PuttySessions, RDPSavedConnections, RDPSessions, RDPsettings, Sysmon, WindowsDefender, WindowsEventForwarding, WindowsFirewall |
 
 
 ## Command Arguments
@@ -452,5 +473,7 @@ Seatbelt incorporates various collection items, code C# snippets, and bits of Po
 * Kirill Osenkov's [code for managed assembly detection](https://stackoverflow.com/a/15608028)
 * The [Mono project](https://github.com/mono/linux-packaging-mono/blob/d356d2b7db91d62b80a61eeb6fbc70a402ac3cac/external/corefx/LICENSE.TXT) for the SecBuffer/SecBufferDesc classes
 * [Elad Shamir](https://twitter.com/elad_shamir) and his [Internal-Monologue](https://github.com/eladshamir/Internal-Monologue/) project, [Vincent Le Toux](https://twitter.com/mysmartlogon) for his [DetectPasswordViaNTLMInFlow](https://github.com/vletoux/DetectPasswordViaNTLMInFlow/) project, and Lee Christensen for this [GetNTLMChallenge](https://github.com/leechristensen/GetNTLMChallenge/) project. All of these served as inspiration int he SecPackageCreds command.
+* @leftp and @eksperience's [Gopher project](https://github.com/EncodeGroup/Gopher) for inspiration for the FileZilla and SuperPutty commands
+* @funoverip for the original McAfee SiteList.xml decryption code
 
 We've tried to do our due diligence for citations, but if we've left someone/something out, please let us know!

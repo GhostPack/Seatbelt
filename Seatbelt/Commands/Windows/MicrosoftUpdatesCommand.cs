@@ -11,7 +11,7 @@ namespace Seatbelt.Commands.Windows
     internal class MicrosoftUpdateCommand : CommandBase
     {
         public override string Command => "MicrosoftUpdates";
-        public override string Description => "All Microsoft updates.";
+        public override string Description => "All Microsoft updates (via COM)";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
         public override bool SupportRemote => false;
 

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Seatbelt.Util
 {
@@ -147,5 +145,4 @@ namespace Seatbelt.Util
             }
         }
     }
-
 }

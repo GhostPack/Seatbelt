@@ -49,89 +49,52 @@ namespace Seatbelt.Commands
                     };
                 }
 
-                var computeCredsDb = $"{dir}\\AppData\\Roaming\\gcloud\\credentials.db";
-                if (File.Exists(computeCredsDb))
+                string[] googleCredLocations = {    $"{dir}\\AppData\\Roaming\\gcloud\\credentials.db",
+                                                    $"{dir}\\AppData\\Roaming\\gcloud\\legacy_credentials",
+                                                    $"{dir}\\AppData\\Roaming\\gcloud\\access_tokens.db"};
+                
+                foreach(var googleCredLocation in googleCredLocations)
                 {
-                    var lastAccessed = File.GetLastAccessTime(computeCredsDb);
-                    var lastModified = File.GetLastWriteTime(computeCredsDb);
-                    var size = new FileInfo(computeCredsDb).Length;
-
-                    yield return new CloudCredentialsDTO()
+                    if (File.Exists(googleCredLocation))
                     {
-                        Type = "Google",
-                        FileName = computeCredsDb,
-                        LastAccessed = lastAccessed,
-                        LastModified = lastModified,
-                        Size = size
-                    };
+                        var lastAccessed = File.GetLastAccessTime(googleCredLocation);
+                        var lastModified = File.GetLastWriteTime(googleCredLocation);
+                        var size = new FileInfo(googleCredLocation).Length;
+
+                        yield return new CloudCredentialsDTO()
+                        {
+                            Type = "Google",
+                            FileName = googleCredLocation,
+                            LastAccessed = lastAccessed,
+                            LastModified = lastModified,
+                            Size = size
+                        };
+                    }
                 }
 
-                var computeLegacyCreds = $"{dir}\\AppData\\Roaming\\gcloud\\legacy_credentials";
-                if (File.Exists(computeLegacyCreds))
+                string[] azureCredLocations = {     $"{dir}\\.azure\\azureProfile.json",
+                                                    $"{dir}\\.azure\\TokenCache.dat",
+                                                    $"{dir}\\.azure\\AzureRMContext.json",
+                                                    $"{dir}\\AppData\\Roaming\\Windows Azure Powershell\\TokenCache.dat",
+                                                    $"{dir}\\AppData\\Roaming\\Windows Azure Powershell\\AzureRMContext.json" };
+
+                foreach (var azureCredLocation in azureCredLocations)
                 {
-                    var lastAccessed = File.GetLastAccessTime(computeLegacyCreds);
-                    var lastModified = File.GetLastWriteTime(computeLegacyCreds);
-                    var size = new FileInfo(computeLegacyCreds).Length;
-
-                    yield return new CloudCredentialsDTO()
+                    if (File.Exists(azureCredLocation))
                     {
-                        Type = "Google",
-                        FileName = computeLegacyCreds,
-                        LastAccessed = lastAccessed,
-                        LastModified = lastModified,
-                        Size = size
-                    };
-                }
+                        var lastAccessed = File.GetLastAccessTime(azureCredLocation);
+                        var lastModified = File.GetLastWriteTime(azureCredLocation);
+                        var size = new FileInfo(azureCredLocation).Length;
 
-                var computeAccessTokensDb = $"{dir}\\AppData\\Roaming\\gcloud\\access_tokens.db";
-                if (File.Exists(computeAccessTokensDb))
-                {
-                    var lastAccessed = File.GetLastAccessTime(computeAccessTokensDb);
-                    var lastModified = File.GetLastWriteTime(computeAccessTokensDb);
-                    var size = new FileInfo(computeAccessTokensDb).Length;
-
-                    yield return new CloudCredentialsDTO()
-                    {
-                        Type = "Google",
-                        FileName = computeAccessTokensDb,
-                        LastAccessed = lastAccessed,
-                        LastModified = lastModified,
-                        Size = size
-                    };
-                }
-
-                var azureTokens = $"{dir}\\.azure\\accessTokens.json";
-                if (File.Exists(azureTokens))
-                {
-                    var lastAccessed = File.GetLastAccessTime(azureTokens);
-                    var lastModified = File.GetLastWriteTime(azureTokens);
-                    var size = new FileInfo(azureTokens).Length;
-
-                    yield return new CloudCredentialsDTO()
-                    {
-                        Type = "Azure",
-                        FileName = azureTokens,
-                        LastAccessed = lastAccessed,
-                        LastModified = lastModified,
-                        Size = size
-                    };
-                }
-
-                var azureProfile = $"{dir}\\.azure\\azureProfile.json";
-                if (File.Exists(azureProfile))
-                {
-                    var lastAccessed = File.GetLastAccessTime(azureProfile);
-                    var lastModified = File.GetLastWriteTime(azureProfile);
-                    var size = new FileInfo(azureProfile).Length;
-
-                    yield return new CloudCredentialsDTO()
-                    {
-                        Type = "Azure",
-                        FileName = azureProfile,
-                        LastAccessed = lastAccessed,
-                        LastModified = lastModified,
-                        Size = size
-                    };
+                        yield return new CloudCredentialsDTO()
+                        {
+                            Type = "Azure",
+                            FileName = azureCredLocation,
+                            LastAccessed = lastAccessed,
+                            LastModified = lastModified,
+                            Size = size
+                        };
+                    }
                 }
             }
         }

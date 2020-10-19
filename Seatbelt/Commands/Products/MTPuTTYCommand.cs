@@ -94,7 +94,7 @@ namespace Seatbelt.Commands
                         if (session.Attributes["Type"].Value == "1"){
                             var displayName =session["DisplayName"].InnerText;
                             var serverName = session["ServerName"].InnerText;
-                            var conType = int.Parse(session["PuttyConType"].InnerText); //Make sure this works with empty string
+                            var conType = int.Parse(session["PuttyConType"].InnerText);
                             var port = int.Parse(session["Port"].InnerText);
                             var username = session["UserName"].InnerText;
                             var encpassword = session["Password"].InnerText;

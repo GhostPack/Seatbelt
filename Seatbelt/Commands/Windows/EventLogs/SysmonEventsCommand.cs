@@ -23,7 +23,7 @@ namespace Seatbelt.Commands.Windows.EventLogs
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            if (!SecurityUtil.IsHighIntegrity())
+            if (!SecurityUtil.IsHighIntegrity() && !ThisRunTime.ISRemote())
             {
                 WriteError("Unable to collect. Must be an administrator.");
                 yield break;

@@ -37,14 +37,14 @@ namespace Seatbelt.Commands.Windows
                 appIdSvcState = result["State"].ToString();
             }
 
-            var keys = RegistryUtil.GetSubkeyNames(RegistryHive.LocalMachine, "Software\\Policies\\Microsoft\\Windows\\SrpV2");
+            var keys = ThisRunTime.GetSubkeyNames(RegistryHive.LocalMachine, "Software\\Policies\\Microsoft\\Windows\\SrpV2") ?? new string[] { };
 
             if (keys != null && keys.Length != 0)
             {
                 foreach (var key in keys)
                 {
                     var keyName = key;
-                    var enforcementMode = RegistryUtil.GetDwordValue(RegistryHive.LocalMachine, $"Software\\Policies\\Microsoft\\Windows\\SrpV2\\{key}", "EnforcementMode");
+                    var enforcementMode = ThisRunTime.GetDwordValue(RegistryHive.LocalMachine, $"Software\\Policies\\Microsoft\\Windows\\SrpV2\\{key}", "EnforcementMode");
                     var enforcementModeStr = enforcementMode switch
                     {
                         null => "not configured",
@@ -53,11 +53,11 @@ namespace Seatbelt.Commands.Windows
                         _ => $"Unknown value {enforcementMode}"
                     };
 
-                    var ids = RegistryUtil.GetSubkeyNames(RegistryHive.LocalMachine, "Software\\Policies\\Microsoft\\Windows\\SrpV2\\" + key);
+                    var ids = ThisRunTime.GetSubkeyNames(RegistryHive.LocalMachine, "Software\\Policies\\Microsoft\\Windows\\SrpV2\\" + key);
 
                     foreach (var id in ids)
                     {
-                        var rule = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, $"Software\\Policies\\Microsoft\\Windows\\SrpV2\\{key}\\{id}", "Value");
+                        var rule = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, $"Software\\Policies\\Microsoft\\Windows\\SrpV2\\{key}\\{id}", "Value");
                         rules.Add(rule);
                     }
 

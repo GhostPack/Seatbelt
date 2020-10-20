@@ -21,16 +21,18 @@ namespace Seatbelt.Commands.Products
         public override string Command => "SlackWorkspaces";
         public override string Description => "Parses any found 'slack-workspaces' files";
         public override CommandGroup[] Group => new[] { CommandGroup.User, CommandGroup.Slack };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public SlackWorkspacesCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
+
             foreach (var dir in dirs)
             {
                 var parts = dir.Split('\\');

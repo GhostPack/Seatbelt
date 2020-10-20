@@ -41,10 +41,12 @@ namespace Seatbelt.Commands
         public override string Command => "FileZilla";
         public override string Description => "FileZilla configuration files";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public FileZillaCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
@@ -54,8 +56,7 @@ namespace Seatbelt.Commands
             // information on FileZilla master key encryption:
             //  https://forum.filezilla-project.org/viewtopic.php?f=3&t=64&start=1005#p156191
 
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
 
             foreach (var dir in dirs)
             {
@@ -74,6 +75,7 @@ namespace Seatbelt.Commands
                         continue;
 
                     var xmlDoc = new XmlDocument();
+                    
                     xmlDoc.Load(path);
 
                     // handle "Servers" (sitemanager.xml) and "RecentServers" (recentservers.xml)

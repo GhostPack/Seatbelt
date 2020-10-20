@@ -10,10 +10,12 @@ namespace Seatbelt.Commands
         public override string Command => "CloudCredentials";
         public override string Description => "AWS/Google/Azure cloud credential files";
         public override CommandGroup[] Group => new[] {CommandGroup.User};
-        public override bool SupportRemote => false; // though I *really* want to figure an effective way to do this one remotely
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public CloudCredentialsCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
@@ -21,8 +23,7 @@ namespace Seatbelt.Commands
             // checks for various cloud credential files (AWS, Microsoft Azure, and Google Compute)
             // adapted from https://twitter.com/cmaddalena's SharpCloud project (https://github.com/chrismaddalena/SharpCloud/)
 
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
 
             foreach (var dir in dirs)
             {

@@ -188,13 +188,15 @@ namespace Seatbelt
 
         public string[] GetDirectories(string relPath)
         {
+            relPath = relPath.Trim('\\');
+
             if (!string.IsNullOrEmpty(ComputerName))
             {
-                return System.IO.Directory.GetDirectories($"\\\\{ComputerName}\\C$\\{relPath}");
+                return System.IO.Directory.GetDirectories($"\\\\{ComputerName}\\C$\\{relPath}\\");
             }
             else
             {
-                return System.IO.Directory.GetDirectories($"{Environment.GetEnvironmentVariable("SystemDrive")}\\{relPath}");
+                return System.IO.Directory.GetDirectories($"{Environment.GetEnvironmentVariable("SystemDrive")}\\{relPath}\\");
             }
         }
 

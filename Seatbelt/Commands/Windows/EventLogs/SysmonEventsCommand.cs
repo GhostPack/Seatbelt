@@ -13,10 +13,12 @@ namespace Seatbelt.Commands.Windows.EventLogs
         public override string Command => "SysmonEvents";
         public override string Description => "Sysmon process creation logs (1) with sensitive data.";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
-        public override bool SupportRemote => false; // TODO remote
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public SysmonEventCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
@@ -33,12 +35,10 @@ namespace Seatbelt.Commands.Windows.EventLogs
             Regex[] processCmdLineRegex = MiscUtil.GetProcessCmdLineRegex();
 
             var query = "*[System/EventID=1]";
-            var eventLogQuery = new EventLogQuery("Microsoft-Windows-Sysmon/Operational", PathType.LogName, query) { ReverseDirection = true };
-
             EventLogReader logReader = null;
             try
             {
-                logReader = new EventLogReader(eventLogQuery);
+                logReader = ThisRunTime.GetEventLogReader("Microsoft-Windows-Sysmon/Operational", query);
             }
             catch
             {

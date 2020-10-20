@@ -18,16 +18,17 @@ namespace Seatbelt.Commands.Windows.EventLogs
         public override string Command => "LogonEvents";
         public override string Description => "Logon events (Event ID 4624) from the security event log. Default of 10 days, argument == last X days.";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
-        public override bool SupportRemote => false; // TODO remote
-
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public LogonEventsCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            if (!SecurityUtil.IsHighIntegrity())
+            if (!SecurityUtil.IsHighIntegrity() && !ThisRunTime.ISRemote())
             {
                 WriteError("Unable to collect. Must be an administrator/in a high integrity context.");
                 yield break;
@@ -40,7 +41,11 @@ namespace Seatbelt.Commands.Windows.EventLogs
             // grab events from the last X days - 10 for workstations, 30 for "-full" collection
             // Always use the user-supplied value, if specified
             var lastDays = 10;
-            if (Shlwapi.IsWindowsServer())
+            if(ThisRunTime.ISRemote())
+            {
+                lastDays = 5;
+            }
+            else if (Shlwapi.IsWindowsServer())
             {
                 lastDays = 1;
             }
@@ -71,8 +76,7 @@ namespace Seatbelt.Commands.Windows.EventLogs
             var endTime = DateTime.Now;
 
             var query = $@"*[System/EventID=4624] and *[System[TimeCreated[@SystemTime >= '{startTime.ToUniversalTime():o}']]] and *[System[TimeCreated[@SystemTime <= '{endTime.ToUniversalTime():o}']]]";
-            var eventsQuery = new EventLogQuery("Security", PathType.LogName, query) { ReverseDirection = true };
-            var logReader = new EventLogReader(eventsQuery);
+            var logReader = ThisRunTime.GetEventLogReader("Security", query);
 
             WriteHost("  TimeCreated,TargetUser,LogonType,IpAddress,SubjectUsername,AuthenticationPackageName,LmPackageName,TargetOutboundUser");
 

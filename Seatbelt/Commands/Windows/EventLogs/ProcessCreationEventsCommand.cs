@@ -14,15 +14,17 @@ namespace Seatbelt.Commands.Windows.EventLogs
         public override string Command => "ProcessCreationEvents";
         public override string Description => "Process creation logs (4688) with sensitive data.";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
-        public override bool SupportRemote => false; // TODO remote
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public ProcessCreationEventsCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            if (!SecurityUtil.IsHighIntegrity())
+            if (!SecurityUtil.IsHighIntegrity() && !ThisRunTime.ISRemote())
             {
                 WriteError("Unable to collect. Must be an administrator.");
                 yield break;
@@ -35,9 +37,7 @@ namespace Seatbelt.Commands.Windows.EventLogs
             var processCmdLineRegex = MiscUtil.GetProcessCmdLineRegex();
 
             var query = $"*[System/EventID=4688]";
-            var eventLogQuery = new EventLogQuery("Security", PathType.LogName, query);
-            eventLogQuery.ReverseDirection = true;
-            var logReader = new EventLogReader(eventLogQuery);
+            var logReader = ThisRunTime.GetEventLogReader("Security", query);
 
             for (var eventDetail = logReader.ReadEvent(); eventDetail != null; eventDetail = logReader.ReadEvent())
             {

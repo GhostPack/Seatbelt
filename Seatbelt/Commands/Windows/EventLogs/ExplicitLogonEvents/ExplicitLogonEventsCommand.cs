@@ -11,10 +11,12 @@ namespace Seatbelt.Commands.Windows.EventLogs.ExplicitLogonEvents
         public override string Description => "Explicit Logon events (Event ID 4648) from the security event log. Default of 7 days, argument == last X days.";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
         public override string Command => "ExplicitLogonEvents";
-        public override bool SupportRemote => false; // TODO remote
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public ExplicitLogonEventsCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
@@ -65,12 +67,7 @@ namespace Seatbelt.Commands.Windows.EventLogs.ExplicitLogonEvents
 
             var query = $@"*[System/EventID={eventId}] and *[System[TimeCreated[@SystemTime >= '{startTime.ToUniversalTime():o}']]] and *[System[TimeCreated[@SystemTime <= '{endTime.ToUniversalTime():o}']]]";
 
-            var eventsQuery = new EventLogQuery("Security", PathType.LogName, query)
-            {
-                ReverseDirection = true
-            };
-
-            var logReader = new EventLogReader(eventsQuery);
+            var logReader = ThisRunTime.GetEventLogReader("Security", query);
 
             for (var eventDetail = logReader.ReadEvent(); eventDetail != null; eventDetail = logReader.ReadEvent())
             {

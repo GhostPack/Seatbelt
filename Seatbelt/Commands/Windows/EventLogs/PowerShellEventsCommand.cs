@@ -11,10 +11,12 @@ namespace Seatbelt.Commands.Windows.EventLogs
         public override string Command => "PowerShellEvents";
         public override string Description => "PowerShell script block logs (4104) with sensitive data.";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
-        public override bool SupportRemote => false; // TODO remote
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public PowerShellEventsCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
@@ -35,8 +37,8 @@ namespace Seatbelt.Commands.Windows.EventLogs
             foreach (var logName in powershellLogs)
             {
                 var query = "*[System/EventID=4104]";
-                var eventLogQuery = new EventLogQuery(logName, PathType.LogName, query) { ReverseDirection = true };
-                var logReader = new EventLogReader(eventLogQuery);
+
+                var logReader = ThisRunTime.GetEventLogReader(logName, query);
 
                 for (var eventDetail = logReader.ReadEvent(); eventDetail != null; eventDetail = logReader.ReadEvent())
                 {

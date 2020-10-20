@@ -12,10 +12,12 @@ namespace Seatbelt.Commands.Windows.EventLogs
         public override string Command => "PoweredOnEvents";
         public override string Description => "Reboot and sleep schedule based on the System event log EIDs 1, 12, 13, 42, and 6008. Default of 7 days, argument == last X days.";
         public override CommandGroup[] Group => new[] {CommandGroup.System};
-        public override bool SupportRemote => false; // TODO remote
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public PoweredOnEventsCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
@@ -50,8 +52,7 @@ namespace Seatbelt.Commands.Windows.EventLogs
 ((*[System[(EventID=12 or EventID=13) and Provider[@Name='Microsoft-Windows-Kernel-General']]] or *[System/EventID=42]) or (*[System/EventID=6008]) or (*[System/EventID=1] and *[System[Provider[@Name='Microsoft-Windows-Power-Troubleshooter']]])) and *[System[TimeCreated[@SystemTime >= '{startTime.ToUniversalTime():o}']]] and *[System[TimeCreated[@SystemTime <= '{endTime.ToUniversalTime():o}']]]
 ";
 
-            var eventsQuery = new EventLogQuery("System", PathType.LogName, query);
-            var logReader = new EventLogReader(eventsQuery);
+            var logReader = ThisRunTime.GetEventLogReader("System", query);
 
             for (var eventDetail = logReader.ReadEvent(); eventDetail != null; eventDetail = logReader.ReadEvent())
             {

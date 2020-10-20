@@ -19,11 +19,13 @@ namespace Seatbelt.Commands
         public override string Command => "CredGuard";
         public override string Description => "CredentialGuard configuration";
         public override CommandGroup[] Group => new[] {CommandGroup.System};
-        public override bool SupportRemote => false; // TODO remote
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
 
         public CredentialGuardCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
@@ -35,7 +37,7 @@ namespace Seatbelt.Commands
             ManagementObjectCollection? data = null;
             try
             {
-                var wmiData = new ManagementObjectSearcher(@"root\Microsoft\Windows\DeviceGuard", "SELECT * FROM Win32_DeviceGuard");
+                var wmiData = ThisRunTime.GetManagementObjectSearcher(@"root\Microsoft\Windows\DeviceGuard", "SELECT * FROM Win32_DeviceGuard");
                 data = wmiData.Get();
             }
             catch (ManagementException ex) when (ex.ErrorCode == ManagementStatus.InvalidNamespace)

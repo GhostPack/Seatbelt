@@ -186,10 +186,25 @@ namespace Seatbelt
             return RegistryUtil.GetUserSIDs();
         }
 
+        public string[] GetDirectories(string relPath)
+        {
+            if (!string.IsNullOrEmpty(ComputerName))
+            {
+                return System.IO.Directory.GetDirectories($"\\\\{ComputerName}\\ADMIN$\\{relPath}");
+            }
+            else
+            {
+                return System.IO.Directory.GetDirectories($"{Environment.GetEnvironmentVariable("windir")}\\{relPath}");
+            }
+        }
+
+
         public bool ISRemote()
         {
             return !string.IsNullOrEmpty(ComputerName);
         }
+
+
 
         private void InitializeCommands()
         {

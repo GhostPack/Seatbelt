@@ -65,7 +65,7 @@ namespace Seatbelt.Commands.Windows
         {
             var versions = new List<string>();
 
-            var dirs = System.IO.Directory.GetDirectories($"{Environment.GetEnvironmentVariable("windir")}\\Microsoft.Net\\Framework\\");
+            var dirs = ThisRunTime.GetDirectories("\\Microsoft.Net\\Framework\\");
             foreach (var dir in dirs)
             {
                 if (System.IO.File.Exists($"{dir}\\System.dll"))

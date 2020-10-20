@@ -14,7 +14,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "EnvironmentVariables";
         public override string Description => "Current user environment variables";
         public override CommandGroup[] Group => new[] {CommandGroup.System};
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // TODO: investigate Win32_Environment class for remote enumeration
 
         class PathLocation
         {

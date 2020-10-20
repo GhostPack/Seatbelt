@@ -9,7 +9,7 @@ namespace Seatbelt.Commands.Windows.EventLogs.ExplicitLogonEvents
     internal class ExplicitLogonEventsCommand : CommandBase
     {
         public override string Description => "Explicit Logon events (Event ID 4648) from the security event log. Default of 7 days, argument == last X days.";
-        public override CommandGroup[] Group => new[] { CommandGroup.Misc };
+        public override CommandGroup[] Group => new[] { CommandGroup.Misc, CommandGroup.Remote };
         public override string Command => "ExplicitLogonEvents";
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;

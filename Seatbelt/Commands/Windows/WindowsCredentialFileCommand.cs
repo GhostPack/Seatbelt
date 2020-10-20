@@ -39,7 +39,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "WindowsCredentialFiles";
         public override string Description => "Windows credential DPAPI blobs";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // TODO
 
         public WindowsCredentialFileCommand(Runtime runtime) : base(runtime)
         {

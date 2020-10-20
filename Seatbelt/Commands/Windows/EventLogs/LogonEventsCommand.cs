@@ -17,7 +17,7 @@ namespace Seatbelt.Commands.Windows.EventLogs
     {
         public override string Command => "LogonEvents";
         public override string Description => "Logon events (Event ID 4624) from the security event log. Default of 10 days, argument == last X days.";
-        public override CommandGroup[] Group => new[] { CommandGroup.Misc };
+        public override CommandGroup[] Group => new[] { CommandGroup.Misc, CommandGroup.Remote };
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
 

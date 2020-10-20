@@ -13,17 +13,20 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "AppLocker";
         public override string Description => "AppLocker settings, if installed";
         public override CommandGroup[] Group => new[] {CommandGroup.System};
-        public override bool SupportRemote => false; // TODO: impement remote
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public AppLockerCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
             // ref - @_RastaMouse https://rastamouse.me/2018/09/enumerating-applocker-config/
-            var wmiData = new ManagementObjectSearcher(@"root\cimv2", "SELECT Name, State FROM win32_service WHERE Name = 'AppIDSvc'");
+            var wmiData = ThisRunTime.GetManagementObjectSearcher(@"root\cimv2", "SELECT Name, State FROM win32_service WHERE Name = 'AppIDSvc'");
             var data = wmiData.Get();
+
             string appIdSvcState = "Service not found";
 
             var rules = new List<string>();

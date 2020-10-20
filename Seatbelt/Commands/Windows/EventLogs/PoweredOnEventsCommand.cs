@@ -11,7 +11,7 @@ namespace Seatbelt.Commands.Windows.EventLogs
     {
         public override string Command => "PoweredOnEvents";
         public override string Description => "Reboot and sleep schedule based on the System event log EIDs 1, 12, 13, 42, and 6008. Default of 7 days, argument == last X days.";
-        public override CommandGroup[] Group => new[] {CommandGroup.System};
+        public override CommandGroup[] Group => new[] {CommandGroup.System, CommandGroup.Remote};
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
 

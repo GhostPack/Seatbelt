@@ -9,7 +9,7 @@ namespace Seatbelt.Commands
     {
         public override string Command => "CloudCredentials";
         public override string Description => "AWS/Google/Azure cloud credential files";
-        public override CommandGroup[] Group => new[] {CommandGroup.User};
+        public override CommandGroup[] Group => new[] {CommandGroup.User, CommandGroup.Remote};
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
 

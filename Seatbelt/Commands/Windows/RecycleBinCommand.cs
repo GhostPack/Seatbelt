@@ -11,7 +11,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "RecycleBin";
         public override string Description => "Items in the Recycle Bin deleted in the last 30 days - only works from a user context!";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // not possible
 
         public RecycleBinCommand(Runtime runtime) : base(runtime)
         {

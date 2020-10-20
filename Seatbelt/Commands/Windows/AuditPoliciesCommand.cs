@@ -37,7 +37,7 @@ namespace Seatbelt.Commands
         public override string Command => "AuditPolicies";
         public override string Description => "Enumerates classic and advanced audit policy settings";
         public override CommandGroup[] Group => new[] {CommandGroup.System};
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // TODO : remote conversion, need to implement searching for remote files
 
         // reference - https://github.com/trustedsec/HoneyBadger/blob/master/modules/post/windows/gather/ts_get_policyinfo.rb
 

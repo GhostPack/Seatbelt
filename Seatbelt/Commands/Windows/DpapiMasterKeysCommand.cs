@@ -23,7 +23,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "DpapiMasterKeys";
         public override string Description => "List DPAPI master keys";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // TODO : remote conversion, need to implement searching for remote files
 
 
         public DpapiMasterKeysCommand(Runtime runtime) : base(runtime)

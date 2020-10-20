@@ -13,11 +13,13 @@ namespace Seatbelt.Commands.Browser
     {
         public override string Command => "ChromePresence";
         public override string Description => "Checks if interesting Google Chrome files exist";
-        public override CommandGroup[] Group => new[] { CommandGroup.User, CommandGroup.Chrome };
-        public override bool SupportRemote => false;
+        public override CommandGroup[] Group => new[] { CommandGroup.User, CommandGroup.Chrome, CommandGroup.Remote };
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public ChromePresenceCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
@@ -25,13 +27,14 @@ namespace Seatbelt.Commands.Browser
             string chromeVersion = "";
 
             var chromePath = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe", "");
+
             if (chromePath != null)
             {
                 chromeVersion = FileVersionInfo.GetVersionInfo(chromePath).ProductVersion;
             }
 
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
+
             foreach (var dir in dirs)
             {
                 if (dir.EndsWith("Public") || dir.EndsWith("Default") || dir.EndsWith("Default User") ||

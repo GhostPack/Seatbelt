@@ -12,7 +12,7 @@ namespace Seatbelt.Commands.Browser
         public override string Command => "IETabs";
         public override string Description => "Open Internet Explorer tabs";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // don't think this is possible...
 
         public InternetExplorerTabCommand(Runtime runtime) : base(runtime)
         {

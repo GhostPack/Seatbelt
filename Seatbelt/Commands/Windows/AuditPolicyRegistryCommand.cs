@@ -11,7 +11,7 @@ namespace Seatbelt.Commands.Windows
     {
         public override string Command => "AuditPolicyRegistry";
         public override string Description => "Audit settings via the registry";
-        public override CommandGroup[] Group => new[] {CommandGroup.System};
+        public override CommandGroup[] Group => new[] {CommandGroup.System, CommandGroup.Remote};
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
 

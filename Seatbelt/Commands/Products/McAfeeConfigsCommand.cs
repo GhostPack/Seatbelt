@@ -10,7 +10,7 @@ namespace Seatbelt.Commands
         public override string Command => "McAfeeConfigs";
         public override string Description => "Finds McAfee configuration files";
         public override CommandGroup[] Group => new[] { CommandGroup.System };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // TODO when remote file searching is worked out... though it might take a while
 
         public McAfeeConfigsCommand(Runtime runtime) : base(runtime)
         {

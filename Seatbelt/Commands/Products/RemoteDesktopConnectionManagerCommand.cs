@@ -13,7 +13,7 @@ namespace Seatbelt.Commands
         public override string Command => "RDCManFiles";
         public override string Description => "Windows Remote Desktop Connection Manager settings files";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => true;
+        public override bool SupportRemote => false;
         public Runtime ThisRunTime;
 
         public RemoteDesktopConnectionManagerCommand(Runtime runtime) : base(runtime)
@@ -36,6 +36,7 @@ namespace Seatbelt.Commands
                 if (!File.Exists(userRDManFile))
                     continue;
                 
+                // TODO: for remote triage, need to translate local paths to remote paths effectively
 
                 var xmlDoc = new XmlDocument();
                 xmlDoc.Load(userRDManFile);

@@ -40,7 +40,7 @@ namespace Seatbelt.Commands
     {
         public override string Command => "FileZilla";
         public override string Description => "FileZilla configuration files";
-        public override CommandGroup[] Group => new[] { CommandGroup.User };
+        public override CommandGroup[] Group => new[] { CommandGroup.User, CommandGroup.Remote };
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
 

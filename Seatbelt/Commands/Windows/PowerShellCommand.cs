@@ -22,6 +22,22 @@ namespace Seatbelt.Commands.Windows
             ThisRunTime = runtime;
         }
 
+        public string GetOSVersion()
+        {
+            var wmiData = ThisRunTime.GetManagementObjectSearcher(@"root\cimv2", "SELECT Version FROM Win32_OperatingSystem");
+
+            try
+            {
+                foreach (var os in wmiData.Get())
+                {
+                    return os["Version"].ToString();
+                }
+            }
+            catch { }
+
+            return "";
+        }
+
         private IEnumerable<string> GetWindowsPowerShellVersions()
         {
             var versions = new List<string>();
@@ -97,7 +113,8 @@ namespace Seatbelt.Commands.Windows
             var scriptBlockInvocationLogging = ThisRunTime.GetStringValue(RegistryHive.LocalMachine,
                                                    "SOFTWARE\\Policies\\Microsoft\\Windows\\PowerShell\\ScriptBlockLogging",
                                                    "EnableScriptBlockInvocationLogging") == "1";
-            var osSupportsAmsi = Environment.OSVersion.Version.Major >= 10;
+            int osVersionMajor = int.Parse(GetOSVersion().Split('.')[0]);
+            var osSupportsAmsi = osVersionMajor >= 10;
 
             yield return new PowerShellDTO(
                 installedCLRVersions.ToArray(),

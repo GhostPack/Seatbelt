@@ -38,12 +38,13 @@ namespace Seatbelt.Commands.Windows
             return versions;
         }
 
-        public static string GetOSVersion()
+        public string GetOSVersion()
         {
-            ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT Version FROM Win32_OperatingSystem");
+            var wmiData = ThisRunTime.GetManagementObjectSearcher(@"root\cimv2", "SELECT Version FROM Win32_OperatingSystem");
+            
             try
             {
-                foreach (var os in searcher.Get())
+                foreach (var os in wmiData.Get())
                 {
                     return os["Version"].ToString();
                 }
@@ -73,6 +74,7 @@ namespace Seatbelt.Commands.Windows
             }
 
             int osVersionMajor = int.Parse(GetOSVersion().Split('.')[0]);
+
 #nullable restore
             yield return new DotNetDTO(
                 installedCLRVersions.ToArray(),

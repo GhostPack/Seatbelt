@@ -44,6 +44,13 @@ namespace Seatbelt.Commands.Windows.EventLogs.ExplicitLogonEvents
                 }
             }
 
+
+            if (!SecurityUtil.IsHighIntegrity() && !ThisRunTime.ISRemote())
+            {
+                WriteError("Unable to collect. Must be an administrator.");
+                yield break;
+            }
+
             WriteHost("Listing 4648 Explicit Credential Events - A process logged on using plaintext credentials");
 
             if (args.Length >= 2)
@@ -58,12 +65,6 @@ namespace Seatbelt.Commands.Windows.EventLogs.ExplicitLogonEvents
 
             var startTime = DateTime.Now.AddDays(-lastDays);
             var endTime = DateTime.Now;
-
-            if (!SecurityUtil.IsHighIntegrity())
-            {
-                WriteError("Unable to collect. Must be an administrator.");
-                yield break;
-            }
 
             var query = $@"*[System/EventID={eventId}] and *[System[TimeCreated[@SystemTime >= '{startTime.ToUniversalTime():o}']]] and *[System[TimeCreated[@SystemTime <= '{endTime.ToUniversalTime():o}']]]";
 

@@ -26,11 +26,15 @@ namespace Seatbelt.Commands.Browser
         {
             string chromeVersion = "";
 
-            var chromePath = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe", "");
-
-            if (chromePath != null)
+            if (!ThisRunTime.ISRemote())
             {
-                chromeVersion = FileVersionInfo.GetVersionInfo(chromePath).ProductVersion;
+                // TODO: translate the chrome path to a UNC path
+                var chromePath = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe", "");
+
+                if (chromePath != null)
+                {
+                    chromeVersion = FileVersionInfo.GetVersionInfo(chromePath).ProductVersion;
+                }
             }
 
             var dirs = ThisRunTime.GetDirectories("\\Users\\");

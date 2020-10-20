@@ -74,7 +74,6 @@ namespace Seatbelt.Commands.Windows
             }
 
             int osVersionMajor = int.Parse(GetOSVersion().Split('.')[0]);
-
 #nullable restore
             yield return new DotNetDTO(
                 installedCLRVersions.ToArray(),

@@ -223,6 +223,28 @@ namespace Seatbelt
             return logReader;
         }
 
+        public string GetEnvironmentVariable(string variableName)
+        {
+            if (!string.IsNullOrEmpty(ComputerName))
+            {
+                string result = "";
+
+                var wmiData = this.GetManagementObjectSearcher(@"root\cimv2", $"SELECT VariableValue from win32_environment WHERE name='{variableName}' AND UserName='<SYSTEM>'");
+
+                foreach (var wmiResult in wmiData.Get())
+                {
+                    result = wmiResult["VariableValue"].ToString();
+                }
+
+                return result;
+            }
+            else
+            {
+                return Environment.GetEnvironmentVariable(variableName);
+            }
+        }
+
+
         public bool ISRemote()
         {
             return !string.IsNullOrEmpty(ComputerName);

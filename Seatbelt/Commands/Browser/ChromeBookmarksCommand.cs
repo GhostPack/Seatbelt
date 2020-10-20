@@ -26,15 +26,18 @@ namespace Seatbelt.Commands.Browser
         public override string Command => "ChromeBookmarks";
         public override string Description => "Parses any found Chrome bookmark files";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc, CommandGroup.Chrome };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public ChromeBookmarksCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
+
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
+
             foreach (var dir in dirs)
             {
                 var parts = dir.Split('\\');

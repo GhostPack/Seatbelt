@@ -10,19 +10,21 @@ namespace Seatbelt.Commands.Browser
 {
     internal class ChromeHistoryCommand : CommandBase
     {
-        public ChromeHistoryCommand(Runtime runtime) : base(runtime)
-        {
-        }
-
         public override string Command => "ChromeHistory";
         public override string Description => "Parses any found Chrome history files";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc, CommandGroup.Chrome };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
+
+        public ChromeHistoryCommand(Runtime runtime) : base(runtime)
+        {
+            ThisRunTime = runtime;
+        }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
+
             foreach (var dir in dirs)
             {
                 var parts = dir.Split('\\');

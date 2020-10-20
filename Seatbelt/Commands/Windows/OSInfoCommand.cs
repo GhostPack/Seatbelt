@@ -19,7 +19,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "OSInfo";
         public override string Description => "Basic OS info (i.e. architecture, OS version, etc.)";
         public override CommandGroup[] Group => new[] { CommandGroup.System };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // TODO: work out what settings can be enumerated remotely
 
         public OSInfoCommand(Runtime runtime) : base(runtime)
         {

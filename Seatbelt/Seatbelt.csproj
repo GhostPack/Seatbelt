@@ -93,8 +93,8 @@
     <Compile Include="Commands\Windows\PowerShellHistory.cs" />
     <Compile Include="Commands\Windows\RDPSessionsCommand.cs" />
     <Compile Include="SeatbeltArgumentParser.cs" />
-    <Compile Include="Commands\Browser\ChromeBookmarksCommand.cs" />
-    <Compile Include="Commands\Browser\ChromeHistoryCommand.cs" />
+    <Compile Include="Commands\Browser\ChromiumBookmarksCommand.cs" />
+    <Compile Include="Commands\Browser\ChromiumHistoryCommand.cs" />
     <Compile Include="Commands\Browser\FirefoxHistoryCommand.cs" />
     <Compile Include="Commands\Browser\InternetExplorerFavoritesCommand.cs" />
     <Compile Include="Commands\Browser\InternetExplorerTypedUrlsCommand.cs" />
@@ -152,7 +152,7 @@
     <Compile Include="Commands\Windows\RegistryValueCommand.cs" />
     <Compile Include="Commands\Windows\WindowsAutoLogonCommand.cs" />
     <Compile Include="Commands\Windows\AutoRunsCommand.cs" />
-    <Compile Include="Commands\Browser\ChromePresenceCommand.cs" />
+    <Compile Include="Commands\Browser\ChromiumPresenceCommand.cs" />
     <Compile Include="Commands\Misc\CloudCredentialsCommand.cs" />
     <Compile Include="Commands\Windows\WindowsCredentialFileCommand.cs" />
     <Compile Include="Commands\Windows\TokenGroupCommand.cs" />

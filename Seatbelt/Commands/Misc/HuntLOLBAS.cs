@@ -10,7 +10,7 @@ namespace Seatbelt.Commands
     {
         public override string Command => "HuntLolbas";
         public override string Description => "Locates Living Off The Land Binaries and Scripts (LOLBAS) on the system. Note: takes non-trivial time.";
-        public override CommandGroup[] Group => new[] { CommandGroup.Misc };              
+        public override CommandGroup[] Group => new[] { CommandGroup.All };              
         public override bool SupportRemote => false;
 
         // Contains all lolbas found from https://lolbas-project.github.io/

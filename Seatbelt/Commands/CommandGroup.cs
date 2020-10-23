@@ -12,7 +12,7 @@ namespace Seatbelt.Commands
         User,
         System,
         Slack,
-        Chrome,
+        Chromium,
         Remote,
         Misc,
     }

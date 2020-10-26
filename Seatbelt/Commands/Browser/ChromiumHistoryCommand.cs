@@ -11,7 +11,7 @@ namespace Seatbelt.Commands.Browser
     internal class ChromiumHistoryCommand : CommandBase
     {
         public override string Command => "ChromiumHistory";
-        public override string Description => "Parses any found Chrome/Edge/Brave history files";
+        public override string Description => "Parses any found Chrome/Edge/Brave/Opera history files";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc, CommandGroup.Chromium };
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
@@ -36,14 +36,15 @@ namespace Seatbelt.Commands.Browser
                 }
 
                 string[] paths = {
-                    "\\AppData\\Local\\Google\\Chrome\\User Data\\",
-                    "\\AppData\\Local\\Microsoft\\Edge\\User Data\\",
-                    "\\AppData\\Local\\BraveSoftware\\Brave-Browser\\User Data\\",
+                    "\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\",
+                    "\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default\\",
+                    "\\AppData\\Local\\BraveSoftware\\Brave-Browser\\User Data\\Default\\",
+                    "\\AppData\\Roaming\\Opera Software\\Opera Stable\\"
                 };
 
                 foreach (string path in paths)
                 {
-                    var userChromiumHistoryPath = $"{dir}{path}Default\\History";
+                    var userChromiumHistoryPath = $"{dir}{path}History";
 
                     // parses a Chrome history file via regex
                     if (File.Exists(userChromiumHistoryPath))

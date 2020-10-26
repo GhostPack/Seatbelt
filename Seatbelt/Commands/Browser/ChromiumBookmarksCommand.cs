@@ -24,7 +24,7 @@ namespace Seatbelt.Commands.Browser
     internal class ChromiumBookmarksCommand : CommandBase
     {
         public override string Command => "ChromiumBookmarks";
-        public override string Description => "Parses any found Chrome/Edge/Brave bookmark files";
+        public override string Description => "Parses any found Chrome/Edge/Brave/Opera bookmark files";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc, CommandGroup.Chromium };
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
@@ -49,15 +49,16 @@ namespace Seatbelt.Commands.Browser
                 }
 
                 string[] paths = {
-                    "\\AppData\\Local\\Google\\Chrome\\User Data\\",
-                    "\\AppData\\Local\\Microsoft\\Edge\\User Data\\",
-                    "\\AppData\\Local\\BraveSoftware\\Brave-Browser\\User Data\\",
+                    "\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\",
+                    "\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default\\",
+                    "\\AppData\\Local\\BraveSoftware\\Brave-Browser\\User Data\\Default\\",
+                    "\\AppData\\Roaming\\Opera Software\\Opera Stable\\"
                 };
 
                 foreach (string path in paths)
                 {
                     // TODO: Account for other profiles
-                    var userChromeBookmarkPath = $"{dir}{path}Default\\Bookmarks";
+                    var userChromeBookmarkPath = $"{dir}{path}Bookmarks";
 
                     // parses a Chrome bookmarks file
                     if (!File.Exists(userChromeBookmarkPath))

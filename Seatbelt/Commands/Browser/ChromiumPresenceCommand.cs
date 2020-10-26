@@ -12,7 +12,7 @@ namespace Seatbelt.Commands.Browser
     internal class ChromiumPresenceCommand : CommandBase
     {
         public override string Command => "ChromiumPresence";
-        public override string Description => "Checks if interesting Chrome/Edge/Brave files exist";
+        public override string Description => "Checks if interesting Chrome/Edge/Brave/Opera files exist";
         public override CommandGroup[] Group => new[] { CommandGroup.User, CommandGroup.Chromium, CommandGroup.Remote };
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
@@ -48,20 +48,21 @@ namespace Seatbelt.Commands.Browser
                 }
 
                 string[] paths = {
-                    "\\AppData\\Local\\Google\\Chrome\\User Data\\",
-                    "\\AppData\\Local\\Microsoft\\Edge\\User Data\\",
-                    "\\AppData\\Local\\BraveSoftware\\Brave-Browser\\User Data\\",
+                    "\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\",
+                    "\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default\\",
+                    "\\AppData\\Local\\BraveSoftware\\Brave-Browser\\User Data\\Default\\",
+                    "\\AppData\\Roaming\\Opera Software\\Opera Stable\\"
                 };
 
                 foreach (string path in paths)
                 {
+                    var chromeBasePath = $"{dir}{path}";
 
-                    var chromeBasePath = $"{dir}{path}Default\\";
                     if (!Directory.Exists(chromeBasePath))
                     {
                         continue;
                     }
-
+                    
                     var history = new DateTime();
                     var cookies = new DateTime();
                     var loginData = new DateTime();

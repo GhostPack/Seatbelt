@@ -9,6 +9,7 @@ using System.Reflection;
 using Seatbelt.Output.Sinks;
 using System.Management;
 using Microsoft.Win32;
+using System.Diagnostics.Eventing.Reader;
 
 namespace Seatbelt
 {
@@ -186,6 +187,64 @@ namespace Seatbelt
             return RegistryUtil.GetUserSIDs();
         }
 
+        public string[] GetDirectories(string relPath)
+        {
+            relPath = relPath.Trim('\\');
+
+            if (!string.IsNullOrEmpty(ComputerName))
+            {
+                return System.IO.Directory.GetDirectories($"\\\\{ComputerName}\\C$\\{relPath}\\");
+            }
+            else
+            {
+                return System.IO.Directory.GetDirectories($"{Environment.GetEnvironmentVariable("SystemDrive")}\\{relPath}\\");
+            }
+        }
+        public EventLogReader GetEventLogReader(string path, string query)
+        {
+            // TODO: investigate https://docs.microsoft.com/en-us/previous-versions/windows/desktop/eventlogprov/win32-ntlogevent
+
+            var eventsQuery = new EventLogQuery(path, PathType.LogName, query) { ReverseDirection = true };
+
+            if (!string.IsNullOrEmpty(ComputerName))
+            {
+                //EventLogSession session = new EventLogSession(
+                //    ComputerName,
+                //    "Domain",                                  // Domain
+                //    "Username",                                // Username
+                //    pw,
+                //    SessionAuthentication.Default); // TODO password specification! https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.eventing.reader.eventlogsession.-ctor?view=dotnet-plat-ext-3.1#System_Diagnostics_Eventing_Reader_EventLogSession__ctor_System_String_System_String_System_String_System_Security_SecureString_System_Diagnostics_Eventing_Reader_SessionAuthentication_
+
+                EventLogSession session = new EventLogSession(ComputerName);
+                eventsQuery.Session = session;
+            }
+
+            var logReader = new EventLogReader(eventsQuery);
+            return logReader;
+        }
+
+        public string GetEnvironmentVariable(string variableName)
+        {
+            if (!string.IsNullOrEmpty(ComputerName))
+            {
+                string result = "";
+
+                var wmiData = this.GetManagementObjectSearcher(@"root\cimv2", $"SELECT VariableValue from win32_environment WHERE name='{variableName}' AND UserName='<SYSTEM>'");
+
+                foreach (var wmiResult in wmiData.Get())
+                {
+                    result = wmiResult["VariableValue"].ToString();
+                }
+
+                return result;
+            }
+            else
+            {
+                return Environment.GetEnvironmentVariable(variableName);
+            }
+        }
+
+
         public bool ISRemote()
         {
             return !string.IsNullOrEmpty(ComputerName);
@@ -256,7 +315,7 @@ namespace Seatbelt
             switch (command.ToLower())
             {
                 case "all":
-                    toExecute = AllCommands;
+                    toExecute = AllCommands.ToList();
                     break;
 
                 default:

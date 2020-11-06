@@ -31,14 +31,14 @@ namespace Seatbelt.Commands
 
                 var LAPSPasswordLength = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "Software\\Policies\\Microsoft Services\\AdmPwd", "PasswordLength");
 
-                var LASPwdExpirationProtectionEnabled = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "Software\\Policies\\Microsoft Services\\AdmPwd", "PwdExpirationProtectionEnabled");
+                var LAPSPwdExpirationProtectionEnabled = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "Software\\Policies\\Microsoft Services\\AdmPwd", "PwdExpirationProtectionEnabled");
 
                 yield return new LapsDTO(
-                     bool.Parse(AdmPwdEnabled),
+                    (AdmPwdEnabled == "1"),
                     LAPSAdminAccountName,
                     LAPSPasswordComplexity,
                     LAPSPasswordLength,
-                    LASPwdExpirationProtectionEnabled
+                    LAPSPwdExpirationProtectionEnabled
                 );
             }
             else

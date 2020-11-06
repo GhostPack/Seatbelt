@@ -22,18 +22,19 @@ namespace Seatbelt.Commands.Windows
     {
         public override string Command => "DpapiMasterKeys";
         public override string Description => "List DPAPI master keys";
-        public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => false;
+        public override CommandGroup[] Group => new[] { CommandGroup.User, CommandGroup.Remote };
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
 
         public DpapiMasterKeysCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
 
             foreach (var dir in dirs)
             {

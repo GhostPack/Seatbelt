@@ -741,7 +741,9 @@ namespace Seatbelt.Commands.Windows
                 {"chrome"                  , "Google Chrome"},
                 {"iexplore"                , "Microsoft Internet Explorer"},
                 {"microsoftedge"           , "Microsoft Edge"},
-                {"firefox"                 , "Mozilla Firefox"}
+                {"firefox"                 , "Mozilla Firefox"},
+                {"brave"                   , "Brave Browser"},
+                {"opera"                   , "Opera Browser"},
             };
 
             var wmiData = ThisRunTime.GetManagementObjectSearcher(@"Root\CIMV2", "SELECT * FROM Win32_Process");

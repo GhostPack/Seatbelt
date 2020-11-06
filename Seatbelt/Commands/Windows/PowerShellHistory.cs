@@ -16,7 +16,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "PowerShellHistory";
         public override string Description => "Searches PowerShell console history files for sensitive regex matches.";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => true;
         public Runtime ThisRunTime;
 
         public PowerShellHistoryCommand(Runtime runtime) : base(runtime)
@@ -29,8 +29,8 @@ namespace Seatbelt.Commands.Windows
             // get our "sensitive" cmdline regexes from a common helper function.
             var powershellRegex = MiscUtil.GetProcessCmdLineRegex();
 
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
+
             foreach (var dir in dirs)
             {
                 var parts = dir.Split('\\');

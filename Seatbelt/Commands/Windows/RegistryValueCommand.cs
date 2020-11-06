@@ -15,7 +15,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "reg";
         public override string Description => @"Registry key values (HKLM\Software by default) argument == [Path] [intDepth] [Regex] [boolIgnoreErrors]";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
-        public override bool SupportRemote => false; // TODO remote
+        public override bool SupportRemote => false; // TODO remote, but will take some work
 
         //private string _rootKey;
         //private string _rootParentKey;

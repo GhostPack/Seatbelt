@@ -15,7 +15,7 @@ namespace Seatbelt.Commands.Windows
         public override string Description => "Named pipe names and any readable ACL information.";
         public override CommandGroup[] Group => new[] {CommandGroup.System};
 
-        public override bool SupportRemote => false; // might be true? unsure...
+        public override bool SupportRemote => false; // almost certainly not possible
 
         public NamedPipesCommand(Runtime runtime) : base(runtime)
         {

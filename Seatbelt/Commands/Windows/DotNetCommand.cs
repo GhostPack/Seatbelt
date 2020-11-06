@@ -25,7 +25,7 @@ namespace Seatbelt.Commands.Windows
         {
             var versions = new List<string>();
 
-            var dirs = System.IO.Directory.GetDirectories($"{Environment.GetEnvironmentVariable("windir")}\\Microsoft.Net\\Framework\\");
+            var dirs = ThisRunTime.GetDirectories("\\Windows\\Microsoft.Net\\Framework\\");
             foreach (var dir in dirs)
             {
                 if (System.IO.File.Exists($"{dir}\\System.dll"))
@@ -38,12 +38,13 @@ namespace Seatbelt.Commands.Windows
             return versions;
         }
 
-        public static string GetOSVersion()
+        public string GetOSVersion()
         {
-            ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT Version FROM Win32_OperatingSystem");
+            var wmiData = ThisRunTime.GetManagementObjectSearcher(@"root\cimv2", "SELECT Version FROM Win32_OperatingSystem");
+            
             try
             {
-                foreach (var os in searcher.Get())
+                foreach (var os in wmiData.Get())
                 {
                     return os["Version"].ToString();
                 }

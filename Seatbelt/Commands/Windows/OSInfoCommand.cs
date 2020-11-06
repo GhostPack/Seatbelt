@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using Microsoft.Win32;
 using Seatbelt.Util;
 using Seatbelt.Output.TextWriters;
-
+using System.Management;
 
 namespace Seatbelt.Commands.Windows
 {
@@ -18,79 +18,135 @@ namespace Seatbelt.Commands.Windows
     {
         public override string Command => "OSInfo";
         public override string Description => "Basic OS info (i.e. architecture, OS version, etc.)";
-        public override CommandGroup[] Group => new[] { CommandGroup.System };
-        public override bool SupportRemote => false;
+        public override CommandGroup[] Group => new[] { CommandGroup.System, CommandGroup.Remote };
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public OSInfoCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            var ProductName = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "ProductName");
-            var EditionID = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "EditionID");
-            var ReleaseId = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId");
-            var BuildBranch = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "BuildBranch");
-            var CurrentMajorVersionNumber = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "CurrentMajorVersionNumber");
-            var CurrentVersion = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "CurrentVersion");
+            var ProductName = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "ProductName");
+            var EditionID = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "EditionID");
+            var ReleaseId = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId");
+            var BuildBranch = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "BuildBranch");
+            var CurrentMajorVersionNumber = ThisRunTime.GetDwordValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "CurrentMajorVersionNumber");
+            var CurrentVersion = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "CurrentVersion");
 
-            var BuildNumber = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "CurrentBuildNumber");
-            var UBR = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "UBR");
+            var BuildNumber = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "CurrentBuildNumber");
+            var UBR = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "Software\\Microsoft\\Windows NT\\CurrentVersion", "UBR");
             if (!string.IsNullOrEmpty(UBR))  // UBR is not on Win < 10
             {
                 BuildNumber += ("." + UBR);
             }
 
-            var isHighIntegrity = SecurityUtil.IsHighIntegrity();
-            var isLocalAdmin = SecurityUtil.IsLocalAdmin();
+            if (ThisRunTime.ISRemote())
+            {
+                var isHighIntegrity = true;
+                var isLocalAdmin = true;
 
-            var arch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-            var ProcessorCount = Environment.ProcessorCount.ToString();
-            var isVM = IsVirtualMachine();
+                var arch = ThisRunTime.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+                var ProcessorCount = ThisRunTime.GetEnvironmentVariable("NUMBER_OF_PROCESSORS");
+                var isVM = IsVirtualMachine();
 
-            var now = DateTime.UtcNow;
-            var bootTimeUtc = now - TimeSpan.FromMilliseconds(Environment.TickCount);
+                var bootTimeUtc = new DateTime();
 
-            var strHostName = Dns.GetHostName();
-            var properties = IPGlobalProperties.GetIPGlobalProperties();
-            var dnsDomain = properties.DomainName;
+                var strHostName = ThisRunTime.ComputerName;
 
-            var timeZone = TimeZone.CurrentTimeZone;
-            var cultureInfo = CultureInfo.InstalledUICulture;
-            var inputLanguage = InputLanguage.CurrentInputLanguage.LayoutName;
+                var domain = "";
+                var wmiData = ThisRunTime.GetManagementObjectSearcher(@"root\cimv2", "Select Domain from Win32_ComputerSystem");
+                var data = wmiData.Get();
+                foreach (var o in data)
+                {
+                    var result = (ManagementObject)o;
+                    domain = result["Domain"].ToString();
+                }
 
-            var installedInputLanguages = new List<string>();
-            foreach (InputLanguage l in InputLanguage.InstalledInputLanguages)
-                installedInputLanguages.Add(l.LayoutName);
+                var machineGuid = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "SOFTWARE\\Microsoft\\Cryptography", "MachineGuid");
+                var temp = new string[0];
 
-            var machineGuid = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, "SOFTWARE\\Microsoft\\Cryptography", "MachineGuid");
+                yield return new OSInfoDTO(
+                    strHostName,
+                    domain,
+                    "",
+                    ProductName,
+                    EditionID,
+                    ReleaseId,
+                    BuildNumber,
+                    BuildBranch,
+                    CurrentMajorVersionNumber.ToString(),
+                    CurrentVersion,
+                    arch,
+                    ProcessorCount,
+                    isVM,
+                    bootTimeUtc,
+                    isHighIntegrity,
+                    isLocalAdmin,
+                    DateTime.UtcNow,
+                    null,
+                    null,
+                    null,
+                    null,
+                    temp,
+                    machineGuid
+                );
+            }
+            else
+            {
+                var isHighIntegrity = SecurityUtil.IsHighIntegrity();
+                var isLocalAdmin = SecurityUtil.IsLocalAdmin();
+
+                var arch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+                var ProcessorCount = Environment.ProcessorCount.ToString();
+                var isVM = IsVirtualMachine();
+
+                var now = DateTime.UtcNow;
+                var bootTimeUtc = now - TimeSpan.FromMilliseconds(Environment.TickCount);
+
+                var strHostName = Dns.GetHostName();
+                var properties = IPGlobalProperties.GetIPGlobalProperties();
+                var dnsDomain = properties.DomainName;
+
+                var timeZone = TimeZone.CurrentTimeZone;
+                var cultureInfo = CultureInfo.InstalledUICulture;
+                var inputLanguage = InputLanguage.CurrentInputLanguage.LayoutName;
+
+                var installedInputLanguages = new List<string>();
+                foreach (InputLanguage l in InputLanguage.InstalledInputLanguages)
+                    installedInputLanguages.Add(l.LayoutName);
+
+                var machineGuid = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, "SOFTWARE\\Microsoft\\Cryptography", "MachineGuid");
 
 
-            yield return new OSInfoDTO(
-                strHostName,
-                dnsDomain,
-                WindowsIdentity.GetCurrent().Name,
-                ProductName,
-                 EditionID,
-                 ReleaseId,
-                 BuildNumber,
-                 BuildBranch,
-                 CurrentMajorVersionNumber,
-                 CurrentVersion,
-                 arch,
-                 ProcessorCount,
-                 isVM,
-                 bootTimeUtc,
-                isHighIntegrity,
-                isLocalAdmin,
-                DateTime.UtcNow,
-                timeZone.StandardName,
-                timeZone.GetUtcOffset(DateTime.Now).ToString(),
-                cultureInfo.ToString(),
-                inputLanguage,
-                installedInputLanguages.ToArray(),
-                machineGuid
-            );
+                yield return new OSInfoDTO(
+                    strHostName,
+                    dnsDomain,
+                    WindowsIdentity.GetCurrent().Name,
+                    ProductName,
+                    EditionID,
+                    ReleaseId,
+                    BuildNumber,
+                    BuildBranch,
+                    CurrentMajorVersionNumber.ToString(),
+                    CurrentVersion,
+                    arch,
+                    ProcessorCount,
+                    isVM,
+                    bootTimeUtc,
+                    isHighIntegrity,
+                    isLocalAdmin,
+                    DateTime.UtcNow,
+                    timeZone.StandardName,
+                    timeZone.GetUtcOffset(DateTime.Now).ToString(),
+                    cultureInfo.ToString(),
+                    inputLanguage,
+                    installedInputLanguages.ToArray(),
+                    machineGuid
+                );
+            }
         }
 
         private bool IsVirtualMachine()
@@ -98,7 +154,7 @@ namespace Seatbelt.Commands.Windows
             // returns true if the system is likely a virtual machine
             // Adapted from RobSiklos' code from https://stackoverflow.com/questions/498371/how-to-detect-if-my-application-is-running-in-a-virtual-machine/11145280#11145280
 
-            using (var searcher = new System.Management.ManagementObjectSearcher("Select * from Win32_ComputerSystem"))
+            using (var searcher = ThisRunTime.GetManagementObjectSearcher(@"root\cimv2", "Select * from Win32_ComputerSystem"))
             {
                 using (var items = searcher.Get())
                 {
@@ -121,7 +177,7 @@ namespace Seatbelt.Commands.Windows
 
     internal class OSInfoDTO : CommandDTOBase
     {
-        public OSInfoDTO(string hostname, string domain, string username, string? productName, string? editionId, string? releaseId, string? build, string? buildBranch, string? currentMajorVersionNumber, string? currentVersion, string architecture, string processorCount, bool isVirtualMachine, DateTime bootTimeUtc, bool isHighIntegrity, bool isLocalAdmin, DateTime currentTimeUtc, string timeZone, string timeZoneUtcOffset, string locale, string inputLanguage, string[] installedInputLanguages, string? machineGuid)
+        public OSInfoDTO(string hostname, string domain, string username, string? productName, string? editionId, string? releaseId, string? build, string? buildBranch, string? currentMajorVersionNumber, string? currentVersion, string architecture, string processorCount, bool isVirtualMachine, DateTime bootTimeUtc, bool isHighIntegrity, bool isLocalAdmin, DateTime currentTimeUtc, string? timeZone, string? timeZoneUtcOffset, string? locale, string? inputLanguage, string[]? installedInputLanguages, string? machineGuid)
         {
             Hostname = hostname;
             Domain = domain;
@@ -165,11 +221,11 @@ namespace Seatbelt.Commands.Windows
         public bool IsHighIntegrity { get; set; }
         public bool IsLocalAdmin { get; set; }
         public DateTime CurrentTimeUtc { get; set; }
-        public string TimeZone { get; set; }
-        public string TimeZoneUtcOffset { get; set; }
-        public string Locale { get; set; }
-        public string InputLanguage;
-        public string[] InstalledInputLanguages;
+        public string? TimeZone { get; set; }
+        public string? TimeZoneUtcOffset { get; set; }
+        public string? Locale { get; set; }
+        public string? InputLanguage;
+        public string[]? InstalledInputLanguages;
         public string? MachineGuid { get; set; }
     }
 

@@ -1,14 +1,13 @@
-﻿#nullable disable
-using System.Linq;
+﻿using System.Linq;
 using System.Collections.Generic;
 using Seatbelt.Output.TextWriters;
 using Seatbelt.Output.Formatters;
 
 namespace Seatbelt.Commands
 {
-    internal class HuntLolbasCommand : CommandBase
+    internal class LolbasCommand : CommandBase
     {
-        public override string Command => "HuntLolbas";
+        public override string Command => "LOLBAS";
         public override string Description => "Locates Living Off The Land Binaries and Scripts (LOLBAS) on the system. Note: takes non-trivial time.";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };              
         public override bool SupportRemote => false;
@@ -57,7 +56,7 @@ namespace Seatbelt.Commands
             "te.exe", "vbc.exe", "vsjitdebugger.exe", 
             "winrm.vbs", };
 
-        public HuntLolbasCommand(Runtime runtime) : base(runtime)
+        public LolbasCommand(Runtime runtime) : base(runtime)
         {  
         }
 
@@ -111,7 +110,7 @@ namespace Seatbelt.Commands
           
             foreach(string path in query)
             {
-                yield return new HuntLolbasDTO() { Path = path };
+                yield return new LolbasDTO() { Path = path };
             }
 
             // This is only the LOLBAS with a .wsf extension so we can simply just check if the file exists
@@ -119,32 +118,31 @@ namespace Seatbelt.Commands
 
             if (System.IO.File.Exists(manageBDE))
             {
-                yield return new HuntLolbasDTO() { Path = manageBDE };
+                yield return new LolbasDTO() { Path = manageBDE };
             }
 
             WriteVerbose($"Found: {query.Count()} LOLBAS");
             WriteHost("\nTo see how to use the LOLBAS that were found go to https://lolbas-project.github.io/");
         }
 
-        internal class HuntLolbasDTO : CommandDTOBase
+        internal class LolbasDTO : CommandDTOBase
         {
             public string Path { get; set; }
         }
 
-        [CommandOutputType(typeof(HuntLolbasDTO))]
-        internal class HuntLolbasFormatter : TextFormatterBase
+        [CommandOutputType(typeof(LolbasDTO))]
+        internal class LolbasFormatter : TextFormatterBase
         {
-            public HuntLolbasFormatter(ITextWriter writer) : base(writer)
+            public LolbasFormatter(ITextWriter writer) : base(writer)
             {
             }
 
             public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
             {
-                var dto = (HuntLolbasDTO)result;
+                var dto = (LolbasDTO)result;
                 WriteLine($"Path: {dto.Path}");
             }
             
         }
     }
 }
-#nullable enable

@@ -13,7 +13,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "SecPackageCreds";
         public override string Description => "Obtains credentials from security packages";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // obviously not possible
         public Runtime ThisRunTime;
 
         private const int MAX_TOKEN_SIZE = 12288;

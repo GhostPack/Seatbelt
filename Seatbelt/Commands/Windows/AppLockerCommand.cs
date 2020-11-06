@@ -13,17 +13,20 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "AppLocker";
         public override string Description => "AppLocker settings, if installed";
         public override CommandGroup[] Group => new[] {CommandGroup.System};
-        public override bool SupportRemote => false; // TODO: impement remote
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public AppLockerCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
             // ref - @_RastaMouse https://rastamouse.me/2018/09/enumerating-applocker-config/
-            var wmiData = new ManagementObjectSearcher(@"root\cimv2", "SELECT Name, State FROM win32_service WHERE Name = 'AppIDSvc'");
+            var wmiData = ThisRunTime.GetManagementObjectSearcher(@"root\cimv2", "SELECT Name, State FROM win32_service WHERE Name = 'AppIDSvc'");
             var data = wmiData.Get();
+
             string appIdSvcState = "Service not found";
 
             var rules = new List<string>();
@@ -34,14 +37,14 @@ namespace Seatbelt.Commands.Windows
                 appIdSvcState = result["State"].ToString();
             }
 
-            var keys = RegistryUtil.GetSubkeyNames(RegistryHive.LocalMachine, "Software\\Policies\\Microsoft\\Windows\\SrpV2");
+            var keys = ThisRunTime.GetSubkeyNames(RegistryHive.LocalMachine, "Software\\Policies\\Microsoft\\Windows\\SrpV2") ?? new string[] { };
 
             if (keys != null && keys.Length != 0)
             {
                 foreach (var key in keys)
                 {
                     var keyName = key;
-                    var enforcementMode = RegistryUtil.GetDwordValue(RegistryHive.LocalMachine, $"Software\\Policies\\Microsoft\\Windows\\SrpV2\\{key}", "EnforcementMode");
+                    var enforcementMode = ThisRunTime.GetDwordValue(RegistryHive.LocalMachine, $"Software\\Policies\\Microsoft\\Windows\\SrpV2\\{key}", "EnforcementMode");
                     var enforcementModeStr = enforcementMode switch
                     {
                         null => "not configured",
@@ -50,11 +53,11 @@ namespace Seatbelt.Commands.Windows
                         _ => $"Unknown value {enforcementMode}"
                     };
 
-                    var ids = RegistryUtil.GetSubkeyNames(RegistryHive.LocalMachine, "Software\\Policies\\Microsoft\\Windows\\SrpV2\\" + key);
+                    var ids = ThisRunTime.GetSubkeyNames(RegistryHive.LocalMachine, "Software\\Policies\\Microsoft\\Windows\\SrpV2\\" + key);
 
                     foreach (var id in ids)
                     {
-                        var rule = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, $"Software\\Policies\\Microsoft\\Windows\\SrpV2\\{key}\\{id}", "Value");
+                        var rule = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, $"Software\\Policies\\Microsoft\\Windows\\SrpV2\\{key}\\{id}", "Value");
                         rules.Add(rule);
                     }
 

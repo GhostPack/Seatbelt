@@ -48,7 +48,7 @@ namespace Seatbelt.Commands
         public override string Command => "McAfeeSiteList";
         public override string Description => "Decrypt any found McAfee SiteList.xml configuration files.";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // TODO when remote file searching is worked out... though it might take a while
 
         public McAfeeSiteListCommand(Runtime runtime) : base(runtime)
         {

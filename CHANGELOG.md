@@ -5,6 +5,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.1.1] - 2020-11-06
+
+### Added
+
+* Added remote support to the following commands:
+    * PowerShell, DotNet
+    * FirefoxPresence, FirefoxHistory
+    * ChromePresence/ChromeHistory/ChromeBookmarks
+    * InternetExplorerFavorites, IEUrls
+    * SlackDownloads, SlackPresence, SlackWorkspaces
+    * CloudCredentials, FileZilla, OutlookDownloads, RDCManFiles
+    * SuperPutty, LocalUsers, LocalGroups, PowerShellHistory
+    * Credguard, InstalledProducts, AppLocker, AuditPolicyRegistry
+    * DNSCache, PSSessionSettings, OSInfo, EnvironmentVariables, DpapiMasterKeys
+
+* Implemented remote event log support:
+    * ExplicitLogonEvents, LogonEvents, PoweredOnEvents, PowerShellEvents, ProcessCreationEvents, SysmonEvents
+
+* Chrome* modules now converted to Chromium support:
+    * Chrome, Edge, Brave, Opera
+
+* Added IBM Bluemix enumeration to CloudCredentials
+
+
+### Fixed
+
+* Better error handling in various modules
+* OS version number collection on Windows 10
+* McAfeeSiteList null pointer exception
+* Interpretation of uac/tokenfilter/filteradmintoken values
+* Nullable type issues
+* WindowsFirewall filtering
+
+
 ## [1.1.0] - 2020-09-30
 
 ### Added

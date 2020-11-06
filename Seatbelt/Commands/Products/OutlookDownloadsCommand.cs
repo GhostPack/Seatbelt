@@ -22,16 +22,17 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "OutlookDownloads";
         public override string Description => "List files downloaded by Outlook";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
-        public override bool SupportRemote => false; // could, but won't for now
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public OutlookDownloadsCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
 
             foreach (var dir in dirs)
             {

@@ -69,7 +69,7 @@ namespace Seatbelt.Commands.Windows
                 {
                     profileArgs.Add("Private");
                 }
-                else if (arg.ToLower().Equals("Public"))
+                else if (arg.ToLower().Equals("public"))
                 {
                     profileArgs.Add("Public");
                 }
@@ -249,20 +249,24 @@ namespace Seatbelt.Commands.Windows
                             !Runtime.FilterResults ||
                             (
                                 (
-                                    ((actionArgs.Count == 0 && protocolsArgs.Count == 0 && directionArgs.Count == 0 && profileArgs.Count == 0) && !rule.Name.StartsWith("@") && !rule.Name.Equals("Shell Input Application"))) ||
-                                    (
-                                        (actionArgs.Contains("Allow") && !String.IsNullOrEmpty(rule.Action) && rule.Action.Equals("Allow")) ||
-                                        (actionArgs.Contains("Block") && !String.IsNullOrEmpty(rule.Action) && rule.Action.Equals("Block")) ||
-                                        (protocolsArgs.Contains("TCP") && (String.IsNullOrEmpty(rule.Protocol) || rule.Protocol.Equals("TCP"))) ||
-                                        (protocolsArgs.Contains("UDP") && (String.IsNullOrEmpty(rule.Protocol) || rule.Protocol.Equals("UDP"))) ||
-                                        (directionArgs.Contains("In") && (String.IsNullOrEmpty(rule.Direction) || rule.Direction.Equals("In"))) ||
-                                        (directionArgs.Contains("Out") && (String.IsNullOrEmpty(rule.Direction) || rule.Direction.Equals("Out"))) ||
-                                        (profileArgs.Contains("Domain") && (String.IsNullOrEmpty(rule.Profiles) || rule.Profiles.Equals("Domain"))) ||
-                                        (profileArgs.Contains("Private") && (String.IsNullOrEmpty(rule.Profiles) || rule.Profiles.Equals("Private"))) ||
-                                        (profileArgs.Contains("Public") && (String.IsNullOrEmpty(rule.Profiles) || rule.Profiles.Equals("Public")))
-                                    )
-                                )
+                                    ((actionArgs.Count == 0 && protocolsArgs.Count == 0 && directionArgs.Count == 0 && profileArgs.Count == 0) &&
+                                    !rule.Name.StartsWith("@") &&
+                                    !rule.Name.Equals("Shell Input Application") &&
+                                    rule.Action.Equals("Block"))
+                                ) ||
+                                (
+                                    (actionArgs.Contains("Allow") && (rule.Action == "Allow")) ||
+                                    (actionArgs.Contains("Block") && (rule.Action == "Block")) ||
+                                    (protocolsArgs.Contains("TCP") && (rule.Protocol == "TCP")) ||
+                                    (protocolsArgs.Contains("UDP") && (rule.Protocol == "UDP")) ||
+                                    (directionArgs.Contains("In") && (rule.Direction == "In")) ||
+                                    (directionArgs.Contains("Out") && (rule.Direction == "Out")) ||
+                                    (profileArgs.Contains("Domain") && (rule.Profiles.Trim() == "Domain")) ||
+                                    (profileArgs.Contains("Private") && (rule.Profiles.Trim() == "Private")) ||
+                                    (profileArgs.Contains("Public") && (rule.Profiles.Trim() == "Public"))
+                                 )
                             )
+                        )
                         {
                             output.Rules.Add(rule);
                         }

@@ -27,7 +27,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "WindowsVault";
         public override string Description => "Credentials saved in the Windows Vault (i.e. logins from Internet Explorer and Edge).";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // not possible
 
         private readonly Dictionary<Guid, string> VaultSchema = new Dictionary<Guid, string>
         {

@@ -11,7 +11,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "SecurityPackages"; 
         public override string Description => "Enumerates the security packages currently available using EnumerateSecurityPackagesA()"; 
         public override CommandGroup[] Group => new[] {CommandGroup.Misc};
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // not possible
 
         public SecurityPackagesCommand(Runtime runtime) : base(runtime)
         {

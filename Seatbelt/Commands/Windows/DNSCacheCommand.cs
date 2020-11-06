@@ -9,7 +9,7 @@ namespace Seatbelt.Commands.Windows
     {
         public override string Command => "DNSCache";
         public override string Description => "DNS cache entries (via WMI)";
-        public override CommandGroup[] Group => new[] {CommandGroup.System};
+        public override CommandGroup[] Group => new[] {CommandGroup.System, CommandGroup.Remote};
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
 

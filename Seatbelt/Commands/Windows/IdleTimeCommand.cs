@@ -14,7 +14,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "IdleTime";
         public override string Description => "Returns the number of seconds since the current user's last input.";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // not possible
 
 
         public IdleTimeCommand(Runtime runtime) : base(runtime)

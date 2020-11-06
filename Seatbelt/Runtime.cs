@@ -315,7 +315,7 @@ namespace Seatbelt
             switch (command.ToLower())
             {
                 case "all":
-                    toExecute = AllCommands.Where(g => !g.Command.Contains("HuntLolbas")).ToList();
+                    toExecute = AllCommands.ToList();
                     break;
 
                 default:

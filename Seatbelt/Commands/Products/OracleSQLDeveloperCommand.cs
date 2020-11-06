@@ -5,16 +5,16 @@ using Seatbelt.Util;
 
 namespace Seatbelt.Commands
 {
-    internal class OracleConnectionsCommand : CommandBase
+    internal class OracleSQLDeveloperCommand : CommandBase
     {
-        public override string Command => "OracleConnections";
+        public override string Command => "OracleSQLDeveloper";
         public override string Description => "Finds Oracle SQLDeveloper connections.xml files";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
         public override bool SupportRemote => false;
 
         // NOTE: to decrypt, use https://pypi.org/project/sqldeveloperpassworddecryptor/
 
-        public OracleConnectionsCommand(Runtime runtime) : base(runtime)
+        public OracleSQLDeveloperCommand(Runtime runtime) : base(runtime)
         {
         }
 

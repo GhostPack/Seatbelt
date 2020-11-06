@@ -78,7 +78,6 @@ Available commands (+ means remote usage is supported):
     + FirefoxHistory         - Parses any found FireFox history files
     + FirefoxPresence        - Checks if interesting Firefox files exist
     + Hotfixes               - Installed hotfixes (via WMI)
-      HuntLolbas             - Locates Living Off The Land Binaries and Scripts (LOLBAS) on the system. Note: takes non-trivial time.
       IdleTime               - Returns the number of seconds since the current user's last input.
     + IEFavorites            - Internet Explorer favorites
       IETabs                 - Open Internet Explorer tabs
@@ -94,6 +93,7 @@ Available commands (+ means remote usage is supported):
     + LocalUsers             - Local users, whether they're active/disabled, and pwd last set (argument == computername to enumerate)
     + LogonEvents            - Logon events (Event ID 4624) from the security event log. Default of 10 days, argument == last X days.
     + LogonSessions          - Windows logon sessions
+      LOLBAS                 - Locates Living Off The Land Binaries and Scripts (LOLBAS) on the system. Note: takes non-trivial time.
     + LSASettings            - LSA settings (including auth packages)
     + MappedDrives           - Users' mapped drives (via WMI)
       McAfeeConfigs          - Finds McAfee configuration files
@@ -104,6 +104,7 @@ Available commands (+ means remote usage is supported):
     + NetworkShares          - Network shares exposed by the machine (via WMI)
     + NTLMSettings           - NTLM authentication settings
       OfficeMRUs             - Office most recently used file list (last 7 days)
+      OracleSQLDeveloper     - Finds Oracle SQLDeveloper connections.xml files
     + OSInfo                 - Basic OS info (i.e. architecture, OS version, etc.)
     + OutlookDownloads       - List files downloaded by Outlook
     + PoweredOnEvents        - Reboot and sleep schedule based on the System event log EIDs 1, 12, 13, 42, and 6008. Default of 7 days, argument == last X days.
@@ -165,10 +166,11 @@ Seatbelt has the following command groups: All, User, System, Slack, Chromium, R
         ChromiumPresence, CloudCredentials, CredEnum, dir, DpapiMasterKeys, 
         ExplorerMRUs, ExplorerRunCommands, FileZilla, FirefoxPresence, 
         IdleTime, IEFavorites, IETabs, IEUrls, 
-        MappedDrives, OfficeMRUs, PowerShellHistory, PuttyHostKeys, 
-        PuttySessions, RDCManFiles, RDPSavedConnections, SecPackageCreds, 
-        SlackDownloads, SlackPresence, SlackWorkspaces, SuperPutty, 
-        TokenGroups, WindowsCredentialFiles, WindowsVault
+        MappedDrives, OfficeMRUs, OracleSQLDeveloper, PowerShellHistory, 
+        PuttyHostKeys, PuttySessions, RDCManFiles, RDPSavedConnections, 
+        SecPackageCreds, SlackDownloads, SlackPresence, SlackWorkspaces, 
+        SuperPutty, TokenGroups, WindowsCredentialFiles, WindowsVault
+        
 
    "Seatbelt.exe -group=system" runs the following commands:
 
@@ -210,7 +212,7 @@ Seatbelt has the following command groups: All, User, System, Slack, Chromium, R
    "Seatbelt.exe -group=misc" runs the following commands:
 
         ChromiumBookmarks, ChromiumHistory, ExplicitLogonEvents, FileInfo, FirefoxHistory, 
-        HuntLolbas, InstalledProducts, InterestingFiles, LogonEvents, 
+        InstalledProducts, InterestingFiles, LogonEvents, LOLBAS, 
         McAfeeSiteList, MicrosoftUpdates, OutlookDownloads, PowerShellEvents, 
         Printers, ProcessCreationEvents, ProcessOwners, RecycleBin, 
         reg, RPCMappedEndpoints, ScheduledTasks, SearchIndex, 
@@ -226,6 +228,7 @@ Examples:
     'Seatbelt.exe -group=remote -computername=COMPUTER.DOMAIN.COM [-username=DOMAIN\USER -password=PASSWORD]' will run remote specific checks
     'Seatbelt.exe -group=system -outputfile="C:\Temp\out.txt"' will run system checks and output to a .txt file.
     'Seatbelt.exe -group=user -q -outputfile="C:\Temp\out.json"' will run in quiet mode with user checks and output to a .json file.
+
 ```
 
 **Note:** searches that target users will run for the current user if not-elevated and for ALL users if elevated.

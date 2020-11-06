@@ -110,7 +110,7 @@ namespace Seatbelt.Commands
           
             foreach(string path in query)
             {
-                yield return new LolbasDTO() { Path = path };
+                yield return new LolbasDTO(path);
             }
 
             // This is only the LOLBAS with a .wsf extension so we can simply just check if the file exists
@@ -118,7 +118,7 @@ namespace Seatbelt.Commands
 
             if (System.IO.File.Exists(manageBDE))
             {
-                yield return new LolbasDTO() { Path = manageBDE };
+                yield return new LolbasDTO(manageBDE);
             }
 
             WriteVerbose($"Found: {query.Count()} LOLBAS");
@@ -127,6 +127,10 @@ namespace Seatbelt.Commands
 
         internal class LolbasDTO : CommandDTOBase
         {
+            public LolbasDTO(string path)
+            {
+                Path = path;
+            }
             public string Path { get; set; }
         }
 

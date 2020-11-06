@@ -33,8 +33,9 @@ Seatbelt is licensed under the BSD 3-Clause license.
 
 ```
 
-                        %&&@@@&&
-                        &&&&&&&%%%,                       #&&@@@@@@%%%%%%###############%
+
+                        %&&@@@&&                                                                                  
+                        &&&&&&&%%%,                       #&&@@@@@@%%%%%%###############%                         
                         &%&   %&%%                        &////(((&%%%%%#%################//((((###%%%%%%%%%%%%%%%
 %%%%%%%%%%%######%%%#%%####%  &%%**#                      @////(((&%%%%%%######################(((((((((((((((((((
 #%#%%%%%%%#######%#%%#######  %&%,,,,,,,,,,,,,,,,         @////(((&%%%%%#%#####################(((((((((((((((((((
@@ -42,10 +43,10 @@ Seatbelt is licensed under the BSD 3-Clause license.
 #####%%%####################  &%%......  ...   ..         @////(((&%%%%%%%###############%######((#(#(####((((((((
 #######%##########%#########  %%%......  ...   ..         @////(((&%%%%%#########################(#(#######((#####
 ###%##%%####################  &%%...............          @////(((&%%%%%%%%##############%#######(#########((#####
-#####%######################  %%%..                       @////(((&%%%%%%%################
-                        &%&   %%%%%      Seatbelt         %////(((&%%%%%%%%#############*
-                        &%%&&&%%%%%        v1.1.1         ,(((&%%%%%%%%%%%%%%%%%,
-                         #%%%%##,
+#####%######################  %%%..                       @////(((&%%%%%%%################                        
+                        &%&   %%%%%      Seatbelt         %////(((&%%%%%%%%#############*                         
+                        &%%&&&%%%%%        v1.1.1         ,(((&%%%%%%%%%%%%%%%%%,                                 
+                         #%%%%##,                                                                                 
 
 
 Available commands (+ means remote usage is supported):
@@ -161,28 +162,28 @@ Seatbelt has the following command groups: All, User, System, Slack, Chromium, R
 
    "Seatbelt.exe -group=user" runs the following commands:
 
-        ChromiumPresence, CloudCredentials, CredEnum, dir, DpapiMasterKeys,
-        ExplorerMRUs, ExplorerRunCommands, FileZilla, FirefoxPresence,
-        IdleTime, IEFavorites, IETabs, IEUrls,
-        MappedDrives, OfficeMRUs, PowerShellHistory, PuttyHostKeys,
-        PuttySessions, RDCManFiles, RDPSavedConnections, SecPackageCreds,
-        SlackDownloads, SlackPresence, SlackWorkspaces, SuperPutty,
+        ChromiumPresence, CloudCredentials, CredEnum, dir, DpapiMasterKeys, 
+        ExplorerMRUs, ExplorerRunCommands, FileZilla, FirefoxPresence, 
+        IdleTime, IEFavorites, IETabs, IEUrls, 
+        MappedDrives, OfficeMRUs, PowerShellHistory, PuttyHostKeys, 
+        PuttySessions, RDCManFiles, RDPSavedConnections, SecPackageCreds, 
+        SlackDownloads, SlackPresence, SlackWorkspaces, SuperPutty, 
         TokenGroups, WindowsCredentialFiles, WindowsVault
 
    "Seatbelt.exe -group=system" runs the following commands:
 
-        AMSIProviders, AntiVirus, AppLocker, ARPTable, AuditPolicies,
-        AuditPolicyRegistry, AutoRuns, CredGuard, DNSCache,
-        DotNet, EnvironmentPath, EnvironmentVariables, Hotfixes,
-        InterestingProcesses, InternetSettings, LAPS, LastShutdown,
-        LocalGPOs, LocalGroups, LocalUsers, LogonSessions,
-        LSASettings, McAfeeConfigs, NamedPipes, NetworkProfiles,
-        NetworkShares, NTLMSettings, OSInfo, PoweredOnEvents,
-        PowerShell, Processes, PSSessionSettings, RDPSessions,
-        RDPsettings, SCCM, Services, Sysmon,
-        TcpConnections, TokenPrivileges, UAC, UdpConnections,
-        UserRightAssignments, WindowsAutoLogon, WindowsDefender, WindowsEventForwarding,
-        WindowsFirewall, WMIEventConsumer, WMIEventFilter, WMIFilterBinding,
+        AMSIProviders, AntiVirus, AppLocker, ARPTable, AuditPolicies, 
+        AuditPolicyRegistry, AutoRuns, CredGuard, DNSCache, 
+        DotNet, EnvironmentPath, EnvironmentVariables, Hotfixes, 
+        InterestingProcesses, InternetSettings, LAPS, LastShutdown, 
+        LocalGPOs, LocalGroups, LocalUsers, LogonSessions, 
+        LSASettings, McAfeeConfigs, NamedPipes, NetworkProfiles, 
+        NetworkShares, NTLMSettings, OSInfo, PoweredOnEvents, 
+        PowerShell, Processes, PSSessionSettings, RDPSessions, 
+        RDPsettings, SCCM, Services, Sysmon, 
+        TcpConnections, TokenPrivileges, UAC, UdpConnections, 
+        UserRightAssignments, WindowsAutoLogon, WindowsDefender, WindowsEventForwarding, 
+        WindowsFirewall, WMIEventConsumer, WMIEventFilter, WMIFilterBinding, 
         WSUS
 
    "Seatbelt.exe -group=slack" runs the following commands:
@@ -195,25 +196,25 @@ Seatbelt has the following command groups: All, User, System, Slack, Chromium, R
 
    "Seatbelt.exe -group=remote" runs the following commands:
 
-        AMSIProviders, AntiVirus, AuditPolicyRegistry, ChromiumPresence, CloudCredentials,
-        DNSCache, DotNet, DpapiMasterKeys, EnvironmentVariables,
-        ExplicitLogonEvents, ExplorerRunCommands, FileZilla, Hotfixes,
-        InterestingProcesses, LastShutdown, LocalGroups, LocalUsers,
-        LogonEvents, LogonSessions, LSASettings, MappedDrives,
-        NetworkProfiles, NetworkShares, NTLMSettings, OSInfo,
-        PoweredOnEvents, PowerShell, ProcessOwners, PSSessionSettings,
-        PuttyHostKeys, PuttySessions, RDPSavedConnections, RDPSessions,
-        RDPsettings, Sysmon, WindowsDefender, WindowsEventForwarding,
+        AMSIProviders, AntiVirus, AuditPolicyRegistry, ChromiumPresence, CloudCredentials, 
+        DNSCache, DotNet, DpapiMasterKeys, EnvironmentVariables, 
+        ExplicitLogonEvents, ExplorerRunCommands, FileZilla, Hotfixes, 
+        InterestingProcesses, LastShutdown, LocalGroups, LocalUsers, 
+        LogonEvents, LogonSessions, LSASettings, MappedDrives, 
+        NetworkProfiles, NetworkShares, NTLMSettings, OSInfo, 
+        PoweredOnEvents, PowerShell, ProcessOwners, PSSessionSettings, 
+        PuttyHostKeys, PuttySessions, RDPSavedConnections, RDPSessions, 
+        RDPsettings, Sysmon, WindowsDefender, WindowsEventForwarding, 
         WindowsFirewall
 
    "Seatbelt.exe -group=misc" runs the following commands:
 
-        ChromiumBookmarks, ChromiumHistory, ExplicitLogonEvents, FileInfo, FirefoxHistory,
-        InstalledProducts, InterestingFiles, LogonEvents, McAfeeSiteList,
-        MicrosoftUpdates, OutlookDownloads, PowerShellEvents, Printers,
-        ProcessCreationEvents, ProcessOwners, RecycleBin, reg,
-        RPCMappedEndpoints, ScheduledTasks, SearchIndex, SecurityPackages,
-        SysmonEvents
+        ChromiumBookmarks, ChromiumHistory, ExplicitLogonEvents, FileInfo, FirefoxHistory, 
+        HuntLolbas, InstalledProducts, InterestingFiles, LogonEvents, 
+        McAfeeSiteList, MicrosoftUpdates, OutlookDownloads, PowerShellEvents, 
+        Printers, ProcessCreationEvents, ProcessOwners, RecycleBin, 
+        reg, RPCMappedEndpoints, ScheduledTasks, SearchIndex, 
+        SecurityPackages, SysmonEvents
 
 
 Examples:

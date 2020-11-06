@@ -9,12 +9,14 @@ namespace Seatbelt.Commands.Windows.EventLogs.ExplicitLogonEvents
     internal class ExplicitLogonEventsCommand : CommandBase
     {
         public override string Description => "Explicit Logon events (Event ID 4648) from the security event log. Default of 7 days, argument == last X days.";
-        public override CommandGroup[] Group => new[] { CommandGroup.Misc };
+        public override CommandGroup[] Group => new[] { CommandGroup.Misc, CommandGroup.Remote };
         public override string Command => "ExplicitLogonEvents";
-        public override bool SupportRemote => false; // TODO remote
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public ExplicitLogonEventsCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
@@ -42,6 +44,13 @@ namespace Seatbelt.Commands.Windows.EventLogs.ExplicitLogonEvents
                 }
             }
 
+
+            if (!SecurityUtil.IsHighIntegrity() && !ThisRunTime.ISRemote())
+            {
+                WriteError("Unable to collect. Must be an administrator.");
+                yield break;
+            }
+
             WriteHost("Listing 4648 Explicit Credential Events - A process logged on using plaintext credentials");
 
             if (args.Length >= 2)
@@ -57,20 +66,9 @@ namespace Seatbelt.Commands.Windows.EventLogs.ExplicitLogonEvents
             var startTime = DateTime.Now.AddDays(-lastDays);
             var endTime = DateTime.Now;
 
-            if (!SecurityUtil.IsHighIntegrity())
-            {
-                WriteError("Unable to collect. Must be an administrator.");
-                yield break;
-            }
-
             var query = $@"*[System/EventID={eventId}] and *[System[TimeCreated[@SystemTime >= '{startTime.ToUniversalTime():o}']]] and *[System[TimeCreated[@SystemTime <= '{endTime.ToUniversalTime():o}']]]";
 
-            var eventsQuery = new EventLogQuery("Security", PathType.LogName, query)
-            {
-                ReverseDirection = true
-            };
-
-            var logReader = new EventLogReader(eventsQuery);
+            var logReader = ThisRunTime.GetEventLogReader("Security", query);
 
             for (var eventDetail = logReader.ReadEvent(); eventDetail != null; eventDetail = logReader.ReadEvent())
             {

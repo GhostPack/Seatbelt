@@ -11,7 +11,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "EnvironmentPath";
         public override string Description => "Current environment %PATH$ folders and SDDL information";
         public override CommandGroup[] Group => new[] {CommandGroup.System};
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // doesn't make sense to implement as we have "EnvironmentVariables" for remote hosts
 
         public EnvironmentPathCommand(Runtime runtime) : base(runtime)
         {

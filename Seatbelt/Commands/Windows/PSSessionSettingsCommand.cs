@@ -25,7 +25,7 @@ namespace Seatbelt.Commands.Windows
     {
         public override string Command => "PSSessionSettings";
         public override string Description => "Enumerates PS Session Settings from the registry";
-        public override CommandGroup[] Group => new[] {CommandGroup.System};
+        public override CommandGroup[] Group => new[] {CommandGroup.System, CommandGroup.Remote};
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
 

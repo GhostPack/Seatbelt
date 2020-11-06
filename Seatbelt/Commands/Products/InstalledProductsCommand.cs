@@ -10,10 +10,12 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "InstalledProducts";
         public override string Description => "Installed products via the registry";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
-        public override bool SupportRemote => false; // TODO remote , though the method of this one will be a bit more difficult
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public InstalledProductsCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
@@ -28,48 +30,45 @@ namespace Seatbelt.Commands.Windows
                     architecture = "x64";
                 }
 
-                using (var key = Registry.LocalMachine.OpenSubKey(productKey))
+                var subkeyNames = ThisRunTime.GetSubkeyNames(RegistryHive.LocalMachine, productKey) ?? new string[] { };
+                foreach(var subkeyName in subkeyNames)
                 {
-                    foreach (var subkeyName in key.GetSubKeyNames())
+                    var DisplayName = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, $"{productKey}\\{subkeyName}", "DisplayName");
+                    var DisplayVersion = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, $"{productKey}\\{subkeyName}", "DisplayVersion");
+                    var Publisher = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, $"{productKey}\\{subkeyName}", "Publisher");
+                    var InstallDateStr = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, $"{productKey}\\{subkeyName}", "InstallDateStr");
+                    var InstallDate = new DateTime();
+
+                    if (InstallDateStr != null && !String.IsNullOrEmpty(InstallDateStr))
                     {
-                        var DisplayName = $"{key.OpenSubKey(subkeyName).GetValue("DisplayName")}";
-                        var DisplayVersion = $"{key.OpenSubKey(subkeyName).GetValue("DisplayVersion")}";
-                        var Publisher = $"{key.OpenSubKey(subkeyName).GetValue("Publisher")}";
-                        var InstallDateStr = $"{key.OpenSubKey(subkeyName).GetValue("InstallDate")}";
-                        var InstallDate = new DateTime();
-
-                        if (InstallDateStr != null && !String.IsNullOrEmpty(InstallDateStr))
+                        try
                         {
-                            try
-                            {
-                                var year = InstallDateStr.Substring(0, 4);
-                                var month = InstallDateStr.Substring(4, 2);
-                                var day = InstallDateStr.Substring(6, 2);
-                                var date = $"{year}-{month}-{day}";
-                                InstallDate = DateTime.Parse(date);
-                            }
-                            catch { }
+                            var year = InstallDateStr.Substring(0, 4);
+                            var month = InstallDateStr.Substring(4, 2);
+                            var day = InstallDateStr.Substring(6, 2);
+                            var date = $"{year}-{month}-{day}";
+                            InstallDate = DateTime.Parse(date);
                         }
-
-                        if (DisplayName != null && !String.IsNullOrEmpty(DisplayName))
-                        {
-                            yield return new InstalledProductsDTO(
-                                DisplayName,
-                                DisplayVersion,
-                                Publisher,
-                                InstallDate,
-                                architecture
-                            );
-                        }
+                        catch { }
                     }
-                    WriteHost("\n");
+
+                    if (DisplayName != null && !String.IsNullOrEmpty(DisplayName))
+                    {
+                        yield return new InstalledProductsDTO(
+                            DisplayName,
+                            DisplayVersion,
+                            Publisher,
+                            InstallDate,
+                            architecture
+                        );
+                    }
                 }
             }
         }
 
         internal class InstalledProductsDTO : CommandDTOBase
         {
-            public InstalledProductsDTO(string displayName, string displayVersion, string publisher, DateTime installDate, string architecture)
+            public InstalledProductsDTO(string displayName, string? displayVersion, string? publisher, DateTime installDate, string architecture)
             {
                 DisplayName = displayName;
                 DisplayVersion = displayVersion;
@@ -79,9 +78,9 @@ namespace Seatbelt.Commands.Windows
             }
             public string DisplayName { get; }
 
-            public string DisplayVersion { get; }
+            public string? DisplayVersion { get; }
 
-            public string Publisher { get; }
+            public string? Publisher { get; }
 
             public DateTime InstallDate { get; }
 

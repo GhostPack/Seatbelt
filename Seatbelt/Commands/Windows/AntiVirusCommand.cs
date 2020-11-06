@@ -26,15 +26,28 @@ namespace Seatbelt.Commands.Windows
             }
 
             // lists installed VA products via WMI (the AntiVirusProduct class)
-            var wmiData = ThisRunTime.GetManagementObjectSearcher(@"root\SecurityCenter2", "SELECT * FROM AntiVirusProduct");
-            var data = wmiData.Get();
-            foreach (var virusChecker in data)
+
+            var AVResults = new List<AntiVirusDTO>();
+
+            try
             {
-                yield return new AntiVirusDTO(
-                    virusChecker["displayName"],
-                    virusChecker["pathToSignedProductExe"],
-                    virusChecker["pathToSignedReportingExe"]
-                );
+                var wmiData = ThisRunTime.GetManagementObjectSearcher(@"root\SecurityCenter2", "SELECT * FROM AntiVirusProduct");
+                var data = wmiData.Get();
+
+                foreach (var virusChecker in data)
+                {
+                    AVResults.Add(new AntiVirusDTO(
+                        virusChecker["displayName"],
+                        virusChecker["pathToSignedProductExe"],
+                        virusChecker["pathToSignedReportingExe"]
+                    ));
+                }
+            }
+            catch { }
+
+            foreach(var AVResult in AVResults)
+            {
+                yield return AVResult;
             }
         }
     }

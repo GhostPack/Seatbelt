@@ -10,7 +10,7 @@ namespace Seatbelt.Commands.Windows
     {
         public override string Command => "LocalUsers";
         public override string Description => "Local users, whether they're active/disabled, and pwd last set (argument == computername to enumerate)";
-        public override CommandGroup[] Group => new[] {CommandGroup.System};
+        public override CommandGroup[] Group => new[] {CommandGroup.System, CommandGroup.Remote};
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
 

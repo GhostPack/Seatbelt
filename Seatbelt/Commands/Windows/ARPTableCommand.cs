@@ -32,7 +32,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "ARPTable";
         public override string Description => "Lists the current ARP table and adapter information (equivalent to arp -a)";
         public override CommandGroup[] Group => new[] {CommandGroup.System};
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // not possible
 
         public ARPTableCommand(Runtime runtime) : base(runtime)
         {

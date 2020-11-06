@@ -1,5 +1,4 @@
 ﻿using Microsoft.Win32;
-using Seatbelt.Util;
 using System;
 using System.Collections.Generic;
 using Seatbelt.Output.Formatters;
@@ -24,10 +23,12 @@ namespace Seatbelt.Commands.Browser
         public override string Command => "IEUrls";
         public override string Description => "Internet Explorer typed URLs (last 7 days, argument == last X days)";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => false; // TODO remote , though not sure how useful this would be
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public InternetExplorerTypedUrlsCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
@@ -52,7 +53,8 @@ namespace Seatbelt.Commands.Browser
 
             WriteHost($"Internet Explorer typed URLs for the last {lastDays} days\n");
 
-            var SIDs = Registry.Users.GetSubKeyNames();
+            var SIDs = ThisRunTime.GetUserSIDs();
+
             foreach (var sid in SIDs)
             {
                 if (!sid.StartsWith("S-1-5") || sid.EndsWith("_Classes"))
@@ -60,7 +62,7 @@ namespace Seatbelt.Commands.Browser
                     continue;
                 }
 
-                var settings = RegistryUtil.GetValues(RegistryHive.Users, $"{sid}\\SOFTWARE\\Microsoft\\Internet Explorer\\TypedURLs");
+                var settings = ThisRunTime.GetValues(RegistryHive.Users, $"{sid}\\SOFTWARE\\Microsoft\\Internet Explorer\\TypedURLs");
                 if ((settings == null) || (settings.Count <= 1))
                 {
                     continue;
@@ -70,7 +72,8 @@ namespace Seatbelt.Commands.Browser
 
                 foreach (var kvp in settings)
                 {
-                    var timeBytes = RegistryUtil.GetBinaryValue(RegistryHive.Users, $"{sid}\\SOFTWARE\\Microsoft\\Internet Explorer\\TypedURLsTime", kvp.Key.Trim());
+                    var timeBytes = ThisRunTime.GetBinaryValue(RegistryHive.Users, $"{sid}\\SOFTWARE\\Microsoft\\Internet Explorer\\TypedURLsTime", kvp.Key.Trim());
+
                     if (timeBytes == null)
                         continue;
 

@@ -44,18 +44,19 @@ namespace Seatbelt.Commands
         public override string Command => "SuperPutty";
         public override string Description => "SuperPutty configuration files";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public SuperPuttyCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
             // inspired by https://github.com/EncodeGroup/Gopher/blob/master/Holes/SuperPuTTY.cs (@lefterispan)
 
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
 
             foreach (var dir in dirs)
             {

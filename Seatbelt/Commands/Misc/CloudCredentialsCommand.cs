@@ -8,12 +8,14 @@ namespace Seatbelt.Commands
     internal class CloudCredentialsCommand : CommandBase
     {
         public override string Command => "CloudCredentials";
-        public override string Description => "AWS/Google/Azure cloud credential files";
-        public override CommandGroup[] Group => new[] {CommandGroup.User};
-        public override bool SupportRemote => false; // though I *really* want to figure an effective way to do this one remotely
+        public override string Description => "AWS/Google/Azure/Bluemix cloud credential files";
+        public override CommandGroup[] Group => new[] {CommandGroup.User, CommandGroup.Remote};
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public CloudCredentialsCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
@@ -21,8 +23,7 @@ namespace Seatbelt.Commands
             // checks for various cloud credential files (AWS, Microsoft Azure, and Google Compute)
             // adapted from https://twitter.com/cmaddalena's SharpCloud project (https://github.com/chrismaddalena/SharpCloud/)
 
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
 
             foreach (var dir in dirs)
             {
@@ -90,6 +91,28 @@ namespace Seatbelt.Commands
                         {
                             Type = "Azure",
                             FileName = azureCredLocation,
+                            LastAccessed = lastAccessed,
+                            LastModified = lastModified,
+                            Size = size
+                        };
+                    }
+                }
+
+                string[] bluemixCredLocations = {   $"{dir}\\.bluemix\\config.json",
+                                                    $"{dir}\\.bluemix\\.cf\\config.json"};
+
+                foreach (var bluemixCredLocation in bluemixCredLocations)
+                {
+                    if (File.Exists(bluemixCredLocation))
+                    {
+                        var lastAccessed = File.GetLastAccessTime(bluemixCredLocation);
+                        var lastModified = File.GetLastWriteTime(bluemixCredLocation);
+                        var size = new FileInfo(bluemixCredLocation).Length;
+
+                        yield return new CloudCredentialsDTO()
+                        {
+                            Type = "Bluemix",
+                            FileName = bluemixCredLocation,
                             LastAccessed = lastAccessed,
                             LastModified = lastModified,
                             Size = size

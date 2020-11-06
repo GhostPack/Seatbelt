@@ -18,7 +18,7 @@ namespace Seatbelt.Commands.Windows
         public override string Command => "ExplorerMRUs";
         public override string Description => "Explorer most recently used files (last 7 days, argument == last X days)";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => false; // don't think this is possible... unless DCOM is an option
 
 
         public ExplorerMRUsCommand(Runtime runtime) : base(runtime)

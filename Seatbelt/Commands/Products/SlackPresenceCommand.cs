@@ -12,17 +12,18 @@ namespace Seatbelt.Commands
         public override string Command => "SlackPresence";
         public override string Description => "Checks if interesting Slack files exist";
         public override CommandGroup[] Group => new[] { CommandGroup.User, CommandGroup.Slack };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public SlackPresenceCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
 
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
             foreach (var dir in dirs)
             {
                 if (dir.EndsWith("Public") || dir.EndsWith("Default") || dir.EndsWith("Default User") ||

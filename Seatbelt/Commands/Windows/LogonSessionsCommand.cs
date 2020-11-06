@@ -67,12 +67,28 @@ namespace Seatbelt.Commands.Windows
                 foreach (var o in data2)
                 {
                     var result2 = (ManagementObject)o;
-                    var userDomain = logonMap[result2["LogonId"].ToString()];
+                    var userDomain = new string[2] { "", "" };
+                    try
+                    {
+                        userDomain = logonMap[result2["LogonId"].ToString()];
+                    }
+                    catch { }
                     var domain = userDomain[0];
                     var userName = userDomain[1];
-                    var startTime = ManagementDateTimeConverter.ToDateTime(result2["StartTime"].ToString());
+                    var startTime = new DateTime();
+                    var logonType = "";
 
-                    var logonType = $"{((SECURITY_LOGON_TYPE)(int.Parse(result2["LogonType"].ToString())))}";
+                    try
+                    {
+                        startTime = ManagementDateTimeConverter.ToDateTime(result2["StartTime"].ToString());
+                    }
+                    catch { }
+
+                    try
+                    {
+                        logonType = $"{((SECURITY_LOGON_TYPE)(int.Parse(result2["LogonType"].ToString())))}";
+                    }
+                    catch { }
 
                     yield return new LogonSessionsDTO(
                         "WMI",

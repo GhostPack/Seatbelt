@@ -102,13 +102,13 @@ namespace Seatbelt.Commands.Windows
             }
 
             var asrKeyPath = $"{defenderKeyPath}\\Windows Defender Exploit Guard\\ASR";
-            var asrEnabled = RegistryUtil.GetDwordValue(RegistryHive.LocalMachine, asrKeyPath, "ExploitGuard_ASR_Rules");
+            var asrEnabled = runtime.GetDwordValue(RegistryHive.LocalMachine, asrKeyPath, "ExploitGuard_ASR_Rules");
 
             AsrSettings = new AsrSettings(
                 asrEnabled != null && (asrEnabled != 0)
                 );
 
-            foreach (var value in RegistryUtil.GetValues(RegistryHive.LocalMachine, $"{asrKeyPath}\\Rules"))
+            foreach (var value in runtime.GetValues(RegistryHive.LocalMachine, $"{asrKeyPath}\\Rules"))
             {
                 AsrSettings.Rules.Add(new AsrRule(
                     new Guid(value.Key),
@@ -116,7 +116,7 @@ namespace Seatbelt.Commands.Windows
                 ));
             }
 
-            foreach (var value in RegistryUtil.GetValues(RegistryHive.LocalMachine, $"{asrKeyPath}\\ASROnlyExclusions"))
+            foreach (var value in runtime.GetValues(RegistryHive.LocalMachine, $"{asrKeyPath}\\ASROnlyExclusions"))
             {
                 AsrSettings.Exclusions.Add(value.Key);
             }

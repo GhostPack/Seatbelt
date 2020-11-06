@@ -177,7 +177,7 @@ namespace Seatbelt.Commands.Windows
 
     internal class OSInfoDTO : CommandDTOBase
     {
-        public OSInfoDTO(string hostname, string domain, string username, string? productName, string? editionId, string? releaseId, string? build, string? buildBranch, string? currentMajorVersionNumber, string? currentVersion, string architecture, string processorCount, bool isVirtualMachine, DateTime bootTimeUtc, bool isHighIntegrity, bool isLocalAdmin, DateTime currentTimeUtc, string timeZone, string timeZoneUtcOffset, string locale, string inputLanguage, string[] installedInputLanguages, string? machineGuid)
+        public OSInfoDTO(string hostname, string domain, string username, string? productName, string? editionId, string? releaseId, string? build, string? buildBranch, string? currentMajorVersionNumber, string? currentVersion, string architecture, string processorCount, bool isVirtualMachine, DateTime bootTimeUtc, bool isHighIntegrity, bool isLocalAdmin, DateTime currentTimeUtc, string? timeZone, string? timeZoneUtcOffset, string? locale, string? inputLanguage, string[]? installedInputLanguages, string? machineGuid)
         {
             Hostname = hostname;
             Domain = domain;
@@ -221,11 +221,11 @@ namespace Seatbelt.Commands.Windows
         public bool IsHighIntegrity { get; set; }
         public bool IsLocalAdmin { get; set; }
         public DateTime CurrentTimeUtc { get; set; }
-        public string TimeZone { get; set; }
-        public string TimeZoneUtcOffset { get; set; }
-        public string Locale { get; set; }
-        public string InputLanguage;
-        public string[] InstalledInputLanguages;
+        public string? TimeZone { get; set; }
+        public string? TimeZoneUtcOffset { get; set; }
+        public string? Locale { get; set; }
+        public string? InputLanguage;
+        public string[]? InstalledInputLanguages;
         public string? MachineGuid { get; set; }
     }
 

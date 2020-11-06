@@ -68,7 +68,7 @@ namespace Seatbelt.Commands.Windows
 
         internal class InstalledProductsDTO : CommandDTOBase
         {
-            public InstalledProductsDTO(string displayName, string displayVersion, string publisher, DateTime installDate, string architecture)
+            public InstalledProductsDTO(string displayName, string? displayVersion, string? publisher, DateTime installDate, string architecture)
             {
                 DisplayName = displayName;
                 DisplayVersion = displayVersion;
@@ -78,9 +78,9 @@ namespace Seatbelt.Commands.Windows
             }
             public string DisplayName { get; }
 
-            public string DisplayVersion { get; }
+            public string? DisplayVersion { get; }
 
-            public string Publisher { get; }
+            public string? Publisher { get; }
 
             public DateTime InstallDate { get; }
 

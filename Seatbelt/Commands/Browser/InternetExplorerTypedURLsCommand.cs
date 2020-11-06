@@ -1,5 +1,4 @@
 ﻿using Microsoft.Win32;
-using Seatbelt.Util;
 using System;
 using System.Collections.Generic;
 using Seatbelt.Output.Formatters;

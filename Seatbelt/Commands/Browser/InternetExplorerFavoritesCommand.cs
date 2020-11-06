@@ -8,8 +8,6 @@ using Seatbelt.Output.TextWriters;
 
 namespace Seatbelt.Commands.Browser
 {
-    // TODO: Bookmarks get collected, but Bookmark folders are not collected
-    //          ^ what does this mean exactly? - @harmj0y
     internal class InternetExplorerFavoritesCommand : CommandBase
     {
         public override string Command => "IEFavorites";

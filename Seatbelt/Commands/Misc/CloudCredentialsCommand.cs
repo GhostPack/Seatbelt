@@ -8,7 +8,7 @@ namespace Seatbelt.Commands
     internal class CloudCredentialsCommand : CommandBase
     {
         public override string Command => "CloudCredentials";
-        public override string Description => "AWS/Google/Azure cloud credential files";
+        public override string Description => "AWS/Google/Azure/Bluemix cloud credential files";
         public override CommandGroup[] Group => new[] {CommandGroup.User, CommandGroup.Remote};
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
@@ -91,6 +91,28 @@ namespace Seatbelt.Commands
                         {
                             Type = "Azure",
                             FileName = azureCredLocation,
+                            LastAccessed = lastAccessed,
+                            LastModified = lastModified,
+                            Size = size
+                        };
+                    }
+                }
+
+                string[] bluemixCredLocations = {   $"{dir}\\.bluemix\\config.json",
+                                                    $"{dir}\\.bluemix\\.cf\\config.json"};
+
+                foreach (var bluemixCredLocation in bluemixCredLocations)
+                {
+                    if (File.Exists(bluemixCredLocation))
+                    {
+                        var lastAccessed = File.GetLastAccessTime(bluemixCredLocation);
+                        var lastModified = File.GetLastWriteTime(bluemixCredLocation);
+                        var size = new FileInfo(bluemixCredLocation).Length;
+
+                        yield return new CloudCredentialsDTO()
+                        {
+                            Type = "Bluemix",
+                            FileName = bluemixCredLocation,
                             LastAccessed = lastAccessed,
                             LastModified = lastModified,
                             Size = size

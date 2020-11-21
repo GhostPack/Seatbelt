@@ -75,10 +75,10 @@ namespace Seatbelt.Commands.Windows
                 {
                     userName = sid;
                 }
-
-                var officeVersion =
+                
+                var officeVersion = 
                     RegistryUtil.GetSubkeyNames(RegistryHive.Users, $"{sid}\\Software\\Microsoft\\Office")
-                    ?.Where(k => float.TryParse(k, out _));
+                    ?.Where(k => float.TryParse(k, NumberStyles.AllowDecimalPoint, new CultureInfo("en-GB"), out _));
 
                 if (officeVersion is null)
                     continue;

@@ -54,6 +54,10 @@ namespace Seatbelt.Commands.Windows
             var vaultGuidPtr = IntPtr.Zero;
             var result = VaultEnumerateVaults(0, ref vaultCount, ref vaultGuidPtr);
 
+            var vaultItemType = Environment.OSVersion.Version > new Version("6.2") ?
+                typeof(VAULT_ITEM_WIN8) :
+                typeof(VAULT_ITEM_WIN7);
+
             if (result != 0)
             {
                 WriteError($"Unable to enumerate vaults. Error code: {result}");
@@ -108,7 +112,7 @@ namespace Seatbelt.Commands.Windows
 
                         entries.Add(entry);
 
-                        currentVaultItem = (IntPtr)(currentVaultItem.ToInt64() + Marshal.SizeOf(currentVaultItem));
+                        currentVaultItem = (IntPtr)(currentVaultItem.ToInt64() + Marshal.SizeOf(vaultItemType));
                     }
                 }
 

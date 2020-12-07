@@ -28,7 +28,8 @@ namespace Seatbelt.Commands.Windows
                 yield return new NetworkShareDTO(
                     result["Name"],
                     result["Path"],
-                    result["Description"]
+                    result["Description"],
+                    (uint)result["type"]
                 );
             }
         }
@@ -36,14 +37,27 @@ namespace Seatbelt.Commands.Windows
 
     internal class NetworkShareDTO : CommandDTOBase
     {
-        public NetworkShareDTO(object name, object path, object description)
+        public NetworkShareDTO(object name, object path, object description, uint type)
         {
+            var typeDict = new Dictionary<uint, string>()
+        {
+            { 0, "Disk Drive" },
+            { 1, "Print Queue" },
+            { 2, "Device " },
+            { 3, "IPC" },
+            { 2147483648, "Disk Drive Admin" },
+            { 2147483649, "Print Queue Admin" },
+            { 2147483650, "Device Admin" },
+            { 2147483651, "IPC Admin" },
+        };
             Name = name;
             Path = path;
             Description = description;
+            Type = typeDict[type];
         }
         public object Name { get; }
         public object Path { get; }
         public object Description { get; }
+        public object Type { get; }
     }
 }

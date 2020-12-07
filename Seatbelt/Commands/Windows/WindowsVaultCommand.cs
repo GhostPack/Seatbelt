@@ -112,7 +112,7 @@ namespace Seatbelt.Commands.Windows
 
                         entries.Add(entry);
 
-                        currentVaultItem = (IntPtr)(currentVaultItem.ToInt64() + Marshal.SizeOf(/*currentVaultItem*/vaultItemType));
+                        currentVaultItem = (IntPtr)(currentVaultItem.ToInt64() + Marshal.SizeOf(vaultItemType));
                     }
                 }
 

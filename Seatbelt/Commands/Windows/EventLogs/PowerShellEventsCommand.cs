@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
-
+using System.Text.RegularExpressions;
 
 namespace Seatbelt.Commands.Windows.EventLogs
 {
@@ -33,6 +33,12 @@ namespace Seatbelt.Commands.Windows.EventLogs
 
             // Get our "sensitive" cmdline regexes from a common helper function.
             var powershellRegex = MiscUtil.GetProcessCmdLineRegex();
+
+            if (args.Length >= 1)
+            {
+                string allArgs = String.Join(" ", args);
+                powershellRegex = new Regex [] { new Regex(allArgs, RegexOptions.IgnoreCase & RegexOptions.Multiline) };
+            }
 
             foreach (var logName in powershellLogs)
             {

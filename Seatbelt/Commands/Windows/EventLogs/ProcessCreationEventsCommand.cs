@@ -36,6 +36,12 @@ namespace Seatbelt.Commands.Windows.EventLogs
             // Get our "sensitive" cmdline regexes from a common helper function.
             var processCmdLineRegex = MiscUtil.GetProcessCmdLineRegex();
 
+            if (args.Length >= 1)
+            {
+                string allArgs = String.Join(" ", args);
+                processCmdLineRegex = new Regex[] { new Regex(allArgs, RegexOptions.IgnoreCase & RegexOptions.Multiline) };
+            }
+
             var query = $"*[System/EventID=4688]";
             var logReader = ThisRunTime.GetEventLogReader("Security", query);
 

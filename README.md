@@ -62,6 +62,7 @@ Available commands (+ means remote usage is supported):
     + ChromiumHistory        - Parses any found Chrome/Edge/Brave/Opera history files
     + ChromiumPresence       - Checks if interesting Chrome/Edge/Brave/Opera files exist
     + CloudCredentials       - AWS/Google/Azure/Bluemix cloud credential files
+    + CloudSyncProviders     - All configured Office 365 endpoints (tenants and teamsites) which are synchronised by OneDrive.
       CredEnum               - Enumerates the current user's saved credentials using CredEnumerate()
     + CredGuard              - CredentialGuard configuration
       dir                    - Lists files/folders. By default, lists users' downloads, documents, and desktop folders (arguments == [directory] [depth] [regex] [boolIgnoreErrors]

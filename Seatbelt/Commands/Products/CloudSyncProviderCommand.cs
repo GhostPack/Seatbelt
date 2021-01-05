@@ -1,9 +1,9 @@
-﻿#if DEBUG
-#nullable disable
+﻿#nullable disable
 using Microsoft.Win32;
 using System.Collections.Generic;
 using Seatbelt.Output.TextWriters;
 using Seatbelt.Output.Formatters;
+using System;
 
 // Any command you create should not generate compiler warnings
 namespace Seatbelt.Commands.Windows
@@ -22,10 +22,10 @@ namespace Seatbelt.Commands.Windows
 
     internal class CloudSyncProviderCommand : CommandBase
     {
-        public override string Command => "CloudSyncProvider";
-        public override string Description => "Lists ";
-        public override CommandGroup[] Group => new[] {CommandGroup.User};              // either CommandGroup.System, CommandGroup.User, or CommandGroup.Misc
-        public override bool SupportRemote => false;                             // set to true if you want to signal that your module supports remote operations
+        public override string Command => "CloudSyncProviders";
+        public override string Description => "All configured Office 365 endpoints (tenants and teamsites) which are synchronised by OneDrive.";
+        public override CommandGroup[] Group => new[] {CommandGroup.User}; 
+        public override bool SupportRemote => true;                       
         public Runtime ThisRunTime;
 
         public CloudSyncProviderCommand(Runtime runtime) : base(runtime)
@@ -67,7 +67,7 @@ namespace Seatbelt.Commands.Windows
                 var odAccounts = ThisRunTime.GetSubkeyNames(RegistryHive.Users, $"{sid}\\Software\\Microsoft\\OneDrive\\Accounts");
                 if (odAccounts == null)
                     continue;
-             
+
                 foreach (string acc in odAccounts)
                 {
                     Dictionary<string, string> account = new Dictionary<string, string>();
@@ -78,12 +78,14 @@ namespace Seatbelt.Commands.Windows
                             account[x] = result;
                     }
                     var odMountPoints = ThisRunTime.GetValues(RegistryHive.Users, $"{sid}\\Software\\Microsoft\\OneDrive\\Accounts\\{acc}\\ScopeIdToMountPointPathCache");
+                    List<string> ScopeIds = new List<string>();
                     foreach (var mp in odMountPoints)
                     {
-                        o.AcctoMPMapping[acc].Add(mp.Key);
+                        ScopeIds.Add(mp.Key);
                     }
+                    o.AcctoMPMapping[acc] = ScopeIds;
                     o.oneDriveList[acc] = account;
-                    
+
                 }
 
                 yield return new CloudSyncProviderDTO(
@@ -92,42 +94,8 @@ namespace Seatbelt.Commands.Windows
                     );
 
             }
-            /*
-            // .\Seatbelt\Runtime.cs contains a number of helper WMI/Registry functions that lets you implicitly perform enumeration locally or remotely.
-            //      GetManagementObjectSearcher(string nameSpace, string query)     ==> easy WMI namespace searching. See DNSCacheCommand.cs
-            //      GetSubkeyNames(RegistryHive hive, string path)                  ==> registry subkey enumeration via WMI StdRegProv. See PuttySessions.cs
-            //      GetStringValue(RegistryHive hive, string path, string value)    ==> retrieve a string registry value via WMI StdRegProv. See PuttySessions.cs
-            //      GetDwordValue(RegistryHive hive, string path, string value)     ==> retrieve an uint registry value via WMI StdRegProv. See NtlmSettingsCommand.cs
-            //      GetBinaryValue(RegistryHive hive, string path, string value)    ==> retrieve an binary registry value via WMI StdRegProv. See SysmonCommand.cs
-            //      GetValues(RegistryHive hive, string path)                       ==> retrieve the values under a path. See PuttyHostKeys.cs.
-            //      GetUserSIDs()                                                   ==> return all user SIDs under HKU. See PuttyHostKeys.cs.
-
-            var providers = ThisRunTime.GetSubkeyNames(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\AMSI\Providers");
-            if(providers == null)
-                yield break;       // Exit the function and don't return anything
-
-            foreach (var provider in providers)
-            {
-                var providerPath = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, $"SOFTWARE\\Classes\\CLSID\\{provider}\\InprocServer32", "");
-
-                // Avoid writing output inside this function.
-                // If you want to format your output in a special way, use a text formatter class (see below)
-                // You _can_ using the following function, however it's not recommended and will be going away in the future.
-                // If you do, this data will not be serialized.
-                // WriteHost("OUTPUT");
-
-                // yield your DTO objects. If you need to yield a _collection_ of multiple objects, set one of the DTO properties to be a List or something similar.
-                yield return new CloudSyncProviderDTO(
-                    provider,
-                    providerPath
-                );
-            }
-            */
         }
 
-        // This is the output data transfer object (DTO).
-        // Properties in this class should only have getters or private setters, and should be initialized in the constructor.
-        // Some of the existing commands are migrating to this format (in case you see ones that do not conform).
         internal class CloudSyncProviderDTO : CommandDTOBase
         {
             public CloudSyncProviderDTO(string sid, OneDriveSyncProvider odsp)
@@ -156,12 +124,12 @@ namespace Seatbelt.Commands.Windows
             {
                 var dto = (CloudSyncProviderDTO) result;
 
-                WriteLine("  User: {0}", dto.Sid);
+                WriteLine("  {0} :", dto.Sid);
 
                 foreach (var item in dto.Odsp.oneDriveList)
                 {
                     string accName = item.Key;
-                    WriteLine("   {0} :", accName);
+                    WriteLine("\r\n    {0} :", accName);
 
                     // These are the core parameters for each account
                     foreach (var subItem in item.Value)
@@ -172,15 +140,26 @@ namespace Seatbelt.Commands.Windows
                     // Now display the mountpoints
                     foreach (string mp in dto.Odsp.AcctoMPMapping[accName])
                     {
+                        WriteLine("");
                         foreach (var mpSub in dto.Odsp.mpList[mp])
                         {
-                            WriteLine("           {0} : {1}", mpSub.Key, mpSub.Value);
+                            if (mpSub.Key == "LastModifiedTime")
+                            {
+                                DateTime parsedDate;
+                                DateTime.TryParse(mpSub.Value, out parsedDate);
+                                string formattedDate = parsedDate.ToString("ddd dd MMM yyyy HH:mm:ss");
+                                WriteLine("      | {0} : {1} ({2})", mpSub.Key, mpSub.Value, formattedDate);
+                            }
+                            else
+                            {
+                                WriteLine("      | {0} : {1}", mpSub.Key, mpSub.Value);
+                            }
                         }
                     }
                 }
+                WriteLine("");
                 // use the following function here if you want to write out to the cmdline. This data will not be serialized.                
             }
         }
     }
 }
-#endif

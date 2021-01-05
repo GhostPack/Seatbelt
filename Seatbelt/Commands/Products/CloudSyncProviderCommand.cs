@@ -70,18 +70,27 @@ namespace Seatbelt.Commands.Windows
 
                 foreach (string acc in odAccounts)
                 {
+                    Boolean business = false;
                     Dictionary<string, string> account = new Dictionary<string, string>();
-                    foreach (string x in new List<string> { "DisplayName", "Business", "ServiceEndpointUri", "SPOResourceId", "UserEmail", "UserFolder", "UserName" })
+                    foreach (string x in new List<string> { "DisplayName", "Business", "ServiceEndpointUri", "SPOResourceId", "UserEmail", "UserFolder", "UserName", "WebServiceUrl" })
                     {
                         var result = ThisRunTime.GetStringValue(RegistryHive.Users, $"{sid}\\Software\\Microsoft\\OneDrive\\Accounts\\{acc}", x);
                         if (!string.IsNullOrEmpty(result))
                             account[x] = result;
+                        if (x == "Business")
+                            business = (String.Compare(result,"1")==0) ? true : false;
                     }
                     var odMountPoints = ThisRunTime.GetValues(RegistryHive.Users, $"{sid}\\Software\\Microsoft\\OneDrive\\Accounts\\{acc}\\ScopeIdToMountPointPathCache");
                     List<string> ScopeIds = new List<string>();
-                    foreach (var mp in odMountPoints)
+                    if (business == true)
                     {
-                        ScopeIds.Add(mp.Key);
+                        foreach (var mp in odMountPoints)
+                        {
+                            ScopeIds.Add(mp.Key);
+                        }
+                    } else
+                    {
+                        ScopeIds.Add(acc); // If its a personal account, OneDrive adds it as 'Personal' or the name of the account, not by the ScopeId itself. You can only have one personal account.
                     }
                     o.AcctoMPMapping[acc] = ScopeIds;
                     o.oneDriveList[acc] = account;
@@ -128,6 +137,11 @@ namespace Seatbelt.Commands.Windows
 
                 foreach (var item in dto.Odsp.oneDriveList)
                 {
+
+                    // If there are no parameters, move on
+                    if (item.Value.Count == 0)
+                        continue;
+
                     string accName = item.Key;
                     WriteLine("\r\n    {0} :", accName);
 

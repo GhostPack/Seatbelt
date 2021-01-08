@@ -14,10 +14,12 @@ namespace Seatbelt.Commands.Windows
     {
         // Stores the mapping between a sync ID and mount point
         public Dictionary<string, Dictionary<string, string>> mpList = new Dictionary<string, Dictionary<string, string>>();
-        // Stores the list of OneDrive accouts configured in the registry
+        // Stores the list of OneDrive accounts configured in the registry
         public Dictionary<string, Dictionary<string, string>> oneDriveList = new Dictionary<string, Dictionary<string, string>>();
         // Stores the mapping between the account and the mountpoint IDs
         public Dictionary<string, List<string>> AcctoMPMapping = new Dictionary<string, List<string>>();
+        // Stores the 'used' scopeIDs (to identify orphans)
+        public List<string> usedScopeIDs = new List<string>();
     }
 
     internal class CloudSyncProviderCommand : CommandBase
@@ -94,7 +96,7 @@ namespace Seatbelt.Commands.Windows
                     }
                     o.AcctoMPMapping[acc] = ScopeIds;
                     o.oneDriveList[acc] = account;
-
+                    o.usedScopeIDs.AddRange(ScopeIds);
                 }
 
                 yield return new CloudSyncProviderDTO(
@@ -150,11 +152,14 @@ namespace Seatbelt.Commands.Windows
                     {
                         WriteLine("      {0} : {1}", subItem.Key, subItem.Value);
                     }
-
+                   
                     // Now display the mountpoints
                     foreach (string mp in dto.Odsp.AcctoMPMapping[accName])
                     {
                         WriteLine("");
+
+                        if (!dto.Odsp.mpList.ContainsKey(mp))
+                            continue;
                         foreach (var mpSub in dto.Odsp.mpList[mp])
                         {
                             if (mpSub.Key == "LastModifiedTime")
@@ -171,8 +176,32 @@ namespace Seatbelt.Commands.Windows
                         }
                     }
                 }
-                WriteLine("");
-                // use the following function here if you want to write out to the cmdline. This data will not be serialized.                
+
+                // Now look for 'Orphaned' accounts
+                List<string> AllScopeIds = new List<string>(dto.Odsp.mpList.Keys);
+                WriteLine("\r\n    Orphaned :");
+                foreach (string scopeid in AllScopeIds)
+                {
+                    if (!dto.Odsp.usedScopeIDs.Contains(scopeid))
+                    {
+                        foreach (var mpSub in dto.Odsp.mpList[scopeid])
+                        {
+                            if (mpSub.Key == "LastModifiedTime")
+                            {
+                                DateTime parsedDate;
+                                DateTime.TryParse(mpSub.Value, out parsedDate);
+                                string formattedDate = parsedDate.ToString("ddd dd MMM yyyy HH:mm:ss");
+                                WriteLine("      {0} : {1} ({2})", mpSub.Key, mpSub.Value, formattedDate);
+                            }
+                            else
+                            {
+                                WriteLine("      {0} : {1}", mpSub.Key, mpSub.Value);
+                            }
+                        }
+                        WriteLine("");
+                    }
+                }
+                WriteLine("");                            
             }
         }
     }

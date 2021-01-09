@@ -82,6 +82,7 @@
     <Compile Include="Commands\CommandGroup.cs" />
     <Compile Include="Commands\Misc\LOLBAS.cs" />
     <Compile Include="Commands\Products\FileZillaCommand.cs" />
+    <Compile Include="Commands\Products\KeePass.cs" />
     <Compile Include="Commands\Products\McAfeeConfigsCommand.cs" />
     <Compile Include="Commands\Products\McAfeeSiteListCommand.cs" />
     <Compile Include="Commands\Products\OracleSQLDeveloperCommand.cs" />

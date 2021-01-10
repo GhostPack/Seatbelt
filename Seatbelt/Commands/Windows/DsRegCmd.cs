@@ -140,19 +140,20 @@ namespace Seatbelt.Commands.Windows
         {
             var dto = (DSregcmdDTO)result;
 
-            WriteLine($"    TenantDisplayName      : {dto.TenantDisplayName}");
-            WriteLine($"    TenantId               : {dto.TenantId}");
-            WriteLine($"    IdpDomain              : {dto.IdpDomain}");
-            WriteLine($"    MdmEnrollmentUrl       : {dto.MdmEnrollmentUrl}");
-            WriteLine($"    MdmTermsOfUseUrl       : {dto.MdmTermsOfUseUrl}");
-            WriteLine($"    MdmComplianceUrl       : {dto.MdmComplianceUrl}");
-            WriteLine($"    UserSettingSyncUrl     : {dto.UserSettingSyncUrl}");
-            WriteLine($"    DeviceId               : {dto.DeviceId}");
-            WriteLine($"    JoinType               : {dto.JType}");
-            WriteLine($"    JoinUserEmail          : {dto.JoinUserEmail}");
-            WriteLine($"    UserKeyId              : {dto.UserKeyId}");
-            WriteLine($"    UserEmail              : {dto.UserEmail}");
-            WriteLine($"    UserKeyname            : {dto.UserKeyname}");
+            WriteLine($"    TenantDisplayName  : {dto.TenantDisplayName}");
+            WriteLine($"    TenantId  : {dto.TenantId}");
+            WriteLine($"    IdpDomain  : {dto.IdpDomain}");
+            WriteLine($"    MdmEnrollmentUrl  : {dto.MdmEnrollmentUrl}");
+            WriteLine($"    MdmTermsOfUseUrl  : {dto.MdmTermsOfUseUrl}");
+            WriteLine($"    MdmComplianceUrl  : {dto.MdmComplianceUrl}");
+            WriteLine($"    UserSettingSyncUrl  : {dto.UserSettingSyncUrl}");
+            WriteLine($"    DeviceId  : {dto.DeviceId}");
+            WriteLine($"    JoinType  : {dto.JType}");
+            WriteLine($"    JoinUserEmail  : {dto.JoinUserEmail}");
+            WriteLine($"    UserKeyId  : {dto.UserKeyId}");
+            WriteLine($"    UserEmail  : {dto.UserEmail}");
+            WriteLine($"    UserKeyname  : {dto.UserKeyname}\n");
+
             foreach (var cert in dto.CertInfo)
             {
                 WriteLine($"    Thumbprint      : {cert.Thumbprint}");

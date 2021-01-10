@@ -156,10 +156,10 @@ namespace Seatbelt.Commands.Windows
 
             foreach (var cert in dto.CertInfo)
             {
-                WriteLine($"    Thumbprint      : {cert.Thumbprint}");
-                WriteLine($"    Subject      : {cert.Subject}");
-                WriteLine($"    Issuer      : {cert.Issuer}");
-                WriteLine($"    Expiration      : {cert.GetExpirationDateString()}");
+                WriteLine($"    Thumbprint  : {cert.Thumbprint}");
+                WriteLine($"    Subject  : {cert.Subject}");
+                WriteLine($"    Issuer  : {cert.Issuer}");
+                WriteLine($"    Expiration  : {cert.GetExpirationDateString()}");
             }
         }
     }

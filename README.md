@@ -62,6 +62,7 @@ Available commands (+ means remote usage is supported):
     + ChromiumHistory        - Parses any found Chrome/Edge/Brave/Opera history files
     + ChromiumPresence       - Checks if interesting Chrome/Edge/Brave/Opera files exist
     + CloudCredentials       - AWS/Google/Azure/Bluemix cloud credential files
+    + CloudSyncProviders     - All configured Office 365 endpoints (tenants and teamsites) which are synchronised by OneDrive.
       CredEnum               - Enumerates the current user's saved credentials using CredEnumerate()
     + CredGuard              - CredentialGuard configuration
       dir                    - Lists files/folders. By default, lists users' downloads, documents, and desktop folders (arguments == [directory] [depth] [regex] [boolIgnoreErrors]
@@ -86,6 +87,7 @@ Available commands (+ means remote usage is supported):
       InterestingFiles       - "Interesting" files matching various patterns in the user's folder. Note: takes non-trivial time.
     + InterestingProcesses   - "Interesting" processes - defensive products and admin tools
       InternetSettings       - Internet settings including proxy configs and zones configuration
+      KeePass                - Finds KeePass configuration files
     + LAPS                   - LAPS settings, if installed
     + LastShutdown           - Returns the DateTime of the last system shutdown (via the registry).
       LocalGPOs              - Local Group Policy settings applied to the machine/local users
@@ -163,29 +165,29 @@ Seatbelt has the following command groups: All, User, System, Slack, Chromium, R
 
    "Seatbelt.exe -group=user" runs the following commands:
 
-        ChromiumPresence, CloudCredentials, CredEnum, dir, DpapiMasterKeys, 
-        ExplorerMRUs, ExplorerRunCommands, FileZilla, FirefoxPresence, 
-        IdleTime, IEFavorites, IETabs, IEUrls, 
-        MappedDrives, OfficeMRUs, OracleSQLDeveloper, PowerShellHistory, 
-        PuttyHostKeys, PuttySessions, RDCManFiles, RDPSavedConnections, 
-        SecPackageCreds, SlackDownloads, SlackPresence, SlackWorkspaces, 
-        SuperPutty, TokenGroups, WindowsCredentialFiles, WindowsVault
-        
+        ChromiumPresence, CloudCredentials, CloudSyncProviders, CredEnum, dir,
+        DpapiMasterKeys, ExplorerMRUs, ExplorerRunCommands, FileZilla,
+        FirefoxPresence, IdleTime, IEFavorites, IETabs,
+        IEUrls, KeePass, MappedDrives, OfficeMRUs,
+        OracleSQLDeveloper, PowerShellHistory, PuttyHostKeys, PuttySessions,
+        RDCManFiles, RDPSavedConnections, SecPackageCreds, SlackDownloads,
+        SlackPresence, SlackWorkspaces, SuperPutty, TokenGroups,
+        WindowsCredentialFiles, WindowsVault
 
    "Seatbelt.exe -group=system" runs the following commands:
 
-        AMSIProviders, AntiVirus, AppLocker, ARPTable, AuditPolicies, 
-        AuditPolicyRegistry, AutoRuns, CredGuard, DNSCache, 
-        DotNet, EnvironmentPath, EnvironmentVariables, Hotfixes, 
-        InterestingProcesses, InternetSettings, LAPS, LastShutdown, 
-        LocalGPOs, LocalGroups, LocalUsers, LogonSessions, 
-        LSASettings, McAfeeConfigs, NamedPipes, NetworkProfiles, 
-        NetworkShares, NTLMSettings, OSInfo, PoweredOnEvents, 
-        PowerShell, Processes, PSSessionSettings, RDPSessions, 
-        RDPsettings, SCCM, Services, Sysmon, 
-        TcpConnections, TokenPrivileges, UAC, UdpConnections, 
-        UserRightAssignments, WindowsAutoLogon, WindowsDefender, WindowsEventForwarding, 
-        WindowsFirewall, WMIEventConsumer, WMIEventFilter, WMIFilterBinding, 
+        AMSIProviders, AntiVirus, AppLocker, ARPTable, AuditPolicies,
+        AuditPolicyRegistry, AutoRuns, CredGuard, DNSCache,
+        DotNet, EnvironmentPath, EnvironmentVariables, Hotfixes,
+        InterestingProcesses, InternetSettings, LAPS, LastShutdown,
+        LocalGPOs, LocalGroups, LocalUsers, LogonSessions,
+        LSASettings, McAfeeConfigs, NamedPipes, NetworkProfiles,
+        NetworkShares, NTLMSettings, OSInfo, PoweredOnEvents,
+        PowerShell, Processes, PSSessionSettings, RDPSessions,
+        RDPsettings, SCCM, Services, Sysmon,
+        TcpConnections, TokenPrivileges, UAC, UdpConnections,
+        UserRightAssignments, WindowsAutoLogon, WindowsDefender, WindowsEventForwarding,
+        WindowsFirewall, WMIEventConsumer, WMIEventFilter, WMIFilterBinding,
         WSUS
 
    "Seatbelt.exe -group=slack" runs the following commands:
@@ -198,24 +200,24 @@ Seatbelt has the following command groups: All, User, System, Slack, Chromium, R
 
    "Seatbelt.exe -group=remote" runs the following commands:
 
-        AMSIProviders, AntiVirus, AuditPolicyRegistry, ChromiumPresence, CloudCredentials, 
-        DNSCache, DotNet, DpapiMasterKeys, EnvironmentVariables, 
-        ExplicitLogonEvents, ExplorerRunCommands, FileZilla, Hotfixes, 
-        InterestingProcesses, LastShutdown, LocalGroups, LocalUsers, 
-        LogonEvents, LogonSessions, LSASettings, MappedDrives, 
-        NetworkProfiles, NetworkShares, NTLMSettings, OSInfo, 
-        PoweredOnEvents, PowerShell, ProcessOwners, PSSessionSettings, 
-        PuttyHostKeys, PuttySessions, RDPSavedConnections, RDPSessions, 
-        RDPsettings, Sysmon, WindowsDefender, WindowsEventForwarding, 
-        WindowsFirewall
+        AMSIProviders, AntiVirus, AuditPolicyRegistry, ChromiumPresence, CloudCredentials,
+        DNSCache, DotNet, DpapiMasterKeys, EnvironmentVariables,
+        ExplicitLogonEvents, ExplorerRunCommands, FileZilla, Hotfixes,
+        InterestingProcesses, KeePass, LastShutdown, LocalGroups,
+        LocalUsers, LogonEvents, LogonSessions, LSASettings,
+        MappedDrives, NetworkProfiles, NetworkShares, NTLMSettings,
+        OSInfo, PoweredOnEvents, PowerShell, ProcessOwners,
+        PSSessionSettings, PuttyHostKeys, PuttySessions, RDPSavedConnections,
+        RDPSessions, RDPsettings, Sysmon, WindowsDefender,
+        WindowsEventForwarding, WindowsFirewall
 
    "Seatbelt.exe -group=misc" runs the following commands:
 
-        ChromiumBookmarks, ChromiumHistory, ExplicitLogonEvents, FileInfo, FirefoxHistory, 
-        InstalledProducts, InterestingFiles, LogonEvents, LOLBAS, 
-        McAfeeSiteList, MicrosoftUpdates, OutlookDownloads, PowerShellEvents, 
-        Printers, ProcessCreationEvents, ProcessOwners, RecycleBin, 
-        reg, RPCMappedEndpoints, ScheduledTasks, SearchIndex, 
+        ChromiumBookmarks, ChromiumHistory, ExplicitLogonEvents, FileInfo, FirefoxHistory,
+        InstalledProducts, InterestingFiles, LogonEvents, LOLBAS,
+        McAfeeSiteList, MicrosoftUpdates, OutlookDownloads, PowerShellEvents,
+        Printers, ProcessCreationEvents, ProcessOwners, RecycleBin,
+        reg, RPCMappedEndpoints, ScheduledTasks, SearchIndex,
         SecurityPackages, SysmonEvents
 
 
@@ -228,7 +230,6 @@ Examples:
     'Seatbelt.exe -group=remote -computername=COMPUTER.DOMAIN.COM [-username=DOMAIN\USER -password=PASSWORD]' will run remote specific checks
     'Seatbelt.exe -group=system -outputfile="C:\Temp\out.txt"' will run system checks and output to a .txt file.
     'Seatbelt.exe -group=user -q -outputfile="C:\Temp\out.json"' will run in quiet mode with user checks and output to a .json file.
-
 ```
 
 **Note:** searches that target users will run for the current user if not-elevated and for ALL users if elevated.

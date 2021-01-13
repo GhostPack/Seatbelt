@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
-using System.IO;
-using Seatbelt.Util;
 using Seatbelt.Output.Formatters;
 using Seatbelt.Output.TextWriters;
 
@@ -21,36 +19,26 @@ namespace Seatbelt.Commands
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            foreach (Enum storeLocation in new Enum[] { StoreLocation.CurrentUser, StoreLocation.LocalMachine })
+            foreach (var storeLocation in new Enum[] { StoreLocation.CurrentUser, StoreLocation.LocalMachine })
             {
 
-                X509Store store = new X509Store(StoreName.My, (System.Security.Cryptography.X509Certificates.StoreLocation)storeLocation);
+                var store = new X509Store(StoreName.My, (StoreLocation)storeLocation);
                 store.Open(OpenFlags.ReadOnly);
-                List<X509Certificate2> cresult = new List<X509Certificate2>();
 
-                foreach (X509Certificate2 certificate in store.Certificates)
+                foreach (var certificate in store.Certificates)
                 {
-                    string? template = "";
-                    List<string>? enhancedKeyUsages = new List<string>();
+                    var template = "";
+                    var enhancedKeyUsages = new List<string>();
                     bool? keyExportable = false;
 
                     try
                     {
-                        var priv = certificate.PrivateKey.ToXmlString(true);
+                        certificate.PrivateKey.ToXmlString(true);
                         keyExportable = true;
                     }
-                    catch (Exception e) {
-                        //Console.WriteLine("e.Message: {0}", e.Message);
-                        if(e.Message.Contains("not valid for use in specified state"))
-                        {
-                            // message means private key is not exportable
-                            keyExportable = false;
-                        }
-                        else
-                        {
-                            // likely exportable
-                            keyExportable = true;
-                        }
+                    catch (Exception e)
+                    {
+                        keyExportable = !e.Message.Contains("not valid for use in specified state");
                     }
 
                     foreach (var ext in certificate.Extensions)
@@ -59,19 +47,15 @@ namespace Seatbelt.Commands
                         {
                             var extUsages = ((X509EnhancedKeyUsageExtension)ext).EnhancedKeyUsages;
 
-                            if (extUsages.Count > 0)
+                            if (extUsages.Count == 0) 
+                                continue;
+
+                            foreach (var extUsage in extUsages)
                             {
-                                foreach (var extUsage in extUsages)
-                                {
-                                    enhancedKeyUsages.Add(extUsage.FriendlyName);
-                                }
+                                enhancedKeyUsages.Add(extUsage.FriendlyName);
                             }
                         }
-                        else if (ext.Oid.FriendlyName == "Certificate Template Name")
-                        {
-                            template = ext.Format(false);
-                        }
-                        else if (ext.Oid.FriendlyName == "Certificate Template Information")
+                        else if (ext.Oid.FriendlyName == "Certificate Template Name" || ext.Oid.FriendlyName == "Certificate Template Information")
                         {
                             template = ext.Format(false);
                         }
@@ -81,7 +65,7 @@ namespace Seatbelt.Commands
                     {
                         yield return new CertificateDTO()
                         {
-                            StoreLocation = String.Format("{0}", storeLocation),
+                            StoreLocation = $"{storeLocation}",
                             Issuer = certificate.Issuer,
                             Subject = certificate.Subject,
                             ValidDate = certificate.NotBefore,
@@ -131,21 +115,20 @@ namespace Seatbelt.Commands
                 WriteLine("  KeyExportable      : {0}", dto.KeyExportable);
                 WriteLine("  Thumbprint         : {0}", dto.Thumbprint);
 
-                if (!String.IsNullOrEmpty(dto.Template))
+                if (!string.IsNullOrEmpty(dto.Template))
                 {
                     WriteLine("  Template           : {0}", dto.Template);
                 }
                 
-                if (dto.EnhancedKeyUsages.Count > 0)
+                if (dto.EnhancedKeyUsages?.Count > 0)
                 {
                     WriteLine("  EnhancedKeyUsages  :");
                     foreach(var eku in dto.EnhancedKeyUsages)
                     {
-                        WriteLine("       {0}", eku);
-                        if(eku == "Client Authentication")
-                        {
-                            Console.WriteLine("         [!] Certificate is used for client authentication!");
-                        }
+                        WriteLine("       {0}{1}", 
+                            eku,
+                            eku == "Client Authentication" ? "     [!] Certificate is used for client authentication!" : "");
+
                     }
                 }
                 WriteLine();

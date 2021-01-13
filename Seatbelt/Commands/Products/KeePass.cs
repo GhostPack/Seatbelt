@@ -10,16 +10,17 @@ namespace Seatbelt.Commands
         public override string Command => "KeePass";
         public override string Description => "Finds KeePass configuration files";
         public override CommandGroup[] Group => new[] { CommandGroup.User, CommandGroup.Remote };
-        public override bool SupportRemote => false;
+        public override bool SupportRemote => true;
+        public Runtime ThisRunTime;
 
         public KeePassCommand(Runtime runtime) : base(runtime)
         {
+            ThisRunTime = runtime;
         }
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            var userFolder = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
-            var dirs = Directory.GetDirectories(userFolder);
+            var dirs = ThisRunTime.GetDirectories("\\Users\\");
 
             foreach (var dir in dirs)
             {

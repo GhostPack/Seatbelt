@@ -88,6 +88,7 @@
     <Compile Include="Commands\Products\OracleSQLDeveloperCommand.cs" />
     <Compile Include="Commands\Products\SuperPuttyCommand.cs" />
     <Compile Include="Commands\Products\CloudSyncProviderCommand.cs" />
+    <Compile Include="Commands\Windows\Certificates.cs" />
     <Compile Include="Commands\Windows\HotfixesCommand.cs" />
     <Compile Include="Commands\Windows\MicrosoftUpdatesCommand.cs" />
     <Compile Include="Commands\Windows\SecurityPackagesCredentialsCommand.cs" />
@@ -125,7 +126,7 @@
     <Compile Include="Commands\Windows\CredentialGuardCommand.cs" />
     <Compile Include="Commands\Windows\CredEnumCommand.cs" />
     <Compile Include="Commands\Windows\DotNetCommand.cs" />
-	<Compile Include="Commands\Windows\DsRegCmd.cs" />
+    <Compile Include="Commands\Windows\DsRegCmd.cs" />
     <Compile Include="Commands\Windows\EnvironmentPathCommand.cs" />
     <Compile Include="Commands\Windows\EventLogs\ExplicitLogonEvents\ExplicitLogonEventsCommandDTO.cs" />
     <Compile Include="Commands\Windows\EventLogs\ExplicitLogonEvents\ExplicitLogonEventsTextFormatter.cs" />

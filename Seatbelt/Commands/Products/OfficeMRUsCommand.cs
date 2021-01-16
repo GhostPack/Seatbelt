@@ -26,6 +26,27 @@ namespace Seatbelt.Commands.Windows
         public string FileName { get; set; }
     }
 
+    class MacroModule
+    {
+        public string Name { get; set; }
+
+        public string Code { get; set; }
+    }
+
+    enum RegistryBlock
+    {
+        // Overall, if (int) RegistryBlock > 1 then a change happened and we need to warn and take action to revert
+
+        // If unblocked, no changes
+        UNBLOCKED, // 0
+        // If missing the whole key, no changes
+        MISSING_KEY, // 1
+        // If blocked a change will happen
+        BLOCKED, // 2 
+        // If missining the DWORD value, a change will happen
+        MISSING_DWORD // 3
+    }
+
     internal class OfficeMRUsCommand : CommandBase
     {
         public override string Command => "OfficeMRUs";
@@ -57,14 +78,8 @@ namespace Seatbelt.Commands.Windows
             }
         }
 
-        // Searches for blocking keys in HKCU and switches them if it's found
-        // Returns true if there is a key that blocks us
-        // Input is the office application. Currently 'Word|Excel'.
-        private bool CheckHKCURegistryBlock(string application)
+        private void DeleteRegistryKey(string application)
         {
-            bool blocked = false;
-            // Version reg keys found from Stack Overflow: https://stackoverflow.com/questions/3266675/how-to-detect-installed-version-of-ms-office
-            // Iterate over all possible versions looking for our security key called AccessVBOM
             for (int i = 7; i <= 16; i++)
             {
                 string version = i.ToString() + ".0";
@@ -73,17 +88,86 @@ namespace Seatbelt.Commands.Windows
                 {
                     if (vbomKey.GetValueNames().Contains("AccessVBOM"))
                     {
+                        string keyPath = vbomKey.ToString() + @"\AccessVBOM";
+                        WriteWarning($"Deleting {keyPath}");
+                        vbomKey.DeleteValue("AccessVBOM");
+                        vbomKey.Close();
+                    } else
+                    {
+                        WriteError("Something went wrong. We created the key previously, but it was missing when trying to delete it.");
+                    }
+                }
+            }
+
+        }
+
+        private void CreateRegistryKey(string application)
+        {
+            for (int i = 7; i <= 16; i++)
+            {
+                string version = i.ToString() + ".0";
+                RegistryKey vbomKey = Registry.CurrentUser.OpenSubKey($@"SOFTWARE\Microsoft\Office\{version}\{application}\Security", true);
+                if (vbomKey != null)
+                {
+                    string keyPath = vbomKey.ToString() + @"\AccessVBOM";
+                    WriteWarning($"Creating {keyPath} and setting the value to 1");
+                    vbomKey.SetValue("AccessVBOM", "1", Microsoft.Win32.RegistryValueKind.DWord);
+                    vbomKey.Close();
+                    
+                }
+            }
+        }
+
+        // Searches for blocking keys in HKCU and switches them if it's found
+        // Returns true if there is a key that blocks us
+        // Input is the office application. Currently 'Word|Excel'.
+        private int CheckHKCURegistryBlock(string application)
+        {
+            // In testing, if the AccessVBOM DWORD value doesn't exist or if it's set to 0, then this enumeration is blocked
+            // If the DWORD value does exist and it's set to 1, then this enumeration is allowed
+
+            // We track if we found the Security key or not to choose the right return value
+            bool keyFound = false;
+
+            // Version reg keys found from Stack Overflow: https://stackoverflow.com/questions/3266675/how-to-detect-installed-version-of-ms-office
+            // Iterate over all possible versions looking for our security key called AccessVBOM
+            for (int i = 7; i <= 16; i++)
+            {
+                string version = i.ToString() + ".0";
+                RegistryKey vbomKey = Registry.CurrentUser.OpenSubKey($@"SOFTWARE\Microsoft\Office\{version}\{application}\Security", true);
+                if (vbomKey != null)
+                {
+                    keyFound = true;
+                    if (vbomKey.GetValueNames().Contains("AccessVBOM"))
+                    {
                         if (vbomKey.GetValue("AccessVBOM").ToString() != "1")
                         {
-                            // The key value is set to something other than Allow, so break out early and notify that it's blocked
+                            // Change the DWORD value to allow the enumeration
                             SetRegistryKey(application, "1");
-                            return true;
+                            // The DWORD value was set to something other than Allow, so break out early and notify that it's blocked
+                            return (int) RegistryBlock.BLOCKED;
                         }
+                    } else 
+                    {
+                        // create key here
+                        CreateRegistryKey(application);
+                        return (int) RegistryBlock.MISSING_DWORD;
                     }
                 }
             }
             // We got to the end and either didn't find the reg key at all or didn't find a blocker
-            return blocked;
+            if (keyFound)
+            {
+                // We found at least one key with the DWORD value there, so the software seems to be installed, 
+                // but didn't break so we didn't find any blocks
+                return (int) RegistryBlock.UNBLOCKED;
+            }
+            else
+            {
+                // We never even found a key for this
+                // It's likely that the application isn't installed
+                return (int)RegistryBlock.MISSING_KEY;
+            }
         }
 
         private bool CheckHKLMRegistryBlock(string application)
@@ -107,132 +191,117 @@ namespace Seatbelt.Commands.Windows
                             // The key value is set to block
                             return true;
                         }
+                    } else
+                    {
+                        // DWORD wasn't there, so we need to create it
                     }
                 }
             }
-            // We didn't find any keys, so return as "unblocked"
+            // Key didn't exist at all. It's likely office isn't even installed. Take no actions
             return false;
 
         }
 
-        private string GetExcelMacros(string fileName)
+        private List<MacroModule> GetExcelMacros(string fileName)
         {
-            //string fileName = @"C:\Users\admin\Desktop\MacroCheck\macro.docm";
+
             Excel.Application excelApp = new Excel.Application();
             excelApp.Visible = false;
             object missing = System.Reflection.Missing.Value;
             object readOnly = true;
             Excel.Workbook book = excelApp.Workbooks.Open(Filename: fileName, ReadOnly: readOnly);
-            List<string> lstMacros = new List<string>();
+            //List<MacroModule> lstMacros = new List<MacroModule>();
+            List<MacroModule> macros = new List<MacroModule>();
 
-            string macros = "";
-            lstMacros = GetMacrosFromExcel(book);
-            if (lstMacros.Count > 0)
+            VBA.VBProject prj;
+            VBA.CodeModule code;
+            string composedFile;
+            MacroModule module;
+
+            prj = book.VBProject;
+            foreach (VBA.VBComponent comp in prj.VBComponents)
             {
-                //Console.WriteLine("There are " + lstMacros.Count.ToString() + " procedures in " + fileName + ":");
-                foreach (string macro in lstMacros)
-                {
-                    macros = macros + macro + "\n";
+                module = new MacroModule();
 
+                code = comp.CodeModule;
+                composedFile = "    ";
+
+                // Put the name of the code module at the top
+                //composedFile = comp.Name + Environment.NewLine;
+                module.Name = comp.Name;
+
+                // Loop through the (1-indexed) lines
+                for (int i = 0; i < code.CountOfLines; i++)
+                {
+                    composedFile += "    " + code.get_Lines(i + 1, 1) + Environment.NewLine;
                 }
+
+                module.Code = composedFile;
+                // Add the macro to the list
+                macros.Add(module);
             }
-            
+
 
             book.Close(0);
             excelApp.Quit();
             return macros;
         }
 
-        private static List<string> GetMacrosFromExcel(Excel.Workbook book)
+        static List<MacroModule> GetWordMacros(string fileName)
         {
-            List<string> macros = new List<string>();
-
-            VBA.VBProject prj;
-            VBA.CodeModule code;
-            string composedFile;
-
-            prj = book.VBProject;
-            foreach (VBA.VBComponent comp in prj.VBComponents)
-            {
-                code = comp.CodeModule;
-
-                // Put the name of the code module at the top
-                composedFile = comp.Name + Environment.NewLine;
-
-                // Loop through the (1-indexed) lines
-                for (int i = 0; i < code.CountOfLines; i++)
-                {
-                    composedFile += code.get_Lines(i + 1, 1) + Environment.NewLine;
-                }
-
-                // Add the macro to the list
-                macros.Add(composedFile);
-            }
-
-            return macros;
-        }
-
-        static string GetWordMacros(string fileName)
-        {
-            string macros = "";
+            //string macros = "";
             Word.Application wordApp = new Word.Application();
             wordApp.Visible = false;
             object missing = System.Reflection.Missing.Value;
             object readOnly = true;
             Word.Document doc = wordApp.Documents.Open(fileName, ref missing, ref readOnly, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing, ref missing);
-            List<string> lstMacros = new List<string>();
+            List<MacroModule> macros = new List<MacroModule>();
 
-            lstMacros = GetMacrosFromDoc(doc);
-            if (lstMacros.Count > 0)
+            VBA.VBProject prj;
+            VBA.CodeModule code;
+            string composedFile;
+            MacroModule module;
+
+            prj = doc.VBProject;
+            foreach (VBA.VBComponent comp in prj.VBComponents)
             {
-                foreach (string macro in lstMacros)
+                module = new MacroModule();
+
+                code = comp.CodeModule;
+                composedFile = "    ";
+
+                // Put the name of the code module at the top
+                //composedFile = comp.Name + Environment.NewLine;
+                module.Name = comp.Name;
+
+                // Loop through the (1-indexed) lines
+                for (int i = 0; i < code.CountOfLines; i++)
                 {
-                    macros = macros + macro + "\n";
+                    composedFile += "    " + code.get_Lines(i + 1, 1) + Environment.NewLine;
                 }
+
+                module.Code = composedFile;
+                // Add the macro to the list
+                macros.Add(module);
             }
+
+            
             doc.Close();
             wordApp.Quit();
             return macros;
 
         }
 
-        private static List<string> GetMacrosFromDoc(Word.Document doc)
-        {
-            List<string> macros = new List<string>();
-
-            VBA.VBProject prj;
-            VBA.CodeModule code;
-            string composedFile;
-
-            prj = doc.VBProject;
-            foreach (VBA.VBComponent comp in prj.VBComponents)
-            {
-                code = comp.CodeModule;
-
-                // Put the name of the code module at the top
-                composedFile = comp.Name + Environment.NewLine;
-
-                // Loop through the (1-indexed) lines
-                for (int i = 0; i < code.CountOfLines; i++)
-                {
-                    composedFile += code.get_Lines(i + 1, 1) + Environment.NewLine;
-                }
-
-                // Add the macro to the list
-                macros.Add(composedFile);
-            }
-
-            return macros;
-        }
-
-
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
             var lastDays = 7;
             bool lastDaysChanged = false;
             bool checkForMacros = false;
-            bool excelKeyChanged = false;
-            bool wordKeyChanged = false;
+
+            // We want to track what changes we make to the system so that we can revert those changes
+            int excelKeyChanged = (int) RegistryBlock.UNBLOCKED;
+            int wordKeyChanged = (int) RegistryBlock.UNBLOCKED;
+
             // parses recent file shortcuts via COM
 
             if (args.Length == 1 && !args.Contains("/checkForMacros"))
@@ -276,9 +345,9 @@ namespace Seatbelt.Commands.Windows
                     WriteWarning("If you have admin, you can manually set these values then run again");
 
                 }
-                else if (wordKeyChanged || excelKeyChanged)
+                else if ((int) wordKeyChanged > 1 || (int) excelKeyChanged > 1)
                 {
-                    WriteWarning("The /checkForMacros flag has been provided but one or more registry keys in HKCU blocks this. Those keys will be temporarily modified to allow this enumeration.");
+                    WriteWarning("The /checkForMacros flag has been provided but one or more registry keys in HKCU blocks this. Those keys will be temporarily modified or created to allow this enumeration.");
                     checkForMacros = true;
                 }
                 else
@@ -298,9 +367,9 @@ namespace Seatbelt.Commands.Windows
                     WriteWarning("If you have admin, you can manually set these values then run again");
 
                 }
-                else if (wordKeyChanged || excelKeyChanged)
+                else if ((int)wordKeyChanged > 1 || (int)excelKeyChanged > 1)
                 {
-                    WriteWarning("The /checkForMacros flag has been provided but one or more registry keys in HKCU blocks this. Those keys will be temporarily modified to allow this enumeration.");
+                    WriteWarning("The /checkForMacros flag has been provided but one or more registry keys in HKCU blocks this. Those keys will be temporarily modified or created to allow this enumeration.");
                     checkForMacros = true;
                 } else
                 {
@@ -331,16 +400,25 @@ namespace Seatbelt.Commands.Windows
                 yield return file;
             }
 
-            if (excelKeyChanged)
+            if (excelKeyChanged == (int) RegistryBlock.BLOCKED)
             {
                 // In testing, a small sleep was needed to change the registry key back. The COM object might have been holding the key, preventing us from changing it.
-                Thread.Sleep(100);
+                Thread.Sleep(500);
                 SetRegistryKey("Excel", "0");
-            }
-            if (wordKeyChanged)
+            } else if (excelKeyChanged == (int)RegistryBlock.MISSING_DWORD)
             {
-                Thread.Sleep(100);
+                Thread.Sleep(500);
+                DeleteRegistryKey("Excel");
+            }
+            
+            if (wordKeyChanged == (int)RegistryBlock.BLOCKED)
+            {
+                Thread.Sleep(500);
                 SetRegistryKey("Word", "0");
+            } else if (wordKeyChanged == (int)RegistryBlock.MISSING_DWORD)
+            {
+                Thread.Sleep(500);
+                DeleteRegistryKey("Word");
             }
 
         }
@@ -389,10 +467,12 @@ namespace Seatbelt.Commands.Windows
                             {
                                 if (wordExtensions.Contains(extension))
                                 {
+                                    WriteHost($"Checking for Word macros in {mru.Target}");
                                     mru.Macros = GetWordMacros(mru.Target);
                                 }
                                 else if (excelExtensions.Contains(extension))
                                 {
+                                    WriteHost($"Checking for Excel macros in {mru.Target}");
                                     mru.Macros = GetExcelMacros(mru.Target);
                                 }
                                 else
@@ -402,7 +482,7 @@ namespace Seatbelt.Commands.Windows
                             }
                             catch (Exception)
                             {
-                                WriteError($"Hit an issue trying to read {mru.Target}. This was common with Excel files for whatever reason.");
+                                WriteError($"Hit an issue trying to read {mru.Target}.");
                                 continue;
                             }
                         }
@@ -499,7 +579,7 @@ namespace Seatbelt.Commands.Windows
             public string Target { get; set; }
             public DateTime LastAccessDate { get; set; }
             public string User { get; set; }
-            public string Macros { get; set; }
+            public List<MacroModule> Macros { get; set; }
         }
 
         [CommandOutputType(typeof(OfficeRecentFilesDTO))]
@@ -518,10 +598,15 @@ namespace Seatbelt.Commands.Windows
 
                 if (dto.Macros!= null)
                 {
-                    WriteLine("---- Macros in {0} ----", dto.Target);
-                    WriteLine("{0}", dto.Macros);
-                    WriteLine("-----------------------");
-                    WriteLine("");
+                    foreach(MacroModule macro in dto.Macros) {
+                        if (!macro.Code.Trim().Equals(""))
+                        {
+                            WriteLine("    Macro Module: {0}", macro.Name);
+                            WriteLine("    Macro Code:   {0}", macro.Code);
+                            WriteLine("  -----------------------");
+                            WriteLine("");
+                        }
+                    }
                 }
             }
         }

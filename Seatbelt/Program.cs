@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+
 
 namespace Seatbelt
 {
@@ -14,6 +16,10 @@ namespace Seatbelt
             catch (Exception e)
             {
                 Console.WriteLine($"Unhandled terminating exception: {e}");
+            }
+            finally
+            {
+                Process.GetCurrentProcess().Kill();
             }
         }
     }

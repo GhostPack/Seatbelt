@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Seatbelt.Output.TextWriters;
 using Seatbelt.Output.Formatters;
 
-// TODO: Need to create a DTO
 namespace Seatbelt.Commands
 {
     internal class PuttySessionsCommand : CommandBase
@@ -60,7 +59,7 @@ namespace Seatbelt.Commands
                         {
                             Settings[key] = result;
                         }
-#nullable restore
+#nullable enable
                     }
 
                     Sessions.Add(Settings);
@@ -80,10 +79,10 @@ namespace Seatbelt.Commands
         {
             public PuttySessionsDTO(string sid, List<Dictionary<string, string>> sessions)
             {
-                SID = sid;
+                Sid = sid;
                 Sessions = sessions;
             }
-            public string SID { get; }
+            public string Sid { get; }
 
             public List<Dictionary<string,string>> Sessions { get; }
         }
@@ -99,7 +98,7 @@ namespace Seatbelt.Commands
             {
                 var dto = (PuttySessionsDTO)result;
 
-                WriteLine("  {0} :\n", dto.SID);
+                WriteLine("  {0} :\n", dto.Sid);
 
                 foreach (var session in dto.Sessions)
                 {

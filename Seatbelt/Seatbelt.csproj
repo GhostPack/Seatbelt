@@ -197,7 +197,7 @@
     <Compile Include="Commands\Windows\WindowsFirewallCommand.cs" />
     <Compile Include="Commands\Windows\WindowsVaultCommand.cs" />
     <Compile Include="Commands\Windows\WMIEventConsumerCommand.cs" />
-    <Compile Include="Commands\Windows\WMIEventFilterCommand.cs" />
+    <Compile Include="Commands\Windows\WmiEventFilterCommand.cs" />
     <Compile Include="Commands\Windows\WMIFilterToConsumerBindingCommand.cs" />
     <Compile Include="Interop\Rpcrt4.cs" />
     <Compile Include="Output\Sinks\JsonFileOutputSink.cs" />

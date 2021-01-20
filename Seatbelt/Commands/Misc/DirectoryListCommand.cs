@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -24,8 +23,8 @@ namespace Seatbelt.Commands
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            string directory = null;
-            Regex regex = null;
+            string directory;
+            Regex? regex = null;
             int depth;
             var ignoreErrors = false;
 
@@ -68,7 +67,7 @@ namespace Seatbelt.Commands
             }
         }
 
-        private IEnumerable<DirectoryListDTO> ListDirectory(string path, Regex regex, int depth,
+        private IEnumerable<DirectoryListDTO> ListDirectory(string path, Regex? regex, int depth,
             bool ignoreErrors)
         {
             if (depth < 0)
@@ -77,7 +76,7 @@ namespace Seatbelt.Commands
             }
 
             var dirList = new List<string>();
-            string[] directories = null;
+            string[] directories;
             try
             {
                 directories = Directory.GetDirectories(path);
@@ -112,7 +111,7 @@ namespace Seatbelt.Commands
 
 
 
-            string[] files = null;
+            string[] files;
             try
             {
                 files = Directory.GetFiles(path);
@@ -161,22 +160,28 @@ namespace Seatbelt.Commands
             var lastAccess = Directory.GetLastAccessTime(path);
             var lastWrite = Directory.GetLastWriteTime(path);
 
-            return new DirectoryListDTO()
-            {
-                LastAccess = lastAccess,
-                LastWrite = lastWrite,
-                Size = size,
-                Path = path
-            };
+            return new DirectoryListDTO(
+                lastAccess,
+                lastWrite,
+                size,
+                path
+            );
         }
     }
 
     internal class DirectoryListDTO : CommandDTOBase
     {
-        public DateTime LastAccess { get; set; }
-        public DateTime LastWrite { get; set; }
-        public long Size { get; set; }
-        public string Path { get; set; }
+        public DirectoryListDTO(DateTime lastAccess, DateTime lastWrite, long size, string path)
+        {
+            LastAccess = lastAccess;
+            LastWrite = lastWrite;
+            Size = size;
+            Path = path;    
+        }
+        public DateTime LastAccess { get;  }
+        public DateTime LastWrite { get;  }
+        public long Size { get;  }
+        public string Path { get;  }
     }
 
     [CommandOutputType(typeof(DirectoryListDTO))]
@@ -204,4 +209,3 @@ namespace Seatbelt.Commands
         }
     }
 }
-#nullable enable

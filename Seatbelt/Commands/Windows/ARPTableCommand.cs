@@ -40,7 +40,7 @@ namespace Seatbelt.Commands.Windows
         {
             // adapted from Fred's code at https://social.technet.microsoft.com/Forums/lync/en-US/e949b8d6-17ad-4afc-88cd-0019a3ac9df9/powershell-alternative-to-arp-a?forum=ITCG
 
-            var adapterIdToInterfaceMap = new SortedDictionary<uint, ArpTableDto>();
+            var adapterIdToInterfaceMap = new SortedDictionary<uint, ArpTableDTO>();
 
             // build a mapping of index -> interface information
             foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces())
@@ -96,7 +96,7 @@ namespace Seatbelt.Commands.Windows
                     {
                         if (!adapterIdToInterfaceMap.ContainsKey(adapterIndex))
                         {
-                            adapterIdToInterfaceMap[adapterIndex] = new ArpTableDto(adapterIndex, "n/a", "n/a");
+                            adapterIdToInterfaceMap[adapterIndex] = new ArpTableDTO(adapterIndex, "n/a", "n/a");
                         }
 
                         currentAdapterIndex = adapterIndex;
@@ -129,7 +129,7 @@ namespace Seatbelt.Commands.Windows
             }
         }
 
-        private static void BuildIndexToInterfaceMap(NetworkInterface ni, SortedDictionary<uint, ArpTableDto> adapters)
+        private static void BuildIndexToInterfaceMap(NetworkInterface ni, SortedDictionary<uint, ArpTableDTO> adapters)
         {
             // We don't care about the loopback interface
             // if (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback) return;
@@ -141,7 +141,7 @@ namespace Seatbelt.Commands.Windows
             if(index == null) throw new Exception("Could not get interface index number");
 
             Console.WriteLine(ni.Description);
-            var adapter = new ArpTableDto(index.Value, ni.Name, ni.Description);
+            var adapter = new ArpTableDTO(index.Value, ni.Name, ni.Description);
 
             adapterProperties.UnicastAddresses
                 .ToList()
@@ -155,9 +155,9 @@ namespace Seatbelt.Commands.Windows
         }
     }
 
-    internal class ArpTableDto : CommandDTOBase
+    internal class ArpTableDTO : CommandDTOBase
     {
-        public ArpTableDto(uint index, string name, string description)
+        public ArpTableDTO(uint index, string name, string description)
         {
             InterfaceIndex = index;
             InterfaceName = name;
@@ -173,7 +173,7 @@ namespace Seatbelt.Commands.Windows
         public List<ArpEntry> Entries { get; set; } = new List<ArpEntry>();
     }
 
-    [CommandOutputType(typeof(ArpTableDto))]
+    [CommandOutputType(typeof(ArpTableDTO))]
     internal class ArpTableTextFormatter : TextFormatterBase
     {
         public ArpTableTextFormatter(ITextWriter writer) : base(writer)
@@ -182,7 +182,7 @@ namespace Seatbelt.Commands.Windows
 
         public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
         {
-            var dto = (ArpTableDto)result;
+            var dto = (ArpTableDTO)result;
 
             WriteLine($"  {dto.InterfaceName} --- Index {dto.InterfaceIndex}");
             WriteLine($"    Interface Description : {dto.InterfaceDescription}");

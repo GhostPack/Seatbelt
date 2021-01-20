@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using Seatbelt.Output.Formatters;
@@ -36,58 +35,60 @@ namespace Seatbelt.Commands.Browser
                     continue;
                 }
 
-                var userIEBookmarkPath = $"{dir}\\Favorites\\";
-                if (!Directory.Exists(userIEBookmarkPath))
+                var userFavoritesPath = $"{dir}\\Favorites\\";
+                if (!Directory.Exists(userFavoritesPath))
                 {
                     continue;
                 }
 
-                var bookmarkPaths = Directory.GetFiles(userIEBookmarkPath, "*.url", SearchOption.AllDirectories);
+                var bookmarkPaths = Directory.GetFiles(userFavoritesPath, "*.url", SearchOption.AllDirectories);
                 if (bookmarkPaths.Length == 0)
                 {
                     continue;
                 }
 
-                var Favorites = new List<string>();
+                var favorites = new List<string>();
 
                 foreach (var bookmarkPath in bookmarkPaths)
                 {
-                    using (var rdr = new StreamReader(bookmarkPath))
+                    using var rdr = new StreamReader(bookmarkPath);
+                    string line;
+                    var url = "";
+
+                    while ((line = rdr.ReadLine()) != null)
                     {
-                        string line;
-                        var url = "";
-
-                        while ((line = rdr.ReadLine()) != null)
+                        if (!line.StartsWith("URL=", StringComparison.InvariantCultureIgnoreCase))
                         {
-                            if (!line.StartsWith("URL=", StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                continue;
-                            }
-
-                            if (line.Length > 4)
-                            {
-                                url = line.Substring(4);
-                            }
-
-                            break;
+                            continue;
                         }
 
-                        Favorites.Add(url.Trim());
+                        if (line.Length > 4)
+                        {
+                            url = line.Substring(4);
+                        }
+
+                        break;
                     }
+
+                    favorites.Add(url.Trim());
                 }
 
-                yield return new InternetExplorerFavoritesDTO()
-                {
-                    UserName = userName,
-                    Favorites = Favorites
-                };
+                yield return new InternetExplorerFavoritesDTO(
+                    userName,
+                    favorites
+                );
             }
         }
 
         internal class InternetExplorerFavoritesDTO : CommandDTOBase
         {
-            public string UserName { get; set; }
-            public List<string> Favorites { get; set; }
+            public InternetExplorerFavoritesDTO(string userName, List<string> favorites)
+            {
+                UserName = userName;
+                Favorites = favorites;
+            }
+            public string UserName { get; }
+            public List<string> Favorites { get; }
         }
 
         [CommandOutputType(typeof(InternetExplorerFavoritesDTO))]
@@ -112,4 +113,3 @@ namespace Seatbelt.Commands.Browser
         }
     }
 }
-#nullable enable

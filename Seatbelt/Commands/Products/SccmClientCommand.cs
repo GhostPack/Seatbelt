@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Microsoft.Win32;
 
 namespace Seatbelt.Commands
@@ -19,22 +18,27 @@ namespace Seatbelt.Commands
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            yield return new SccmClientDTO()
-            {
-                Server = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\CCMSetup", "LastValidMP"),
-                SiteCode = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\SMS\Mobile Client", "AssignedSiteCode"),
-                ProductVersion = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\SMS\Mobile Client", "ProductVersion"),
-                LastSuccessfulInstallParams = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\SMS\Mobile Client", "LastSuccessfulInstallParams"),  // Sometimes contains the fallback server's hostname
-            };
+            yield return new SccmClientDTO(
+                ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\CCMSetup", "LastValidMP"),
+                ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\SMS\Mobile Client", "AssignedSiteCode"),
+                ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\SMS\Mobile Client", "ProductVersion"),
+                ThisRunTime.GetStringValue(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\SMS\Mobile Client", "LastSuccessfulInstallParams")  // Sometimes contains the fallback server's hostname
+            );
         }
     }
 
     internal class SccmClientDTO : CommandDTOBase
     {
-        public string Server { get; set; }
-        public string SiteCode { get; set; }
-        public string ProductVersion { get; set; }
-        public string LastSuccessfulInstallParams { get; set; }
+        public SccmClientDTO(string? server, string? siteCode, string? productVersion, string? lastSuccessfulInstallParams)
+        {
+            Server = server;
+            SiteCode = siteCode;
+            ProductVersion = productVersion;
+            LastSuccessfulInstallParams = lastSuccessfulInstallParams;
+        }
+        public string? Server { get; }
+        public string? SiteCode { get; }
+        public string? ProductVersion { get; }
+        public string? LastSuccessfulInstallParams { get; }
     }
 }
-#nullable enable

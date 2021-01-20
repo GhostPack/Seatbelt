@@ -11,8 +11,6 @@ namespace Seatbelt.Interop
     internal class Advapi32
     {
         #region Function Definitions
-        [DllImport("kernel32.dll")]
-        public static extern IntPtr LocalFree(IntPtr hMem);
 
         [DllImport("advapi32.dll", SetLastError = true)]
         public static extern bool GetTokenInformation(
@@ -99,7 +97,7 @@ namespace Seatbelt.Interop
             IntPtr SecurityDescriptor,
             uint StringSDRevision,
             System.Security.AccessControl.SecurityInfos SecurityInformation,
-            out string StringSecurityDescriptor,
+            out IntPtr StringSecurityDescriptor,
             out int StringSecurityDescriptorSize);
 
         // for GetSystem()

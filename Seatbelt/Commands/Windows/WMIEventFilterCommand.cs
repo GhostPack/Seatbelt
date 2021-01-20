@@ -1,18 +1,17 @@
-﻿#nullable disable
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Management;
 using System.Security.Principal;
 
 namespace Seatbelt.Commands.Windows
 {
-    internal class WMIEventFilterCommand : CommandBase
+    internal class WmiEventFilterCommand : CommandBase
     {
         public override string Command => "WMIEventFilter";
         public override string Description => "Lists WMI Event Filters";
         public override CommandGroup[] Group => new[] {CommandGroup.System};
         public override bool SupportRemote => false; // TODO: remote
 
-        public WMIEventFilterCommand(Runtime runtime) : base(runtime)
+        public WmiEventFilterCommand(Runtime runtime) : base(runtime)
         {
         }
 
@@ -23,32 +22,40 @@ namespace Seatbelt.Commands.Windows
             foreach (ManagementObject EventFilter in EventFilterClass.GetInstances())
             {
                 var sidBytes = (byte[])EventFilter["CreatorSID"];
-                var CreatorSID = new SecurityIdentifier(sidBytes, 0);
+                var creatorSid = new SecurityIdentifier(sidBytes, 0);
 
-                yield return new WMIEventFilterDTO()
-                {
-                    Name = EventFilter["Name"],
-                    Namespace = EventFilter["__NAMESPACE"],
-                    EventNamespace = EventFilter["EventNamespace"],
-                    Query = EventFilter["Query"],
-                    QueryLanguage = EventFilter["QueryLanguage"],
-                    EventAccess = EventFilter["EventAccess"],
-                    CreatorSID = CreatorSID
-                };
+                yield return new WmiEventFilterDTO(
+                    EventFilter["Name"],
+                    EventFilter["__NAMESPACE"],
+                    EventFilter["EventNamespace"],
+                    EventFilter["Query"],
+                    EventFilter["QueryLanguage"],
+                    EventFilter["EventAccess"],
+                    creatorSid
+                );
             }
 
         }
     }
 
-    internal class WMIEventFilterDTO : CommandDTOBase
+    internal class WmiEventFilterDTO : CommandDTOBase
     {
-        public object Name { get; set; }
-        public object Namespace { get; set; }
-        public object EventNamespace { get; set; }
-        public object Query { get; set; }
-        public object QueryLanguage { get; set; }
-        public object EventAccess { get; set; }
-        public object CreatorSID { get; set; }
+        public WmiEventFilterDTO(object name, object ns, object eventNamespace, object query, object queryLanguage, object eventAccess, object creatorSid)
+        {
+            Name = name;
+            Namespace = ns;
+            EventNamespace = eventNamespace;
+            Query = query;
+            QueryLanguage = queryLanguage;
+            EventAccess = eventAccess;
+            CreatorSid = creatorSid;    
+        }
+        public object Name { get; }
+        public object Namespace { get; }
+        public object EventNamespace { get; }
+        public object Query { get; }
+        public object QueryLanguage { get; }
+        public object EventAccess { get; }
+        public object CreatorSid { get; }
     }
 }
-#nullable enable

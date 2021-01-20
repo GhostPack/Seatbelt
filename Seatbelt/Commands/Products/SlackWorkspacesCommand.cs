@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Web.Script.Serialization;
@@ -11,9 +10,9 @@ namespace Seatbelt.Commands.Products
 {
     class Workspace
     {
-        public string Name { get; set; }
-        public string Domain { get; set; }
-        public string ID { get; set; }
+        public string? Name { get; set; }
+        public string? Domain { get; set; }
+        public string? ID { get; set; }
     }
 
     internal class SlackWorkspacesCommand : CommandBase
@@ -132,4 +131,3 @@ namespace Seatbelt.Commands.Products
         }
     }
 }
-#nullable enable

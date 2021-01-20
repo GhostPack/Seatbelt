@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Management;
 using Seatbelt.Output.TextWriters;
 using Seatbelt.Output.Formatters;
@@ -749,12 +750,12 @@ namespace Seatbelt.Commands.Windows
             var wmiData = ThisRunTime.GetManagementObjectSearcher(@"Root\CIMV2", "SELECT * FROM Win32_Process");
             var retObjectCollection = wmiData.Get();
 
-            foreach (ManagementObject Process in retObjectCollection)
+            foreach (ManagementObject process in retObjectCollection)
             {
                 var display = false;
-                var category = "";
-                var product = "";
-                var processName = ExtensionMethods.TrimEnd(Process["Name"].ToString().ToLower(), ".exe");
+                string? category = null;
+                string? product = null;
+                var processName = ExtensionMethods.TrimEnd(process["Name"].ToString().ToLower(), ".exe");
 
                 if (defensiveProcesses.Keys.OfType<string>().ToList().Contains(processName))
                 {
@@ -762,56 +763,72 @@ namespace Seatbelt.Commands.Windows
                     category = "defensive";
                     product = defensiveProcesses[processName];
                 }
-                else if (browserProcesses.Keys.OfType<string>().ToList().Contains(processName, System.StringComparer.OrdinalIgnoreCase))
+                else if (browserProcesses.Keys.OfType<string>().ToList().Contains(processName, StringComparer.OrdinalIgnoreCase))
                 {
                     display = true;
                     category = "browser";
                     product = browserProcesses[processName];
                 }
-                else if (interestingProcesses.Keys.OfType<string>().ToList().Contains(processName, System.StringComparer.OrdinalIgnoreCase))
+                else if (interestingProcesses.Keys.OfType<string>().ToList().Contains(processName, StringComparer.OrdinalIgnoreCase))
                 {
                     display = true;
                     category = "interesting";
                     product = interestingProcesses[processName];
                 }
 
-                if (display)
+                if (!display) 
+                    continue;
+
+                string? owner = null;
+                try
                 {
-                    var OwnerInfo = new string[2];
-                    Process.InvokeMethod("GetOwner", (object[])OwnerInfo);
-                    var owner = "";
+                    var ownerInfo = new string[2];
 
-                    if (OwnerInfo[0] != null)
+                    process.InvokeMethod("GetOwner", (object[]) ownerInfo);
+
+                    if (ownerInfo[0] != null)
                     {
-                        owner = System.String.Format("{0}\\{1}", OwnerInfo[1], OwnerInfo[0]);
+                        owner = $"{ownerInfo[1]}\\{ownerInfo[0]}";
                     }
-
-                    yield return new InterestingProcessesDTO()
-                    {
-                        Category = category,
-                        Name = Process["Name"],
-                        Product = product,
-                        ProcessID = Process["ProcessID"],
-                        Owner = owner,
-                        CommandLine = Process["CommandLine"]
-                    };
                 }
+                catch (ManagementException e)
+                {
+                    WriteError($"Error obtaining owner: {e}");
+                }
+
+                yield return new InterestingProcessesDTO(
+                    category,
+                    process["Name"].ToString(),
+                    product,
+                    (uint)process["ProcessID"],
+                    owner,
+                    process["CommandLine"]?.ToString()
+                );
             }
         }
 
         internal class InterestingProcessesDTO : CommandDTOBase
         {
-            public object Category { get; set; } = string.Empty;  // "defensive", "browser", or "interesting
+            public InterestingProcessesDTO(string? category, string name, string? product, uint processId, string? owner, string? commandLine)
+            {
+                Category = category;
+                Name = name;
+                Product = product;
+                ProcessID = processId;
+                Owner = owner;
+                CommandLine = commandLine;  
+            }
+            public string? Category { get; }  // "defensive", "browser", or "interesting
 
-            public object Name { get; set; } = string.Empty;
+            public string Name { get; }
 
-            public object Product { get; set; } = string.Empty;
+            public string? Product { get; }
 
-            public object ProcessID { get; set; } = string.Empty;
+            public uint ProcessID { get; }
 
-            public object Owner { get; set; } = string.Empty;
+            public string? Owner { get; }
 
-            public object CommandLine { get; set; } = string.Empty;
+            public string? CommandLine { get; }
         }
 
         [CommandOutputType(typeof(InterestingProcessesDTO))]

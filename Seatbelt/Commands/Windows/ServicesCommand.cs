@@ -1,8 +1,10 @@
 ﻿#nullable disable
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Management;
+using System.Security.AccessControl;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using Seatbelt.Util;
@@ -76,18 +78,21 @@ namespace Seatbelt.Commands.Windows
 
                     isDotNet = FileUtil.IsDotNetAssembly(binaryPath);
 
-                    binaryPathSddl = File.GetAccessControl(binaryPath).GetSecurityDescriptorSddlForm(System.Security.AccessControl.AccessControlSections.All);
+                    binaryPathSddl = null;
+                    try
+                    {
+                        binaryPathSddl = File.GetAccessControl(binaryPath)
+                            .GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        WriteWarning($"Could not get the SDDL of service binary '{binaryPath}': Access denied");
+                    }
                 }
 
-                try
-                {
-                    var info = SecurityUtil.GetSecurityInfos(serviceName, Interop.Advapi32.SE_OBJECT_TYPE.SE_SERVICE);
-                    serviceSddl = info.SDDL;
-                }
-                catch
-                {
-                    // eat it
-                }
+
+                serviceDll = TryGetServiceSddl(serviceName);
+                
 
                 yield return new ServicesDTO()
                 {
@@ -112,6 +117,19 @@ namespace Seatbelt.Commands.Windows
             // yield return null;
         }
 
+        private string? TryGetServiceSddl(string serviceName)
+        {
+            try
+            {
+                var info = SecurityUtil.GetSecurityInfos(serviceName, Interop.Advapi32.SE_OBJECT_TYPE.SE_SERVICE);
+                return info.SDDL;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
 
         private string? GetServiceDll(string serviceName)
         {
@@ -131,15 +149,15 @@ namespace Seatbelt.Commands.Windows
             {
             }
 
-            if (path == null)
+            if (path != null) 
+                return path;
+            
+            try
             {
-                try
-                {
-                    path = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, $"SYSTEM\\CurrentControlSet\\Services\\{serviceName}", "ServiceDll");
-                }
-                catch
-                {
-                }
+                path = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, $"SYSTEM\\CurrentControlSet\\Services\\{serviceName}", "ServiceDll");
+            }
+            catch
+            {
             }
 
             return path;

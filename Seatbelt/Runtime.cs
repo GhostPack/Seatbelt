@@ -215,7 +215,7 @@ namespace Seatbelt
                 //    pw,
                 //    SessionAuthentication.Default); // TODO password specification! https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.eventing.reader.eventlogsession.-ctor?view=dotnet-plat-ext-3.1#System_Diagnostics_Eventing_Reader_EventLogSession__ctor_System_String_System_String_System_String_System_Security_SecureString_System_Diagnostics_Eventing_Reader_SessionAuthentication_
 
-                EventLogSession session = new EventLogSession(ComputerName);
+                var session = new EventLogSession(ComputerName);
                 eventsQuery.Session = session;
             }
 
@@ -227,7 +227,7 @@ namespace Seatbelt
         {
             if (!string.IsNullOrEmpty(ComputerName))
             {
-                string result = "";
+                var result = "";
 
                 var wmiData = this.GetManagementObjectSearcher(@"root\cimv2", $"SELECT VariableValue from win32_environment WHERE name='{variableName}' AND UserName='<SYSTEM>'");
 

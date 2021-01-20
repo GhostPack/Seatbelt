@@ -137,7 +137,7 @@
     <Compile Include="Commands\Windows\IdleTimeCommand.cs" />
     <Compile Include="Commands\Windows\AntiVirusCommand.cs" />
     <Compile Include="Commands\Windows\AppLockerCommand.cs" />
-    <Compile Include="Commands\Windows\ARPTableCommand.cs" />
+    <Compile Include="Commands\Windows\ArpTableCommand.cs" />
     <Compile Include="Commands\CommandDTOBase.cs" />
     <Compile Include="Commands\Windows\PrintersCommand.cs" />
     <Compile Include="Commands\Windows\LastShutdownCommand.cs" />

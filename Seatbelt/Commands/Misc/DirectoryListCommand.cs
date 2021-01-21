@@ -61,6 +61,7 @@ namespace Seatbelt.Commands
                 ignoreErrors = true;
             }
 
+            directory = Path.GetFullPath(Environment.ExpandEnvironmentVariables(directory));
             foreach (var file in ListDirectory(directory, regex, depth, ignoreErrors))
             {
                 yield return file;

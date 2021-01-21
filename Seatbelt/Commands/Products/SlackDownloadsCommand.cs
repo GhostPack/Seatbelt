@@ -11,10 +11,10 @@ namespace Seatbelt.Commands
 {
     class Download
     {
-        public string TeamID { get; set; }
-        public string UserID { get; set; }
-        public string DownloadPath { get; set; }
-        public DateTime StartTime { get; set; }
+        public string? TeamID { get; set; }
+        public string? UserID { get; set; }
+        public string? DownloadPath { get; set; }
+        public DateTime? StartTime { get; set; }
     }
 
     internal class SlackDownloadsCommand : CommandBase

@@ -43,7 +43,7 @@ namespace Seatbelt.Commands.Windows
 
         internal class WindowsAutoLogonDTO : CommandDTOBase
         {
-            public WindowsAutoLogonDTO(string defaultDomainName, string defaultUserName, string defaultPassword, string altDefaultDomainName, string altDefaultUserName, string altDefaultPassword)
+            public WindowsAutoLogonDTO(string? defaultDomainName, string? defaultUserName, string? defaultPassword, string? altDefaultDomainName, string? altDefaultUserName, string? altDefaultPassword)
             {
                 DefaultDomainName = defaultDomainName;
                 DefaultUserName = defaultUserName;
@@ -52,12 +52,12 @@ namespace Seatbelt.Commands.Windows
                 AltDefaultUserName = altDefaultUserName;
                 AltDefaultPassword = altDefaultPassword;    
             }
-            public string DefaultDomainName { get; }
-            public string DefaultUserName { get; }
-            public string DefaultPassword { get; }
-            public string AltDefaultDomainName { get; }
-            public string AltDefaultUserName { get; }
-            public string AltDefaultPassword { get; }
+            public string? DefaultDomainName { get; }
+            public string? DefaultUserName { get; }
+            public string? DefaultPassword { get; }
+            public string? AltDefaultDomainName { get; }
+            public string? AltDefaultUserName { get; }
+            public string? AltDefaultPassword { get; }
         }
     }
 }

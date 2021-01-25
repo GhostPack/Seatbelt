@@ -113,7 +113,7 @@ namespace Seatbelt.Commands
                     continue;
                 }
 
-                long size = 0;
+                long? size = null;
                 try
                 {
                     var info = new FileInfo(file);
@@ -149,7 +149,6 @@ namespace Seatbelt.Commands
 
                 if(query.Depth+1 <= maxDepth) _dirList.Push(new DirectoryQuery(dir, query.Depth + 1));
 
-
                 if (!matchesIncludeFilter) continue;
 
                 if (!dir.EndsWith("\\"))
@@ -163,95 +162,7 @@ namespace Seatbelt.Commands
             }
         }
 
-        //private IEnumerable<DirectoryListDTO> ListDirectory(string path, Regex? regex, int maxDepth,
-        //    bool ignoreErrors)
-        //{
-        //    if (maxDepth < 0)
-        //    {
-        //        yield break;
-        //    }
-
-        //    var dirList = new List<string>();
-        //    string[] directories;
-        //    try
-        //    {
-        //        directories = Directory.GetDirectories(path);
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        if (!ignoreErrors)
-        //        {
-        //            WriteError(e.ToString());
-        //        }
-
-        //        yield break;
-        //    }
-
-        //    foreach (var dir in directories)
-        //    {
-        //        dirList.Add(dir);
-        //        if (regex != null && !regex.IsMatch(dir))
-        //        {
-        //            continue;
-        //        }
-
-        //        if (!dir.EndsWith("\\"))
-        //        {
-        //            yield return WriteOutput(dir + "\\", 0);
-        //        }
-        //        else
-        //        {
-        //            yield return WriteOutput(dir, 0);
-        //        }
-        //    }
-
-
-
-        //    string[] files;
-        //    try
-        //    {
-        //        files = Directory.GetFiles(path);
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        if (!ignoreErrors)
-        //        {
-        //            throw e;
-        //        }
-
-        //        yield break;
-        //    }
-
-        //    foreach (var file in files)
-        //    {
-        //        if (regex != null && !regex.IsMatch(file))
-        //        {
-        //            continue;
-        //        }
-
-        //        long size = 0;
-        //        try
-        //        {
-        //            var info = new FileInfo(file);
-        //            size = info.Length;
-        //        }
-        //        catch
-        //        {
-        //        }
-
-        //        yield return WriteOutput(file, size);
-        //    }
-
-        //    foreach (var dir in dirList)
-        //    {
-        //        foreach (var file in ListDirectory(dir, regex, (maxDepth - 1), ignoreErrors))
-        //        {
-        //            yield return file;
-        //        }
-        //    }
-        //}
-
-        private DirectoryListDTO WriteOutput(string path, long size)
+        private DirectoryListDTO WriteOutput(string path, long? size)
         {
             DateTime? lastAccess = null;
             DateTime? lastWrite = null;
@@ -276,7 +187,7 @@ namespace Seatbelt.Commands
 
     internal class DirectoryListDTO : CommandDTOBase
     {
-        public DirectoryListDTO(DateTime? lastAccess, DateTime? lastWrite, long size, string path)
+        public DirectoryListDTO(DateTime? lastAccess, DateTime? lastWrite, long? size, string path)
         {
             LastAccess = lastAccess;
             LastWrite = lastWrite;
@@ -285,7 +196,7 @@ namespace Seatbelt.Commands
         }
         public DateTime? LastAccess { get; }
         public DateTime? LastWrite { get; }
-        public long Size { get; }
+        public long? Size { get; }
         public string Path { get; }
     }
 
@@ -299,7 +210,11 @@ namespace Seatbelt.Commands
         public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
         {
             var dto = (DirectoryListDTO)result;
-            WriteLine("  {0,-10} {1,-10} {2,-9} {3}", dto.LastWrite?.ToString("yy-MM-dd"), dto.LastAccess?.ToString("yy-MM-dd"), BytesToString(dto.Size), dto.Path);
+            WriteLine("  {0,-10} {1,-10} {2,-9} {3}", 
+                dto.LastWrite?.ToString("yy-MM-dd"), 
+                dto.LastAccess?.ToString("yy-MM-dd"),
+                dto.Size == null ? "???" : BytesToString(dto.Size.Value), 
+                dto.Path);
         }
 
         private string BytesToString(long byteCount)

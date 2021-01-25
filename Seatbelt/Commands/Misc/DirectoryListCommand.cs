@@ -1,21 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Seatbelt.Output.Formatters;
 using Seatbelt.Output.TextWriters;
 
 namespace Seatbelt.Commands
 {
+    public class DirectoryQuery
+    {
+        public DirectoryQuery(string path, int depth)
+        {
+            Path = path;
+            Depth = depth;
+        }
+        public string Path { get; }
+        public int Depth { get; }
+    }
     internal class DirectoryListCommand : CommandBase
     {
         public override string Command => "dir";
 
         public override string Description =>
-            "Lists files/folders. By default, lists users' downloads, documents, and desktop folders (arguments == [directory] [depth] [regex] [boolIgnoreErrors]";
+            "Lists files/folders. By default, lists users' downloads, documents, and desktop folders (arguments == [directory] [maxDepth] [regex] [boolIgnoreErrors]";
 
         public override CommandGroup[] Group => new[] { CommandGroup.User };
         public override bool SupportRemote => false;
+        private Stack<DirectoryQuery> _dirList = new Stack<DirectoryQuery>();
 
         public DirectoryListCommand(Runtime runtime) : base(runtime)
         {
@@ -25,7 +37,7 @@ namespace Seatbelt.Commands
         {
             string directory;
             Regex? regex = null;
-            int depth;
+            int maxDepth;
             var ignoreErrors = false;
 
             WriteHost("  {0,-10} {1,-10} {2,-9} {3}\n", "LastAccess", "LastWrite", "Size", "Path");
@@ -34,102 +46,69 @@ namespace Seatbelt.Commands
             {
                 directory = $"{Environment.GetEnvironmentVariable("SystemDrive")}\\Users\\";
                 regex = new Regex(@"^(?!.*desktop\.ini).*\\(Documents|Downloads|Desktop)\\", RegexOptions.IgnoreCase);
-                depth = 2;
+                maxDepth = 2;
                 ignoreErrors = true;
             }
             else if (args.Length == 1)
             {
                 directory = args[0];
-                depth = 0;
+                maxDepth = 0;
             }
             else if (args.Length == 2)
             {
                 directory = args[0];
-                depth = int.Parse(args[1]);
+                maxDepth = int.Parse(args[1]);
             }
             else if (args.Length == 3)
             {
                 directory = args[0];
-                depth = int.Parse(args[1]);
+                maxDepth = int.Parse(args[1]);
                 regex = new Regex(args[2], RegexOptions.IgnoreCase);
             }
             else
             {
                 directory = args[0];
-                depth = int.Parse(args[1]);
+                maxDepth = int.Parse(args[1]);
                 regex = new Regex(args[2], RegexOptions.IgnoreCase);
                 ignoreErrors = true;
             }
 
             directory = Path.GetFullPath(Environment.ExpandEnvironmentVariables(directory));
-            foreach (var file in ListDirectory(directory, regex, depth, ignoreErrors))
+            if (!directory.EndsWith(@"\")) directory += @"\";
+
+            _dirList.Push(new DirectoryQuery(directory, 0));
+
+            while (_dirList.Any())
             {
-                yield return file;
+                var query = _dirList.Pop();
+
+                foreach (var dto in GetDirectories(regex, ignoreErrors, query, maxDepth))
+                    yield return dto;
+
+                foreach (var dto in GetFiles(regex, ignoreErrors, query))
+                    yield return dto;
             }
         }
-
-        private IEnumerable<DirectoryListDTO> ListDirectory(string path, Regex? regex, int depth,
-            bool ignoreErrors)
+        
+        private IEnumerable<DirectoryListDTO> GetFiles(Regex? regex, bool ignoreErrors, DirectoryQuery query)
         {
-            if (depth < 0)
-            {
-                yield break;
-            }
-
-            var dirList = new List<string>();
-            string[] directories;
+            string[] files;
             try
             {
-                directories = Directory.GetDirectories(path);
+                files = Directory.GetFiles(query.Path);
             }
             catch (Exception e)
             {
+                files = new string[] { };
                 if (!ignoreErrors)
                 {
                     WriteError(e.ToString());
                 }
-
-                yield break;
-            }
-
-            foreach (var dir in directories)
-            {
-                dirList.Add(dir);
-                if (regex != null && !regex.IsMatch(dir))
-                {
-                    continue;
-                }
-
-                if (!dir.EndsWith("\\"))
-                {
-                    yield return WriteOutput(dir + "\\", 0);
-                }
-                else
-                {
-                    yield return WriteOutput(dir, 0);
-                }
-            }
-
-
-
-            string[] files;
-            try
-            {
-                files = Directory.GetFiles(path);
-            }
-            catch (Exception e)
-            {
-                if (!ignoreErrors)
-                {
-                    throw e;
-                }
-
-                yield break;
             }
 
             foreach (var file in files)
             {
-                if (regex != null && !regex.IsMatch(file))
+                if (regex != null && !regex.IsMatch(file) && !regex.IsMatch(query.Path))
                 {
                     continue;
                 }
@@ -146,20 +125,145 @@ namespace Seatbelt.Commands
 
                 yield return WriteOutput(file, size);
             }
+        }
 
-            foreach (var dir in dirList)
+        private IEnumerable<DirectoryListDTO> GetDirectories(Regex? regex, bool ignoreErrors, DirectoryQuery query, int maxDepth)
+        {
+            string[] directories;
+            try
             {
-                foreach (var file in ListDirectory(dir, regex, (depth - 1), ignoreErrors))
+                directories = Directory.GetDirectories(query.Path);
+            }
+            catch (Exception e)
+            {
+                directories = new string[] { };
+                if (!ignoreErrors)
                 {
-                    yield return file;
+                    WriteError(e.ToString());
+                }
+            }
+
+            foreach (var dir in directories)
+            {
+                var matchesIncludeFilter = regex == null || regex.IsMatch(dir);
+
+                if(query.Depth+1 <= maxDepth) _dirList.Push(new DirectoryQuery(dir, query.Depth + 1));
+
+
+                if (!matchesIncludeFilter) continue;
+
+                if (!dir.EndsWith("\\"))
+                {
+                    yield return WriteOutput(dir + "\\", 0);
+                }
+                else
+                {
+                    yield return WriteOutput(dir, 0);
                 }
             }
         }
 
+        //private IEnumerable<DirectoryListDTO> ListDirectory(string path, Regex? regex, int maxDepth,
+        //    bool ignoreErrors)
+        //{
+        //    if (maxDepth < 0)
+        //    {
+        //        yield break;
+        //    }
+
+        //    var dirList = new List<string>();
+        //    string[] directories;
+        //    try
+        //    {
+        //        directories = Directory.GetDirectories(path);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        if (!ignoreErrors)
+        //        {
+        //            WriteError(e.ToString());
+        //        }
+
+        //        yield break;
+        //    }
+
+        //    foreach (var dir in directories)
+        //    {
+        //        dirList.Add(dir);
+        //        if (regex != null && !regex.IsMatch(dir))
+        //        {
+        //            continue;
+        //        }
+
+        //        if (!dir.EndsWith("\\"))
+        //        {
+        //            yield return WriteOutput(dir + "\\", 0);
+        //        }
+        //        else
+        //        {
+        //            yield return WriteOutput(dir, 0);
+        //        }
+        //    }
+
+
+
+        //    string[] files;
+        //    try
+        //    {
+        //        files = Directory.GetFiles(path);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        if (!ignoreErrors)
+        //        {
+        //            throw e;
+        //        }
+
+        //        yield break;
+        //    }
+
+        //    foreach (var file in files)
+        //    {
+        //        if (regex != null && !regex.IsMatch(file))
+        //        {
+        //            continue;
+        //        }
+
+        //        long size = 0;
+        //        try
+        //        {
+        //            var info = new FileInfo(file);
+        //            size = info.Length;
+        //        }
+        //        catch
+        //        {
+        //        }
+
+        //        yield return WriteOutput(file, size);
+        //    }
+
+        //    foreach (var dir in dirList)
+        //    {
+        //        foreach (var file in ListDirectory(dir, regex, (maxDepth - 1), ignoreErrors))
+        //        {
+        //            yield return file;
+        //        }
+        //    }
+        //}
+
         private DirectoryListDTO WriteOutput(string path, long size)
         {
-            var lastAccess = Directory.GetLastAccessTime(path);
-            var lastWrite = Directory.GetLastWriteTime(path);
+            DateTime? lastAccess = null;
+            DateTime? lastWrite = null;
+
+            try
+            {
+                lastAccess = Directory.GetLastAccessTime(path);
+                lastWrite = Directory.GetLastWriteTime(path);
+            }
+            catch
+            {
+            }
 
             return new DirectoryListDTO(
                 lastAccess,
@@ -172,17 +276,17 @@ namespace Seatbelt.Commands
 
     internal class DirectoryListDTO : CommandDTOBase
     {
-        public DirectoryListDTO(DateTime lastAccess, DateTime lastWrite, long size, string path)
+        public DirectoryListDTO(DateTime? lastAccess, DateTime? lastWrite, long size, string path)
         {
             LastAccess = lastAccess;
             LastWrite = lastWrite;
             Size = size;
-            Path = path;    
+            Path = path;
         }
-        public DateTime LastAccess { get;  }
-        public DateTime LastWrite { get;  }
-        public long Size { get;  }
-        public string Path { get;  }
+        public DateTime? LastAccess { get; }
+        public DateTime? LastWrite { get; }
+        public long Size { get; }
+        public string Path { get; }
     }
 
     [CommandOutputType(typeof(DirectoryListDTO))]
@@ -195,7 +299,7 @@ namespace Seatbelt.Commands
         public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
         {
             var dto = (DirectoryListDTO)result;
-            WriteLine("  {0,-10} {1,-10} {2,-9} {3}", dto.LastWrite.ToString("yy-MM-dd"), dto.LastAccess.ToString("yy-MM-dd"), BytesToString(dto.Size), dto.Path);
+            WriteLine("  {0,-10} {1,-10} {2,-9} {3}", dto.LastWrite?.ToString("yy-MM-dd"), dto.LastAccess?.ToString("yy-MM-dd"), BytesToString(dto.Size), dto.Path);
         }
 
         private string BytesToString(long byteCount)

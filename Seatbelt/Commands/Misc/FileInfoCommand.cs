@@ -56,55 +56,87 @@ namespace Seatbelt.Commands.Windows
 
             foreach (var file in args)
             {
-                FileVersionInfo versionInfo;
-                FileInfo fileInfo;
-                FileSecurity security;
-
-                try
+                if ((File.GetAttributes(file) & FileAttributes.Directory) != FileAttributes.Directory) // If file is not a directory
                 {
-                    versionInfo = FileVersionInfo.GetVersionInfo(file);
-                    fileInfo = new FileInfo(file);
-                    security = File.GetAccessControl(file);
+                    FileVersionInfo versionInfo;
+                    FileInfo fileInfo;
+                    FileSecurity security;
+
+                    try
+                    {
+                        versionInfo = FileVersionInfo.GetVersionInfo(file);
+                        fileInfo = new FileInfo(file);
+                        security = File.GetAccessControl(file);
+                    }
+                    catch
+                    {
+                        // TODO: Properly process error
+                        WriteError($"  [!] Error accessing {file}\n");
+                        continue;
+                    }
+
+                    if (versionInfo != null && fileInfo != null && security != null)  // TODO: Account for cases when any of these aren't null 
+                    {
+                        var isDotNet = FileUtil.IsDotNetAssembly(file);
+
+                        yield return new FileInfoDTO(
+                            versionInfo.Comments,
+                            versionInfo.CompanyName,
+                            versionInfo.FileDescription,
+                            versionInfo.FileName,
+                            versionInfo.FileVersion,
+                            versionInfo.InternalName,
+                            versionInfo.IsDebug,
+                            isDotNet,
+                            versionInfo.IsPatched,
+                            versionInfo.IsPreRelease,
+                            versionInfo.IsPrivateBuild,
+                            versionInfo.IsSpecialBuild,
+                            versionInfo.Language,
+                            versionInfo.LegalCopyright,
+                            versionInfo.LegalTrademarks,
+                            versionInfo.OriginalFilename,
+                            versionInfo.PrivateBuild,
+                            versionInfo.ProductName,
+                            versionInfo.ProductVersion,
+                            versionInfo.SpecialBuild,
+                            fileInfo.Attributes,
+                            fileInfo.CreationTimeUtc,
+                            fileInfo.LastAccessTimeUtc,
+                            fileInfo.LastWriteTimeUtc,
+                            fileInfo.Length,
+                            security.GetSecurityDescriptorSddlForm(AccessControlSections.Access | AccessControlSections.Owner)
+                        );
+                    }
                 }
-                catch
-                {
-                    // TODO: Properly process error
-                    WriteError($"  [!] Error accessing {file}\n");
-                    continue;
-                }
 
-                if (versionInfo != null && fileInfo != null && security != null)  // TODO: Account for cases when any of these aren't null 
+                else // Target is a directory
                 {
-                    var isDotNet = FileUtil.IsDotNetAssembly(file);
+                    DirectorySecurity directorySecurity;
 
-                    yield return new FileInfoDTO(
-                        versionInfo.Comments,
-                        versionInfo.CompanyName,
-                        versionInfo.FileDescription,
-                        versionInfo.FileName,
-                        versionInfo.FileVersion,
-                        versionInfo.InternalName,
-                        versionInfo.IsDebug,
-                        isDotNet,
-                        versionInfo.IsPatched,
-                        versionInfo.IsPreRelease,
-                        versionInfo.IsPrivateBuild,
-                        versionInfo.IsSpecialBuild,
-                        versionInfo.Language,
-                        versionInfo.LegalCopyright,
-                        versionInfo.LegalTrademarks,
-                        versionInfo.OriginalFilename,
-                        versionInfo.PrivateBuild,
-                        versionInfo.ProductName,
-                        versionInfo.ProductVersion,
-                        versionInfo.SpecialBuild,
-                        fileInfo.Attributes,
-                        fileInfo.CreationTimeUtc,
-                        fileInfo.LastAccessTimeUtc,
-                        fileInfo.LastWriteTimeUtc,
-                        fileInfo.Length,
-                        security.GetSecurityDescriptorSddlForm(AccessControlSections.Access | AccessControlSections.Owner)
-                    );
+                    try
+                    {
+                        DirectoryInfo directoryInfo = new DirectoryInfo(file);
+                        directorySecurity = directoryInfo.GetAccessControl();
+                    }
+                    catch
+                    {
+                        // TODO: Properly process error
+                        WriteError($"  [!] Error accessing {file}\n");
+                        continue;
+                    }
+
+                    if (directorySecurity != null)  // TODO: Account for cases when any of these aren't null 
+                    {
+
+                        yield return new DirectoryInfoDTO(
+                            FileAttributes.Directory,
+                            Directory.GetCreationTimeUtc(file),
+                            Directory.GetLastAccessTimeUtc(file),
+                            Directory.GetLastWriteTimeUtc(file),
+                            directorySecurity.GetSecurityDescriptorSddlForm(AccessControlSections.Access | AccessControlSections.Owner)
+                        );
+                    }
                 }
             }
         }
@@ -141,6 +173,7 @@ namespace Seatbelt.Commands.Windows
             Length = length;
             SDDL = sddl;
         }
+
         public string Comments { get; }
         public string CompanyName { get; }
         public string FileDescription { get; }
@@ -166,6 +199,24 @@ namespace Seatbelt.Commands.Windows
         public DateTime LastAccessTimeUtc { get; }
         public DateTime LastWriteTimeUtc { get; }
         public long Length { get; }
+        public string SDDL { get; }
+}
+
+    internal class DirectoryInfoDTO : CommandDTOBase
+    {
+        public DirectoryInfoDTO(FileAttributes attributes, DateTime creationTimeUtc, DateTime lastAccessTimeUtc, DateTime lastWriteTimeUtc, string sddl)
+        {
+            Attributes = attributes;
+            CreationTimeUtc = creationTimeUtc;
+            LastAccessTimeUtc = lastAccessTimeUtc;
+            LastWriteTimeUtc = lastWriteTimeUtc;
+            SDDL = sddl;
+        }
+
+        public FileAttributes Attributes { get; }
+        public DateTime CreationTimeUtc { get; }
+        public DateTime LastAccessTimeUtc { get; }
+        public DateTime LastWriteTimeUtc { get; }
         public string SDDL { get; }
     }
 }

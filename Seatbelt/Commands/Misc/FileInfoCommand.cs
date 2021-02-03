@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Security;
 using System.Security.AccessControl;
 
 namespace Seatbelt.Commands.Windows
@@ -56,7 +57,7 @@ namespace Seatbelt.Commands.Windows
 
             foreach (var file in args)
             {
-                if ((File.GetAttributes(file) & FileAttributes.Directory) != FileAttributes.Directory) // If file is not a directory
+                if (File.Exists(file) && (File.GetAttributes(file) & FileAttributes.Directory) != FileAttributes.Directory) // If file is not a directory
                 {
                     FileVersionInfo versionInfo;
                     FileInfo fileInfo;
@@ -68,10 +69,24 @@ namespace Seatbelt.Commands.Windows
                         fileInfo = new FileInfo(file);
                         security = File.GetAccessControl(file);
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // TODO: Properly process error
-                        WriteError($"  [!] Error accessing {file}\n");
+                        if (ex is FileNotFoundException || ex is SystemException)
+                        {
+                            WriteError($"  [!] Could not locate {file}\n");
+                        }
+                        else if (ex is SecurityException || ex is UnauthorizedAccessException)
+                        {
+                            WriteError($"  [!] Insufficient privileges to access {file}\n");
+                        }
+                        else if (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException)
+                        {
+                            WriteError($"  [!] Path \"{file}\" is an invalid format\n");
+                        }
+                        else
+                        {
+                            WriteError($"  [!] Error accessing {file}\n");
+                        }
                         continue;
                     }
 
@@ -119,10 +134,24 @@ namespace Seatbelt.Commands.Windows
                         DirectoryInfo directoryInfo = new DirectoryInfo(file);
                         directorySecurity = directoryInfo.GetAccessControl();
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // TODO: Properly process error
-                        WriteError($"  [!] Error accessing {file}\n");
+                        if (ex is FileNotFoundException || ex is SystemException)
+                        {
+                            WriteError($"  [!] Could not locate {file}\n");
+                        }
+                        else if (ex is SecurityException || ex is UnauthorizedAccessException)
+                        {
+                            WriteError($"  [!] Insufficient privileges to access {file}\n");
+                        }
+                        else if (ex is ArgumentException || ex is PathTooLongException)
+                        {
+                            WriteError($"  [!] Path \"{file}\" is an invalid format\n");
+                        }
+                        else
+                        {
+                            WriteError($"  [!] Error accessing {file}\n");
+                        }
                         continue;
                     }
 

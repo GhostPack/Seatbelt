@@ -10,7 +10,7 @@ namespace Seatbelt.Commands
     {
         public override string Command => "CertificateThumbprints";
         public override string Description => "Finds thumbprints for all certificate store certs on the systen";
-        public override CommandGroup[] Group => new[] { CommandGroup.User, CommandGroup.System};
+        public override CommandGroup[] Group => new[] { CommandGroup.User, CommandGroup.System };
         public override bool SupportRemote => false;
 
         public CertificateThumbprintCommand(Runtime runtime) : base(runtime)
@@ -34,7 +34,7 @@ namespace Seatbelt.Commands
                             {
                                 StoreName = $"{storeName}",
                                 StoreLocation = $"{storeLocation}",
-                                FriendlyName = certificate.FriendlyName,
+                                SimpleName = certificate.GetNameInfo(X509NameType.SimpleName, false),
                                 Thumbprint = certificate.Thumbprint,
                                 ExpiryDate = certificate.NotAfter,
                             };
@@ -48,7 +48,7 @@ namespace Seatbelt.Commands
         {
             public string? StoreName { get; set; }
             public string? StoreLocation { get; set; }
-            public string? FriendlyName { get; set; }
+            public string? SimpleName { get; set; }
             public string? Thumbprint { get; set; }
             public DateTime? ExpiryDate { get; set; }
         }
@@ -63,7 +63,7 @@ namespace Seatbelt.Commands
             public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
             {
                 var dto = (CertificateThumbprintDTO)result;
-                WriteLine($"{dto.StoreLocation}\\{dto.StoreName} - {dto.Thumbprint} ({dto.FriendlyName}) {dto.ExpiryDate}");
+                WriteLine($"{dto.StoreLocation}\\{dto.StoreName} - {dto.Thumbprint} ({dto.SimpleName}) {dto.ExpiryDate}");
             }
         }
     }

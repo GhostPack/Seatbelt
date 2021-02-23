@@ -9,7 +9,7 @@ namespace Seatbelt.Commands
     internal class CertificateCommand : CommandBase
     {
         public override string Command => "Certificates";
-        public override string Description => "Finds user and machine certificate files";
+        public override string Description => "Finds user and machine personal certificate files";
         public override CommandGroup[] Group => new[] { CommandGroup.User, CommandGroup.System};
         public override bool SupportRemote => false;
 
@@ -21,7 +21,6 @@ namespace Seatbelt.Commands
         {
             foreach (var storeLocation in new Enum[] { StoreLocation.CurrentUser, StoreLocation.LocalMachine })
             {
-
                 var store = new X509Store(StoreName.My, (StoreLocation)storeLocation);
                 store.Open(OpenFlags.ReadOnly);
 

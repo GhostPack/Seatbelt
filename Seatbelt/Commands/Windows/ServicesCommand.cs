@@ -91,7 +91,7 @@ namespace Seatbelt.Commands.Windows
                 }
 
 
-                serviceDll = TryGetServiceSddl(serviceName);
+                serviceSddl = TryGetServiceSddl(serviceName);
                 
 
                 yield return new ServicesDTO()

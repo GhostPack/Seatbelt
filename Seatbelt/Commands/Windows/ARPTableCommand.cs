@@ -140,7 +140,6 @@ namespace Seatbelt.Commands.Windows
             var index = (uint?)ni.GetType().GetField("index", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(ni);
             if(index == null) throw new Exception("Could not get interface index number");
 
-            Console.WriteLine(ni.Description);
             var adapter = new ArpTableDTO(index.Value, ni.Name, ni.Description);
 
             adapterProperties.UnicastAddresses

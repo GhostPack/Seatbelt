@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Win32;
+using Seatbelt.Commands.Windows;
+using Seatbelt.Output.Formatters;
+using Seatbelt.Output.TextWriters;
 using Seatbelt.Util;
 
 
@@ -104,6 +107,48 @@ namespace Seatbelt.Commands
             public SysmonOptions Options { get; }
 
             public string? Rules { get; }
+        }
+
+        [CommandOutputType(typeof(SysmonDTO))]
+        internal class SysmonTextFormatter : TextFormatterBase
+        {
+            public SysmonTextFormatter(ITextWriter writer) : base(writer)
+            {
+            }
+
+            public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
+            {
+                var dto = (SysmonDTO)result;
+                
+                WriteLine($"Installed:        {dto.Installed}");
+                WriteLine($"HashingAlgorithm: {dto.HashingAlgorithm}");
+                WriteLine($"Options:          {dto.Options}");
+                WriteLine($"Rules:");
+
+                foreach (var line in Split(dto.Rules, 100))
+                {
+                    WriteLine($"    {line}");
+                }
+
+            }
+
+            private IEnumerable<string> Split(string? text, int lineLength)
+            {
+                if(text == null) yield break;
+
+                var i = 0;
+                for (; i < text.Length; i += lineLength)
+                {
+                    if (i + lineLength > text.Length)
+                    {
+                        break;
+                    }
+
+                    yield return text.Substring(i, lineLength);
+                }
+
+                yield return text.Substring(i);
+            }
         }
     }
 }

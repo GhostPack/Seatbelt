@@ -12,15 +12,7 @@ namespace Seatbelt.Interop
         public static extern void WTSCloseServer(IntPtr hServer);
 
         [DllImport("wtsapi32.dll", SetLastError = true)]
-        public static extern int WTSEnumerateSessions(
-            IntPtr hServer,
-            [MarshalAs(UnmanagedType.U4)] int Reserved,
-            [MarshalAs(UnmanagedType.U4)] int Version,
-            ref IntPtr ppSessionInfo,
-            [MarshalAs(UnmanagedType.U4)] ref int pCount);
-
-        [DllImport("wtsapi32.dll", SetLastError = true)]
-        public static extern int WTSEnumerateSessionsEx(
+        public static extern bool WTSEnumerateSessionsEx(
             IntPtr hServer,
             [MarshalAs(UnmanagedType.U4)] ref int pLevel,
             [MarshalAs(UnmanagedType.U4)] int Filter,
@@ -30,7 +22,7 @@ namespace Seatbelt.Interop
         [DllImport("wtsapi32.dll")]
         public static extern void WTSFreeMemory(IntPtr pMemory);
 
-        [DllImport("Wtsapi32.dll", SetLastError = true)]
+        [DllImport("Wtsapi32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern bool WTSQuerySessionInformation(
             IntPtr hServer,
             uint sessionId,
@@ -53,11 +45,11 @@ namespace Seatbelt.Interop
         [StructLayout(LayoutKind.Sequential)]
         public struct WTS_SESSION_INFO_1
         {
-            public int ExecEnvId;
+            public uint ExecEnvId;
 
             public WTS_CONNECTSTATE_CLASS State;
 
-            public int SessionID;
+            public uint SessionID;
 
             [MarshalAs(UnmanagedType.LPStr)]
             public string pSessionName;
@@ -75,10 +67,21 @@ namespace Seatbelt.Interop
             public string pFarmName;
         }
 
+
+        public enum ADDRESS_FAMILY
+        {
+            AF_UNSPEC,
+            AF_INET = 2,
+            AF_IPX = 6,
+            AF_NETBIOS = 17,
+            AF_INET6 = 23,
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct WTS_CLIENT_ADDRESS
         {
-            public uint AddressFamily;
+            public ADDRESS_FAMILY AddressFamily;
+
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20)]
             public byte[] Address;
         }
@@ -130,5 +133,43 @@ namespace Seatbelt.Interop
             WTSSessionAddressV4 = 28,
             WTSIsRemoteSession = 29
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WTS_CLIENT_DISPLAY
+        {
+            public int HorizontalResolution;
+            public int VerticalResolution;
+            public int ColorDepth;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        internal struct WTSINFO
+        {
+            public WTS_CONNECTSTATE_CLASS State;
+            public int SessionId;
+            public int IncomingBytes;
+            public int OutgoingBytes;
+            public int IncomingFrames;
+            public int OutgoingFrames;
+            public int IncomingCompressedBytes;
+            public int OutgoingCompressedBytes;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+            public string WinStationName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 17)]
+            public string Domain;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 21)]
+            public string UserName;
+            [MarshalAs(UnmanagedType.I8)]
+            public long ConnectTime;
+            [MarshalAs(UnmanagedType.I8)]
+            public long DisconnectTime;
+            [MarshalAs(UnmanagedType.I8)]
+            public long LastInputTime;
+            [MarshalAs(UnmanagedType.I8)]
+            public long LogonTime;
+            [MarshalAs(UnmanagedType.I8)]
+            public long CurrentTime;
+        }
     }
 }
+

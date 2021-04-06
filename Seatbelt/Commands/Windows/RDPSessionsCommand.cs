@@ -124,6 +124,23 @@ namespace Seatbelt.Commands.Windows
                         WTSFreeMemory(sessionInfoPtr);
                     }
 
+                    // Get Client's hardwareId
+                    byte[]? clientHardwareId = null;
+                    if (WTSQuerySessionInformation(server, si.SessionID, WTS_INFO_CLASS.WTSClientHardwareId, out var buffer, out var bytesRead))
+                    {
+                        clientHardwareId = new byte[bytesRead];
+                        Marshal.Copy(buffer, clientHardwareId, 0, (int)bytesRead);
+                        WTSFreeMemory(buffer);
+                    }
+
+                    // Get Client's directory
+                    string? clientDirectory = null;
+                    if (WTSQuerySessionInformation(server, si.SessionID, WTS_INFO_CLASS.WTSClientDirectory, out buffer, out _))
+                    {
+                        clientDirectory = Marshal.PtrToStringUni(buffer);
+                        WTSFreeMemory(buffer);
+                    }
+
                     yield return new RDPSessionsDTO(
                         si.SessionID,
                         si.pSessionName,
@@ -136,7 +153,9 @@ namespace Seatbelt.Commands.Windows
                         clientIp,
                         clientHostname,
                         clientResolution,
-                        clientBuild
+                        clientBuild,
+                        clientHardwareId,
+                        clientDirectory
                     );
                 }
 
@@ -151,7 +170,7 @@ namespace Seatbelt.Commands.Windows
 
     internal class RDPSessionsDTO : CommandDTOBase
     {
-        public RDPSessionsDTO(uint sessionId, string sessionName, string userName, string domainName, WTS_CONNECTSTATE_CLASS state, string hostName, string farmName, long? lastInputTime, IPAddress? clientIp, string? clientHostname, WTS_CLIENT_DISPLAY? clientResolution, int? clientBuild)
+        public RDPSessionsDTO(uint sessionId, string sessionName, string userName, string domainName, WTS_CONNECTSTATE_CLASS state, string hostName, string farmName, long? lastInputTime, IPAddress? clientIp, string? clientHostname, WTS_CLIENT_DISPLAY? clientResolution, int? clientBuild, byte[]? clientHardwareId, string? clientDirectory)
         {
             SessionID = sessionId;
             SessionName = sessionName;
@@ -165,6 +184,8 @@ namespace Seatbelt.Commands.Windows
             ClientHostname = clientHostname;
             ClientResolution = clientResolution;
             ClientBuild = clientBuild;
+            ClientHardwareId = clientHardwareId;
+            ClientDirectory = clientDirectory;
         }
         public uint SessionID { get; }
         public string SessionName { get; }
@@ -179,6 +200,8 @@ namespace Seatbelt.Commands.Windows
         public string? ClientHostname { get; }
         public WTS_CLIENT_DISPLAY? ClientResolution { get; }
         public int? ClientBuild { get; }
+        public byte[]? ClientHardwareId { get; }
+        public string? ClientDirectory { get; }
     }
 
     [CommandOutputType(typeof(RDPSessionsDTO))]
@@ -220,7 +243,9 @@ namespace Seatbelt.Commands.Windows
             WriteLine($"  {"ClientIP",-30}:  {dto.ClientIp}");
             WriteLine($"  {"ClientHostname",-30}:  {dto.ClientHostname}");
             WriteLine($"  {"ClientResolution",-30}:  {clientResolution}");
-            WriteLine($"  {"ClientBuild",-30}:  {dto.ClientBuild}\n");
+            WriteLine($"  {"ClientBuild",-30}:  {dto.ClientBuild}");
+            WriteLine($"  {"ClientHardwareId",-30}:  {string.Join(",", dto.ClientHardwareId.Select(b => b.ToString()).ToArray())}");
+            WriteLine($"  {"ClientDirectory",-30}:  {dto.ClientDirectory}\n");
         }
     }
 }

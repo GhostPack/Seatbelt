@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Web.Script.Serialization;
@@ -12,10 +11,10 @@ namespace Seatbelt.Commands
 {
     class Download
     {
-        public string TeamID { get; set; }
-        public string UserID { get; set; }
-        public string DownloadPath { get; set; }
-        public DateTime StartTime { get; set; }
+        public string? TeamID { get; set; }
+        public string? UserID { get; set; }
+        public string? DownloadPath { get; set; }
+        public DateTime? StartTime { get; set; }
     }
 
     internal class SlackDownloadsCommand : CommandBase
@@ -102,19 +101,23 @@ namespace Seatbelt.Commands
                         WriteError(exception.ToString());
                     }
 
-                    yield return new SlackDownloadsDTO()
-                    {
-                        UserName = userName,
-                        Downloads = Downloads
-                    };
+                    yield return new SlackDownloadsDTO(
+                        userName,
+                        Downloads
+                    );
                 }
             }
         }
 
         internal class SlackDownloadsDTO : CommandDTOBase
         {
-            public string UserName { get; set; }
-            public List<Download> Downloads { get; set; }
+            public SlackDownloadsDTO(string userName, List<Download> downloads)
+            {
+                UserName = userName;
+                Downloads = downloads;  
+            }
+            public string UserName { get; }
+            public List<Download> Downloads { get; }
         }
 
         [CommandOutputType(typeof(SlackDownloadsDTO))]
@@ -142,4 +145,3 @@ namespace Seatbelt.Commands
         }
     }
 }
-#nullable enable

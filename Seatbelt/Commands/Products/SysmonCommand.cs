@@ -1,7 +1,9 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Microsoft.Win32;
+using Seatbelt.Commands.Windows;
+using Seatbelt.Output.Formatters;
+using Seatbelt.Output.TextWriters;
 using Seatbelt.Util;
 
 
@@ -50,54 +52,103 @@ namespace Seatbelt.Commands
                 yield break;
             }
 
-            var hashAlg = ThisRunTime.GetDwordValue(RegistryHive.LocalMachine, @"SYSTEM\CurrentControlSet\Services\SysmonDrv\Parameters", "HashingAlgorithm");
-            var options = ThisRunTime.GetDwordValue(RegistryHive.LocalMachine, @"SYSTEM\CurrentControlSet\Services\SysmonDrv\Parameters", "Options");
-            var sysmonRules = ThisRunTime.GetBinaryValue(RegistryHive.LocalMachine, @"SYSTEM\CurrentControlSet\Services\SysmonDrv\Parameters", "Rules");
-            var installed = false;
-            var HashingAlgorithm = (SysmonHashAlgorithm)0;
-            var Options = (SysmonOptions)0;
-            var b64SysmonRules = "";
+            var paramsKey = @"SYSTEM\CurrentControlSet\Services\SysmonDrv\Parameters";
 
-            if ((hashAlg != null) || (options != null) || (sysmonRules != null))
+            var regHashAlg = ThisRunTime.GetDwordValue(RegistryHive.LocalMachine, paramsKey, "HashingAlgorithm");
+            var regOptions = ThisRunTime.GetDwordValue(RegistryHive.LocalMachine, paramsKey, "Options");
+            var regSysmonRules = ThisRunTime.GetBinaryValue(RegistryHive.LocalMachine, paramsKey, "Rules");
+            var installed = false;
+            var hashingAlgorithm = (SysmonHashAlgorithm)0;
+            var sysmonOptions = (SysmonOptions)0;
+            string? b64SysmonRules = null;
+
+            if ((regHashAlg != null) || (regOptions != null) || (regSysmonRules != null))
             {
                 installed = true;
             }
 
-            if (hashAlg != null && hashAlg != 0)
+            if (regHashAlg != null && regHashAlg != 0)
             {
-                hashAlg = hashAlg & 15; // we only care about the last 4 bits
-                HashingAlgorithm = (SysmonHashAlgorithm)hashAlg;
+                regHashAlg = regHashAlg & 15; // we only care about the last 4 bits
+                hashingAlgorithm = (SysmonHashAlgorithm)regHashAlg;
             }
 
-            if (options != null)
+            if (regOptions != null)
             {
-                Options = (SysmonOptions)options;
+                sysmonOptions = (SysmonOptions)regOptions;
             }
 
-            if (sysmonRules != null)
+            if (regSysmonRules != null)
             {
-                b64SysmonRules = Convert.ToBase64String(sysmonRules);
+                b64SysmonRules = Convert.ToBase64String(regSysmonRules);
             }
 
-            yield return new SysmonDTO()
-            {
-                Installed = installed,
-                HashingAlgorithm = HashingAlgorithm,
-                Options = Options,
-                Rules = b64SysmonRules
-            };
+            yield return new SysmonDTO(
+                installed,
+                hashingAlgorithm,
+                sysmonOptions,
+                b64SysmonRules
+            );
         }
 
         internal class SysmonDTO : CommandDTOBase
         {
-            public bool Installed { get; set; }
+            public SysmonDTO(bool installed, SysmonHashAlgorithm hashingAlgorithm, SysmonOptions options, string? rules)
+            {
+                Installed = installed;
+                HashingAlgorithm = hashingAlgorithm;
+                Options = options;
+                Rules = rules;  
+            }
+            public bool Installed { get; }
 
-            public SysmonHashAlgorithm HashingAlgorithm { get; set; }
+            public SysmonHashAlgorithm HashingAlgorithm { get; }
 
-            public SysmonOptions Options { get; set; }
+            public SysmonOptions Options { get; }
 
-            public string Rules { get; set; }
+            public string? Rules { get; }
+        }
+
+        [CommandOutputType(typeof(SysmonDTO))]
+        internal class SysmonTextFormatter : TextFormatterBase
+        {
+            public SysmonTextFormatter(ITextWriter writer) : base(writer)
+            {
+            }
+
+            public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
+            {
+                var dto = (SysmonDTO)result;
+                
+                WriteLine($"Installed:        {dto.Installed}");
+                WriteLine($"HashingAlgorithm: {dto.HashingAlgorithm}");
+                WriteLine($"Options:          {dto.Options}");
+                WriteLine($"Rules:");
+
+                foreach (var line in Split(dto.Rules, 100))
+                {
+                    WriteLine($"    {line}");
+                }
+
+            }
+
+            private IEnumerable<string> Split(string? text, int lineLength)
+            {
+                if(text == null) yield break;
+
+                var i = 0;
+                for (; i < text.Length; i += lineLength)
+                {
+                    if (i + lineLength > text.Length)
+                    {
+                        break;
+                    }
+
+                    yield return text.Substring(i, lineLength);
+                }
+
+                yield return text.Substring(i);
+            }
         }
     }
 }
-#nullable enable

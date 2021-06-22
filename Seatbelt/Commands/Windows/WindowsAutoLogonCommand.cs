@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Microsoft.Win32;
 
 namespace Seatbelt.Commands.Windows
@@ -19,38 +18,46 @@ namespace Seatbelt.Commands.Windows
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            var strDefaultDomainName = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon", "DefaultDomainName");
+            var winlogonPath = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon";
+            var strDefaultDomainName = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, winlogonPath, "DefaultDomainName");
 
-            var strDefaultUserName = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon", "DefaultUserName");
+            var strDefaultUserName = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, winlogonPath, "DefaultUserName");
 
-            var strDefaultPassword = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon", "DefaultPassword");
+            var strDefaultPassword = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, winlogonPath, "DefaultPassword");
 
-            var strAltDefaultDomainName = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon", "AltDefaultDomainName");
+            var strAltDefaultDomainName = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, winlogonPath, "AltDefaultDomainName");
 
-            var strAltDefaultUserName = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon", "AltDefaultUserName");
+            var strAltDefaultUserName = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, winlogonPath, "AltDefaultUserName");
 
-            var strAltDefaultPassword = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon", "AltDefaultPassword");
+            var strAltDefaultPassword = ThisRunTime.GetStringValue(RegistryHive.LocalMachine, winlogonPath, "AltDefaultPassword");
 
-            yield return new WindowsAutoLogonDTO()
-            {
-                DefaultDomainName = strDefaultDomainName,
-                DefaultUserName = strDefaultUserName,
-                DefaultPassword = strDefaultPassword,
-                AltDefaultDomainName = strAltDefaultDomainName,
-                AltDefaultUserName = strAltDefaultUserName,
-                AltDefaultPassword = strAltDefaultPassword
-            };
+            yield return new WindowsAutoLogonDTO(
+                strDefaultDomainName,
+                strDefaultUserName,
+                strDefaultPassword,
+                strAltDefaultDomainName,
+                strAltDefaultUserName,
+                strAltDefaultPassword
+            );
         }
 
         internal class WindowsAutoLogonDTO : CommandDTOBase
         {
-            public string DefaultDomainName { get; set; }
-            public string DefaultUserName { get; set; }
-            public string DefaultPassword { get; set; }
-            public string AltDefaultDomainName { get; set; }
-            public string AltDefaultUserName { get; set; }
-            public string AltDefaultPassword { get; set; }
+            public WindowsAutoLogonDTO(string? defaultDomainName, string? defaultUserName, string? defaultPassword, string? altDefaultDomainName, string? altDefaultUserName, string? altDefaultPassword)
+            {
+                DefaultDomainName = defaultDomainName;
+                DefaultUserName = defaultUserName;
+                DefaultPassword = defaultPassword;
+                AltDefaultDomainName = altDefaultDomainName;
+                AltDefaultUserName = altDefaultUserName;
+                AltDefaultPassword = altDefaultPassword;    
+            }
+            public string? DefaultDomainName { get; }
+            public string? DefaultUserName { get; }
+            public string? DefaultPassword { get; }
+            public string? AltDefaultDomainName { get; }
+            public string? AltDefaultUserName { get; }
+            public string? AltDefaultPassword { get; }
         }
     }
 }
-#nullable enable

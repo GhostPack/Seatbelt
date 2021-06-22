@@ -113,21 +113,22 @@ namespace Seatbelt.Util
             {
                 return infos;
             }
-            else
+
+            if (ConvertSecurityDescriptorToStringSecurityDescriptor(pSecurityDescriptor, 1, SecurityInfos.DiscretionaryAcl | SecurityInfos.Owner, out var pSddlString, out _))
             {
-                var len = 0;
-                //IntPtr pBuffer = IntPtr.Zero;
-                var sddlString = "";
+                infos.SDDL = Marshal.PtrToStringUni(pSddlString) ?? string.Empty;
+            }
+            var ownerSid = new SecurityIdentifier(pSidOwner);
+            infos.Owner = ownerSid.Value;
 
-                if (ConvertSecurityDescriptorToStringSecurityDescriptor(pSecurityDescriptor, 1, SecurityInfos.DiscretionaryAcl | SecurityInfos.Owner, out sddlString, out len))
-                {
-                    infos.SecurityDescriptor = new RawSecurityDescriptor(sddlString);
-                    infos.SDDL = sddlString;
-                }
+            if (pSddlString != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(pSddlString);
+            }
 
-
-                var ownerSid = new SecurityIdentifier(pSidOwner);
-                infos.Owner = ownerSid.Value;
+            if (pSecurityDescriptor != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(pSecurityDescriptor);
             }
 
             return infos;

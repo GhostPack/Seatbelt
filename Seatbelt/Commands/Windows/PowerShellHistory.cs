@@ -1,12 +1,8 @@
-﻿#nullable disable
-using static Seatbelt.Interop.Netapi32;
+﻿using System;
 using System.Collections.Generic;
-using Seatbelt.Output.TextWriters;
-using Seatbelt.Output.Formatters;
-using System;
 using System.IO;
-using Seatbelt.Util;
 using System.Text.RegularExpressions;
+using Seatbelt.Util;
 
 namespace Seatbelt.Commands.Windows
 {
@@ -33,8 +29,8 @@ namespace Seatbelt.Commands.Windows
 
             if (args.Length >= 1)
             {
-                string allArgs = String.Join(" ", args);
-                powershellRegex = new Regex[] { new Regex(allArgs, RegexOptions.IgnoreCase & RegexOptions.Multiline) };
+                var allArgs = String.Join(" ", args);
+                powershellRegex = new[] { new Regex(allArgs, RegexOptions.IgnoreCase & RegexOptions.Multiline) };
             }
 
             var dirs = ThisRunTime.GetDirectories("\\Users\\");
@@ -50,56 +46,57 @@ namespace Seatbelt.Commands.Windows
                 }
 
                 var consoleHistoryPath = $"{dir}\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadline\\ConsoleHost_history.txt";
-                
-                if (File.Exists(consoleHistoryPath))
-                {
-                    string content = System.IO.File.ReadAllText(consoleHistoryPath);
 
-                    foreach (var reg in powershellRegex)
+                if (!File.Exists(consoleHistoryPath)) 
+                    continue;
+
+                var content = File.ReadAllText(consoleHistoryPath);
+
+                foreach (var reg in powershellRegex)
+                {
+                    var m = reg.Match(content);
+                    if (!m.Success)
+                        continue;
+
+                    var contextLines = new List<string>();
+
+                    var scriptBlockParts = content.Split('\n');
+                    for (var i = 0; i < scriptBlockParts.Length; i++)
                     {
-                        var m = reg.Match(content);
-                        if (!m.Success)
+                        if (!scriptBlockParts[i].Contains(m.Value))
                             continue;
 
-                        var contextLines = new List<string>();
-
-                        var scriptBlockParts = content.Split('\n');
-                        for (var i = 0; i < scriptBlockParts.Length; i++)
+                        var printed = 0;
+                        for (var j = 1; i - j > 0 && printed < context; j++)
                         {
-                            if (!scriptBlockParts[i].Contains(m.Value))
+                            if (scriptBlockParts[i - j].Trim() == "")
                                 continue;
 
-                            var printed = 0;
-                            for (var j = 1; i - j > 0 && printed < context; j++)
-                            {
-                                if (scriptBlockParts[i - j].Trim() == "")
-                                    continue;
-
-                                contextLines.Add(scriptBlockParts[i - j].Trim());
-                                printed++;
-                            }
-                            printed = 0;
-                            contextLines.Add(m.Value.Trim());
-                            for (var j = 1; printed < context && i + j < scriptBlockParts.Length; j++)
-                            {
-                                if (scriptBlockParts[i + j].Trim() == "")
-                                    continue;
-
-                                contextLines.Add(scriptBlockParts[i + j].Trim());
-                                printed++;
-                            }
-                            break;
+                            contextLines.Add(scriptBlockParts[i - j].Trim());
+                            printed++;
                         }
 
-                        var contextJoined = string.Join("\n", contextLines.ToArray());
+                        printed = 0;
+                        contextLines.Add(m.Value.Trim());
+                        for (var j = 1; printed < context && i + j < scriptBlockParts.Length; j++)
+                        {
+                            if (scriptBlockParts[i + j].Trim() == "")
+                                continue;
 
-                        yield return new PowerShellHistoryDTO(
-                            userName,
-                            consoleHistoryPath,
-                            m.Value,
-                            contextJoined
-                        );
+                            contextLines.Add(scriptBlockParts[i + j].Trim());
+                            printed++;
+                        }
+                        break;
                     }
+
+                    var contextJoined = string.Join("\n", contextLines.ToArray());
+
+                    yield return new PowerShellHistoryDTO(
+                        userName,
+                        consoleHistoryPath,
+                        m.Value,
+                        contextJoined
+                    );
                 }
             }
         }
@@ -121,4 +118,3 @@ namespace Seatbelt.Commands.Windows
         }
     }
 }
-#nullable enable

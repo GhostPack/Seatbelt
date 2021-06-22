@@ -45,13 +45,15 @@ namespace Seatbelt.Commands.Windows
             var plugins = new[] { "Microsoft.PowerShell", "Microsoft.PowerShell.Workflow", "Microsoft.PowerShell32" };
             foreach (var plugin in plugins)
             {
-                var Config = ThisRunTime.GetStringValue(RegistryHive.LocalMachine,
+                var config = ThisRunTime.GetStringValue(RegistryHive.LocalMachine,
                     $"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WSMAN\\Plugin\\{plugin}", "ConfigXML");
 
-                var Access = new List<PluginAccess>();
+                if(config == null) continue;;
+
+                var access = new List<PluginAccess>();
 
                 var xmlDoc = new XmlDocument();
-                xmlDoc.LoadXml(Config);
+                xmlDoc.LoadXml(config);
                 var security = xmlDoc.GetElementsByTagName("Security");
 
                 if (security.Count <= 0) 
@@ -66,27 +68,27 @@ namespace Seatbelt.Commands.Windows
                     foreach (QualifiedAce ace in desc.DiscretionaryAcl)
                     {
                         var principal = ace.SecurityIdentifier.Translate(typeof(System.Security.Principal.NTAccount)).ToString();
-                        var access = ace.AceQualifier.ToString();
+                        var accessStr = ace.AceQualifier.ToString();
 
-                        Access.Add(new PluginAccess(
+                        access.Add(new PluginAccess(
                             principal,
                             ace.SecurityIdentifier.ToString(),
-                            access
+                            accessStr
                         ));
                     }
                 }
 
-                yield return new PSSessionSettingsRTO(
+                yield return new PSSessionSettingsDTO(
                     plugin,
-                    Access
+                    access
                 );
             }
         }
     }
 
-    internal class PSSessionSettingsRTO : CommandDTOBase
+    internal class PSSessionSettingsDTO : CommandDTOBase
     {
-        public PSSessionSettingsRTO(string plugin, List<PluginAccess> permission)
+        public PSSessionSettingsDTO(string plugin, List<PluginAccess> permission)
         {
             Plugin = plugin;
             Permission = permission;    
@@ -95,7 +97,7 @@ namespace Seatbelt.Commands.Windows
         public List<PluginAccess> Permission { get; }
     }
 
-    [CommandOutputType(typeof(PSSessionSettingsRTO))]
+    [CommandOutputType(typeof(PSSessionSettingsDTO))]
     internal class PSSessionSettingsFormatter : TextFormatterBase
     {
         public PSSessionSettingsFormatter(ITextWriter writer) : base(writer)
@@ -104,7 +106,7 @@ namespace Seatbelt.Commands.Windows
 
         public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
         {
-            var dto = (PSSessionSettingsRTO)result;
+            var dto = (PSSessionSettingsDTO)result;
 
             WriteLine("  Name : {0}", dto.Plugin);
 

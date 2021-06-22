@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Management;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Seatbelt.Output.TextWriters;
 using Seatbelt.Output.Formatters;
@@ -46,100 +44,94 @@ namespace Seatbelt.Commands.Windows
             // lists currently running processes that don't have "Microsoft Corporation" as the company name in their file info
             //      or all processes if "-full" is passed
 
-            var enumerateModules = false;
-            if (args.Length == 1 && args[0].ToLower().Equals("modules"))
-            {
-                enumerateModules = true;
-            }
+            var enumerateModules = args.Length == 1 && args[0].ToLower().Equals("modules");
 
             WriteHost(Runtime.FilterResults
                 ? "Collecting Non Microsoft Processes (via WMI)\n"
                 : "Collecting All Processes (via WMI)\n");
 
             var wmiQueryString = "SELECT ProcessId, ExecutablePath, CommandLine FROM Win32_Process";
-            using (var searcher = new ManagementObjectSearcher(wmiQueryString))
-            {
-                using (var results = searcher.Get())
+            using var searcher = new ManagementObjectSearcher(wmiQueryString);
+            using var results = searcher.Get();
+
+            var query = from p in Process.GetProcesses()
+                join mo in results.Cast<ManagementObject>()
+                    on p.Id equals (int)(uint)mo["ProcessId"]
+                select new
                 {
-                    var query = from p in Process.GetProcesses()
-                                join mo in results.Cast<ManagementObject>()
-                                    on p.Id equals (int)(uint)mo["ProcessId"]
-                                select new
-                                {
-                                    Process = p,
-                                    Path = (string)mo["ExecutablePath"],
-                                    CommandLine = (string)mo["CommandLine"],
-                                };
-                    foreach (var item in query)
+                    Process = p,
+                    Path = (string)mo["ExecutablePath"],
+                    CommandLine = (string)mo["CommandLine"],
+                };
+
+            foreach (var proc in query)
+            {
+                var isDotNet = false;
+                string? companyName = null;
+                string? description = null;
+                string? version = null;
+
+                if (proc.Path != null)
+                {
+                    isDotNet = FileUtil.IsDotNetAssembly(proc.Path);
+
+                    try
                     {
-                        var isDotNet = false;
-                        string? companyName = null;
-                        string? description = null;
-                        string? version = null;
-
-                        if (item.Path != null)
-                        {
-                            isDotNet = FileUtil.IsDotNetAssembly(item.Path);
-
-                            try
-                            {
-                                var myFileVersionInfo = FileVersionInfo.GetVersionInfo(item.Path);
-                                companyName = myFileVersionInfo.CompanyName;
-                                description = myFileVersionInfo.FileDescription;
-                                version = myFileVersionInfo.FileVersion;
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (Runtime.FilterResults)
-                        {
-                            if (companyName == null || string.IsNullOrEmpty(companyName.Trim()) ||
-                                (companyName != null &&
-                                 Regex.IsMatch(companyName, @"^Microsoft.*", RegexOptions.IgnoreCase)))
-                            {
-                                continue;
-                            }
-                        }
-
-                        var processModules = new List<Module>();
-                        if (enumerateModules)
-                        {
-                            try
-                            {
-                                var modules = item.Process.Modules;
-                                foreach (ProcessModule module in modules)
-                                {
-                                    var ProcessModule = new Module(
-                                        module.ModuleName,
-                                        module.FileVersionInfo.FileName,
-                                        module.FileVersionInfo.FileDescription,
-                                        module.FileVersionInfo.OriginalFilename,
-                                        module.FileVersionInfo.CompanyName
-                                    );
-                                    processModules.Add(ProcessModule);
-                                }
-                            }
-                            catch
-                            {
-                                // eat it
-                            }
-                        }
-
-                        yield return new ProcessesDTO(
-                            item.Process.ProcessName,
-                            item.Process.Id,
-                            companyName,
-                            description,
-                            version,
-                            item.Path,
-                            item.CommandLine,
-                            isDotNet,
-                            processModules
-                        );
+                        var myFileVersionInfo = FileVersionInfo.GetVersionInfo(proc.Path);
+                        companyName = myFileVersionInfo.CompanyName;
+                        description = myFileVersionInfo.FileDescription;
+                        version = myFileVersionInfo.FileVersion;
+                    }
+                    catch
+                    {
                     }
                 }
+
+                if (Runtime.FilterResults)
+                {
+                    if (companyName == null || string.IsNullOrEmpty(companyName.Trim()) ||
+                        (companyName != null &&
+                         Regex.IsMatch(companyName, @"^Microsoft.*", RegexOptions.IgnoreCase)))
+                    {
+                        continue;
+                    }
+                }
+
+                var processModules = new List<Module>();
+                if (enumerateModules)
+                {
+                    try
+                    {
+                        var modules = proc.Process.Modules;
+                        foreach (ProcessModule module in modules)
+                        {
+                            var ProcessModule = new Module(
+                                module.ModuleName,
+                                module.FileVersionInfo.FileName,
+                                module.FileVersionInfo.FileDescription,
+                                module.FileVersionInfo.OriginalFilename,
+                                module.FileVersionInfo.CompanyName
+                            );
+                            processModules.Add(ProcessModule);
+                        }
+                    }
+                    catch
+                    {
+                        // eat it
+                    }
+                }
+
+                yield return new ProcessesDTO(
+                    proc.Process.ProcessName,
+                    proc.Process.Id,
+                    companyName,
+                    description,
+                    version,
+                    proc.Path,
+                    proc.CommandLine,
+                    isDotNet,
+                    processModules
+                );
             }
         }
     }

@@ -27,7 +27,7 @@
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <TargetFrameworkProfile />
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>9.0</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -97,10 +97,14 @@
     <Compile Include="Commands\CommandGroup.cs" />
     <Compile Include="Commands\Misc\LOLBAS.cs" />
     <Compile Include="Commands\Products\FileZillaCommand.cs" />
+    <Compile Include="Commands\Products\KeePass.cs" />
     <Compile Include="Commands\Products\McAfeeConfigsCommand.cs" />
     <Compile Include="Commands\Products\McAfeeSiteListCommand.cs" />
     <Compile Include="Commands\Products\OracleSQLDeveloperCommand.cs" />
     <Compile Include="Commands\Products\SuperPuttyCommand.cs" />
+    <Compile Include="Commands\Products\CloudSyncProviderCommand.cs" />
+    <Compile Include="Commands\Windows\Certificates.cs" />
+    <Compile Include="Commands\Windows\CertificateThumbprints.cs" />
     <Compile Include="Commands\Windows\HotfixesCommand.cs" />
     <Compile Include="Commands\Windows\MicrosoftUpdatesCommand.cs" />
     <Compile Include="Commands\Windows\SecurityPackagesCredentialsCommand.cs" />
@@ -138,6 +142,7 @@
     <Compile Include="Commands\Windows\CredentialGuardCommand.cs" />
     <Compile Include="Commands\Windows\CredEnumCommand.cs" />
     <Compile Include="Commands\Windows\DotNetCommand.cs" />
+    <Compile Include="Commands\Windows\DsRegCmd.cs" />
     <Compile Include="Commands\Windows\EnvironmentPathCommand.cs" />
     <Compile Include="Commands\Windows\EventLogs\ExplicitLogonEvents\ExplicitLogonEventsCommandDTO.cs" />
     <Compile Include="Commands\Windows\EventLogs\ExplicitLogonEvents\ExplicitLogonEventsTextFormatter.cs" />
@@ -148,7 +153,7 @@
     <Compile Include="Commands\Windows\IdleTimeCommand.cs" />
     <Compile Include="Commands\Windows\AntiVirusCommand.cs" />
     <Compile Include="Commands\Windows\AppLockerCommand.cs" />
-    <Compile Include="Commands\Windows\ARPTableCommand.cs" />
+    <Compile Include="Commands\Windows\ArpTableCommand.cs" />
     <Compile Include="Commands\CommandDTOBase.cs" />
     <Compile Include="Commands\Windows\PrintersCommand.cs" />
     <Compile Include="Commands\Windows\LastShutdownCommand.cs" />
@@ -208,7 +213,7 @@
     <Compile Include="Commands\Windows\WindowsFirewallCommand.cs" />
     <Compile Include="Commands\Windows\WindowsVaultCommand.cs" />
     <Compile Include="Commands\Windows\WMIEventConsumerCommand.cs" />
-    <Compile Include="Commands\Windows\WMIEventFilterCommand.cs" />
+    <Compile Include="Commands\Windows\WmiEventFilterCommand.cs" />
     <Compile Include="Commands\Windows\WMIFilterToConsumerBindingCommand.cs" />
     <Compile Include="Interop\Rpcrt4.cs" />
     <Compile Include="Output\Sinks\JsonFileOutputSink.cs" />

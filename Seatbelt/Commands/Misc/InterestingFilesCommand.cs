@@ -1,9 +1,7 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Seatbelt.Output.Formatters;
 using Seatbelt.Output.TextWriters;
 
@@ -62,25 +60,24 @@ namespace Seatbelt.Commands
             {
                 var info = new FileInfo(file);
 
-                var owner = "";
-                var SDDL = "";
+                string? owner = null;
+                string? sddl = null;
                 try
                 {
-                    SDDL = info.GetAccessControl(System.Security.AccessControl.AccessControlSections.All).GetSecurityDescriptorSddlForm(System.Security.AccessControl.AccessControlSections.All);
+                    sddl = info.GetAccessControl(System.Security.AccessControl.AccessControlSections.All).GetSecurityDescriptorSddlForm(System.Security.AccessControl.AccessControlSections.All);
                     owner = File.GetAccessControl(file).GetOwner(typeof(System.Security.Principal.NTAccount)).ToString();
                 }
                 catch { }
 
-                yield return new InterestingFileDTO()
-                {
-                    Path = $"{file}",
-                    FileOwner = owner,
-                    Size = info.Length,
-                    DateCreated = info.CreationTime,
-                    DateAccessed = info.LastAccessTime,
-                    DateModified = info.LastWriteTime,
-                    Sddl = SDDL
-                };
+                yield return new InterestingFileDTO(
+                    $"{file}",
+                    info.Length,
+                    info.CreationTime,
+                    info.LastAccessTime,
+                    info.LastWriteTime,
+                    sddl,
+                    owner
+                );
             }
         }
 
@@ -130,7 +127,7 @@ namespace Seatbelt.Commands
                 {
                     // Eat it
                 }
-                string[] files = null;
+                string[]? files = null;
                 try
                 {
                     files = Directory.GetFiles(path);
@@ -148,35 +145,25 @@ namespace Seatbelt.Commands
             }
         }
 
-        public static IEnumerable<string> Split(string text, int partLength, StringBuilder sb)
-        {
-            if (text == null) { sb.AppendLine("[ERROR] Split() - singleLineString"); }
-            if (partLength < 1) { sb.AppendLine("[ERROR] Split() - 'columns' must be greater than 0."); }
-
-            var partCount = Math.Ceiling((double)text.Length / partLength);
-            if (partCount < 2)
-            {
-                yield return text;
-            }
-
-            for (var i = 0; i < partCount; i++)
-            {
-                var index = i * partLength;
-                var lengthLeft = Math.Min(partLength, text.Length - index);
-                var line = text.Substring(index, lengthLeft);
-                yield return line;
-            }
-        }
-
         internal class InterestingFileDTO : CommandDTOBase
         {
-            public string Path { get; set; }
-            public string FileOwner { get; set; }
-            public long Size { get; set; }
-            public DateTime DateCreated { get; set; }
-            public DateTime DateAccessed { get; set; }
-            public DateTime DateModified { get; set; }
-            public string Sddl { get; set; }
+            public InterestingFileDTO(string path, long size, DateTime dateCreated, DateTime dateAccessed, DateTime dateModified, string? sddl, string? fileOwner)
+            {
+                Path = path;
+                Size = size;
+                DateCreated = dateCreated;
+                DateAccessed = dateAccessed;
+                DateModified = dateModified;
+                Sddl = sddl;
+                FileOwner = fileOwner;
+            }
+            public string Path { get; }
+            public long Size { get; }
+            public DateTime DateCreated { get; }
+            public DateTime DateAccessed { get; }
+            public DateTime DateModified { get; }
+            public string? Sddl { get; }
+            public string? FileOwner { get; }
         }
 
         [CommandOutputType(typeof(InterestingFileDTO))]
@@ -195,4 +182,3 @@ namespace Seatbelt.Commands
         }
     }
 }
-#nullable enable

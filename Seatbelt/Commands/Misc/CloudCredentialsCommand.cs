@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -40,14 +39,13 @@ namespace Seatbelt.Commands
                     var lastModified = File.GetLastWriteTime(awsKeyFile);
                     var size = new FileInfo(awsKeyFile).Length;
 
-                    yield return new CloudCredentialsDTO()
-                    {
-                        Type = "AWS",
-                        FileName = awsKeyFile,
-                        LastAccessed = lastAccessed,
-                        LastModified = lastModified,
-                        Size = size
-                    };
+                    yield return new CloudCredentialsDTO(
+                        "AWS",
+                        awsKeyFile,
+                        lastAccessed,
+                        lastModified,
+                        size
+                    );
                 }
 
                 string[] googleCredLocations = {    $"{dir}\\AppData\\Roaming\\gcloud\\credentials.db",
@@ -56,21 +54,19 @@ namespace Seatbelt.Commands
                 
                 foreach(var googleCredLocation in googleCredLocations)
                 {
-                    if (File.Exists(googleCredLocation))
-                    {
-                        var lastAccessed = File.GetLastAccessTime(googleCredLocation);
-                        var lastModified = File.GetLastWriteTime(googleCredLocation);
-                        var size = new FileInfo(googleCredLocation).Length;
+                    if (!File.Exists(googleCredLocation)) continue;
 
-                        yield return new CloudCredentialsDTO()
-                        {
-                            Type = "Google",
-                            FileName = googleCredLocation,
-                            LastAccessed = lastAccessed,
-                            LastModified = lastModified,
-                            Size = size
-                        };
-                    }
+                    var lastAccessed = File.GetLastAccessTime(googleCredLocation);
+                    var lastModified = File.GetLastWriteTime(googleCredLocation);
+                    var size = new FileInfo(googleCredLocation).Length;
+
+                    yield return new CloudCredentialsDTO(
+                        "Google",
+                        googleCredLocation,
+                        lastAccessed,
+                        lastModified,
+                        size
+                    );
                 }
 
                 string[] azureCredLocations = {     $"{dir}\\.azure\\azureProfile.json",
@@ -81,21 +77,19 @@ namespace Seatbelt.Commands
 
                 foreach (var azureCredLocation in azureCredLocations)
                 {
-                    if (File.Exists(azureCredLocation))
-                    {
-                        var lastAccessed = File.GetLastAccessTime(azureCredLocation);
-                        var lastModified = File.GetLastWriteTime(azureCredLocation);
-                        var size = new FileInfo(azureCredLocation).Length;
+                    if (!File.Exists(azureCredLocation)) continue;
 
-                        yield return new CloudCredentialsDTO()
-                        {
-                            Type = "Azure",
-                            FileName = azureCredLocation,
-                            LastAccessed = lastAccessed,
-                            LastModified = lastModified,
-                            Size = size
-                        };
-                    }
+                    var lastAccessed = File.GetLastAccessTime(azureCredLocation);
+                    var lastModified = File.GetLastWriteTime(azureCredLocation);
+                    var size = new FileInfo(azureCredLocation).Length;
+
+                    yield return new CloudCredentialsDTO(
+                        "Azure",
+                        azureCredLocation,
+                        lastAccessed,
+                        lastModified,
+                        size
+                    );
                 }
 
                 string[] bluemixCredLocations = {   $"{dir}\\.bluemix\\config.json",
@@ -103,37 +97,42 @@ namespace Seatbelt.Commands
 
                 foreach (var bluemixCredLocation in bluemixCredLocations)
                 {
-                    if (File.Exists(bluemixCredLocation))
-                    {
-                        var lastAccessed = File.GetLastAccessTime(bluemixCredLocation);
-                        var lastModified = File.GetLastWriteTime(bluemixCredLocation);
-                        var size = new FileInfo(bluemixCredLocation).Length;
+                    if (!File.Exists(bluemixCredLocation)) continue;
 
-                        yield return new CloudCredentialsDTO()
-                        {
-                            Type = "Bluemix",
-                            FileName = bluemixCredLocation,
-                            LastAccessed = lastAccessed,
-                            LastModified = lastModified,
-                            Size = size
-                        };
-                    }
+                    var lastAccessed = File.GetLastAccessTime(bluemixCredLocation);
+                    var lastModified = File.GetLastWriteTime(bluemixCredLocation);
+                    var size = new FileInfo(bluemixCredLocation).Length;
+
+                    yield return new CloudCredentialsDTO(
+                        "Bluemix",
+                        bluemixCredLocation,
+                        lastAccessed,
+                        lastModified,
+                        size
+                    );
                 }
             }
         }
 
         internal class CloudCredentialsDTO : CommandDTOBase
         {
-            public string Type { get; set; }
+            public CloudCredentialsDTO(string type, string fileName, DateTime lastAccessed, DateTime lastModified, long size)
+            {
+                Type = type;
+                FileName = fileName;
+                LastAccessed = lastAccessed;
+                LastModified = lastModified;
+                Size = size;    
+            }
+            public string Type { get; }
 
-            public string FileName { get; set; }
+            public string FileName { get; }
 
-            public DateTime LastAccessed { get; set; }
+            public DateTime LastAccessed { get; }
 
-            public DateTime LastModified { get; set; }
+            public DateTime LastModified { get; }
 
-            public long Size { get; set; }
+            public long Size { get; }
         }
     }
 }
-#nullable enable

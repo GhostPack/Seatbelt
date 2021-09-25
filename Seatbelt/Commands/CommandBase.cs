@@ -6,6 +6,7 @@ namespace Seatbelt.Commands
     internal abstract class CommandBase
     {
         public abstract string Command { get; }
+        public virtual string CommandVersion { get; set;  }
         public abstract string Description { get; }
         public abstract CommandGroup[] Group { get; }
         public abstract bool SupportRemote { get; }
@@ -14,6 +15,7 @@ namespace Seatbelt.Commands
 
         protected CommandBase(Runtime runtime)
         {
+            CommandVersion = "1.0";
             Runtime = runtime;
         }
 

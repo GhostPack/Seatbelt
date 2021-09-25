@@ -33,6 +33,11 @@ namespace Seatbelt
                 );
         }
 
+        public string GetOutput()
+        {
+            return _outputSink.GetOutput();
+        }
+
         private IOutputSink OutputSinkFromArgs(string? outputFileArg)
         {
             if (outputFileArg == null)
@@ -47,8 +52,12 @@ namespace Seatbelt
                 return new JsonFileOutputSink(outputFileArg, FilterResults);
             }
 
-            return new TextOutputSink(new FileTextWriter(outputFileArg), FilterResults);
+            if (outputFileArg == "jsonstring")
+            {
+                return new JsonStringOutputSink(outputFileArg, FilterResults);
+            }
 
+            return new TextOutputSink(new FileTextWriter(outputFileArg), FilterResults);
         }
 
         public void Start()

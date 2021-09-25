@@ -378,6 +378,9 @@ namespace Seatbelt
                     // OutputSink.BeginOutput();
                     foreach (var result in results)
                     {
+                        // pass the command version from the command module to the DTO
+                        result.SetCommandVersion(command.CommandVersion);
+
                         OutputSink.WriteOutput(result);
                     }
                     // OutputSink.EndOutput();

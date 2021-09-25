@@ -10,5 +10,6 @@ namespace Seatbelt.Output.Sinks
         void WriteVerbose(string message);
         void WriteWarning(string message);
         void WriteError(string message);
+        string GetOutput();
     }
 }

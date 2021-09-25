@@ -66,7 +66,9 @@ namespace Seatbelt.Output.Sinks
         {
             _stream.Flush();
             _streamWriter.Flush();
-            return System.Text.Encoding.ASCII.GetString(_stream.GetBuffer());
+            _stream.Position = 0;
+            StreamReader sr = new StreamReader(_stream);
+            return sr.ReadToEnd();
         }
 
         public void Dispose()

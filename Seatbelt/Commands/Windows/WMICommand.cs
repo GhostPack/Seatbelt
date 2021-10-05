@@ -1,9 +1,12 @@
-﻿#nullable disable
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Management;
 using Seatbelt.Output.Formatters;
 using Seatbelt.Output.TextWriters;
 using System.Collections.Specialized;
+using System.Linq;
+using System.Text;
 
 
 namespace Seatbelt.Commands.Windows
@@ -12,7 +15,7 @@ namespace Seatbelt.Commands.Windows
     {
         public override string Command => "WMI";
         public override string Description => "Runs a specified WMI query";
-        public override CommandGroup[] Group => new[] { CommandGroup.Misc };
+        public override CommandGroup[] Group => new[] { CommandGroup.System };
         public override bool SupportRemote => true;
         public Runtime ThisRunTime;
 
@@ -23,8 +26,8 @@ namespace Seatbelt.Commands.Windows
 
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
-            string wmiQuery = "Select * from Win32_ComputerSystem";
-            string wmiNamespace = @"root\cimv2";
+            var wmiQuery = "Select * from Win32_ComputerSystem";
+            var wmiNamespace = @"root\cimv2";
 
             if (args.Length == 1)
             {
@@ -36,22 +39,22 @@ namespace Seatbelt.Commands.Windows
                 wmiQuery = args[1];
             }
 
-            List<OrderedDictionary> results = new List<OrderedDictionary>();
+            var results = new List<OrderedDictionary>();
 
             using (var searcher = ThisRunTime.GetManagementObjectSearcher(wmiNamespace, wmiQuery))
             {
-                using (var items = searcher.Get())
+                using var items = searcher.Get();
+
+                foreach (ManagementObject result in items)
                 {
-                    foreach (ManagementObject result in items)
+                    var properties = new OrderedDictionary();
+
+                    foreach (var prop in result.Properties)
                     {
-                        OrderedDictionary properties = new OrderedDictionary();
-
-                        foreach (var prop in result.Properties) {
-                            properties.Add(prop.Name, prop.Value);
-                        }
-
-                        results.Add(properties);
+                        properties.Add(prop.Name, prop.Value);
                     }
+
+                    results.Add(properties);
                 }
             }
 
@@ -80,29 +83,58 @@ namespace Seatbelt.Commands.Windows
         public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
         {
             var dto = (WMIDTO)result;
-            foreach (OrderedDictionary resultEntry in dto.QueryResults) {
-
+            foreach (var resultEntry in dto.QueryResults)
+            {
                 var enumerator = resultEntry.GetEnumerator();
 
                 while (enumerator.MoveNext())
                 {
-                    if ((enumerator.Value != null) && enumerator.Value.GetType().Name == "String[]")
+                    var value = enumerator.Value;
+                    if (value == null)
                     {
-                        WriteLine("  {0}:", enumerator.Key);
-                        foreach (var s in (string[])enumerator.Value)
-                        {
-                            WriteLine("      {0}", s);
-                        }
+                        continue;
                     }
-                    // TODO: additional array type unrolling at some point as needed
+
+                    var valueType = value.GetType();
+                    var valueName = enumerator.Key?.ToString();
+
+                    if (valueType.IsArray)
+                    {
+                        WriteArrayValue(valueType, valueName, value);
+                    }
                     else
                     {
-                        WriteLine("  {0,-30}:  {1}", enumerator.Key, enumerator.Value);
+                        WriteLine("  {0,-30}: {1}", valueName, value);
                     }
                 }
                 WriteLine();
             }
         }
+
+        private void WriteArrayValue(Type valueType, string? valueName, object value)
+        {
+            var elemType = valueType.GetElementType();
+
+            var name = $"{valueName}({valueType.Name})";
+
+            if (elemType == typeof(string))
+            {
+                WriteLine($"  {name,-30}:");
+                foreach (var s in (string[]) value)
+                {
+                    WriteLine($"      {s}");
+                }
+            }
+            else
+            {
+                IEnumerable<string> s = ((IEnumerable) value).Cast<object>()
+                    .Select(x => x.ToString())
+                    .ToArray();
+
+                var v = string.Join(",", (string[]) s);
+
+                WriteLine($"  {name,-30}: {v}");
+            }
+        }
     }
 }
-#nullable enable

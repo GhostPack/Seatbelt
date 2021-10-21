@@ -9,7 +9,7 @@ namespace Seatbelt.Output.Sinks
     internal class JsonFileOutputSink : IOutputSink
     {
         private StreamWriter _stream;
-
+        private JavaScriptSerializer _json = new JavaScriptSerializer();
 
         public JsonFileOutputSink(string file, bool filterResults)
         {
@@ -32,7 +32,6 @@ namespace Seatbelt.Output.Sinks
 
             // If the dto has a custom output sink, use it.  Otherwise, use the default output sink
             var dtoType = dto.GetType();
-            var json = new JavaScriptSerializer();
 
             var obj = new
             {
@@ -43,14 +42,14 @@ namespace Seatbelt.Output.Sinks
             string jsonStr;
             try
             {
-                jsonStr = json.Serialize(obj);
+                jsonStr = _json.Serialize(obj);
             }
             catch(Exception e)
             {
-                jsonStr = json.Serialize(new
+                jsonStr = _json.Serialize(new
                 {
                     Type = typeof(ErrorDTO).ToString(),
-                    Data = json.Serialize(new ErrorDTO(e.ToString()))
+                    Data = _json.Serialize(new ErrorDTO(e.ToString()))
                 });
             }
 

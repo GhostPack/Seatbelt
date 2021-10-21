@@ -10,8 +10,9 @@ namespace Seatbelt.Output.Sinks
     {
         private StreamWriter _streamWriter;
         private MemoryStream _stream;
+        private JavaScriptSerializer _json = new JavaScriptSerializer();
 
-        public JsonStringOutputSink(string file, bool filterResults)
+            public JsonStringOutputSink(string file, bool filterResults)
         {
             _stream = new MemoryStream();
             _streamWriter = new StreamWriter(_stream);
@@ -28,7 +29,7 @@ namespace Seatbelt.Output.Sinks
 
             // If the dto has a custom output sink, use it.  Otherwise, use the default output sink
             var dtoType = dto.GetType();
-            var json = new JavaScriptSerializer();
+            if (dtoType == typeof(HostDTO)) return;
 
             var obj = new
             {
@@ -40,14 +41,14 @@ namespace Seatbelt.Output.Sinks
             string jsonStr;
             try
             {
-                jsonStr = json.Serialize(obj);
+                jsonStr = _json.Serialize(obj);
             }
             catch(Exception e)
             {
-                jsonStr = json.Serialize(new
+                jsonStr = _json.Serialize(new
                 {
                     Type = typeof(ErrorDTO).ToString(),
-                    Data = json.Serialize(new ErrorDTO(e.ToString()))
+                    Data = _json.Serialize(new ErrorDTO(e.ToString()))
                 });
             }
 

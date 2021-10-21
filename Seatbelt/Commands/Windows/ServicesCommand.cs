@@ -1,8 +1,8 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Management;
 using System.Security.AccessControl;
 using System.Text.RegularExpressions;
@@ -34,22 +34,24 @@ namespace Seatbelt.Commands.Windows
 
             foreach (ManagementObject result in data)
             {
-                var serviceName = result["Name"] == null ? null : (string)result["Name"];
+                string? serviceName = (string)result["Name"];
+
+                if (args.Length > 0 && !args.Contains(serviceName)) continue;
+
                 string? companyName = null;
                 string? description = null;
                 string? version = null;
-                string binaryPathSddl = null;
-                string serviceSddl = null;
+                string? binaryPathSddl = null;
                 bool? isDotNet = null;
 
-                var serviceCommand = GetServiceCommand(result);
-                var binaryPath = GetServiceBinaryPath(serviceCommand);
-                var serviceDll = GetServiceDll(serviceName);
+                string? serviceCommand = GetServiceCommand(result);
+                string? binaryPath = serviceCommand == null ? null : GetServiceBinaryPath(serviceCommand);
+                string? serviceDll = serviceName == null ? null : GetServiceDll(serviceName);
 
 
                 // ServiceDll could be null if access to the Parameters key is denied 
                 //  - Examples: The lmhosts service on Win10 as an unprivileged user
-                if (binaryPath.ToLower().EndsWith("\\svchost.exe") && serviceDll != null)
+                if (binaryPath != null && binaryPath.ToLower().EndsWith("\\svchost.exe") && serviceDll != null)
                 {
                     binaryPath = serviceDll;
                 }
@@ -65,10 +67,11 @@ namespace Seatbelt.Commands.Windows
                     }
                     catch
                     {
+                        // ignored
                     }
 
 
-                    if (Runtime.FilterResults)
+                    if (Runtime.FilterResults && args.Length == 0)
                     {
                         if (companyName != null && Regex.IsMatch(companyName, @"^Microsoft.*", RegexOptions.IgnoreCase))
                         {
@@ -76,9 +79,8 @@ namespace Seatbelt.Commands.Windows
                         }
                     }
 
-                    isDotNet = FileUtil.IsDotNetAssembly(binaryPath);
+                    isDotNet = binaryPath == null ? null : (bool?)FileUtil.IsDotNetAssembly(binaryPath);
 
-                    binaryPathSddl = null;
                     try
                     {
                         binaryPathSddl = File.GetAccessControl(binaryPath)
@@ -90,31 +92,26 @@ namespace Seatbelt.Commands.Windows
                     }
                 }
 
+                var serviceSddl = serviceName == null ? null : TryGetServiceSddl(serviceName);
 
-                serviceSddl = TryGetServiceSddl(serviceName);
-                
-
-                yield return new ServicesDTO()
-                {
-                    Name = serviceName,
-                    DisplayName = (string)result["DisplayName"],
-                    Description = (string)result["Description"],
-                    User = (string)result["StartName"],
-                    State = (string)result["State"],
-                    StartMode = (string)result["StartMode"],
-                    ServiceCommand = serviceCommand,
-                    BinaryPath = binaryPath,
-                    BinaryPathSDDL = binaryPathSddl,
-                    ServiceDll = serviceDll,
-                    ServiceSDDL = serviceSddl,
-                    CompanyName = companyName,
-                    FileDescription = description,
-                    Version = version,
-                    IsDotNet = isDotNet
-                };
+                yield return new ServicesDTO(
+                    serviceName,
+                    (string)result["DisplayName"],
+                    (string)result["Description"],
+                    (string)result["StartName"],
+                    (string)result["State"],
+                    (string)result["StartMode"],
+                    serviceCommand,
+                    binaryPath,
+                    binaryPathSddl,
+                    serviceDll,
+                    serviceSddl,
+                    companyName,
+                    description,
+                    version,
+                    isDotNet
+                );
             }
-
-            // yield return null;
         }
 
         private string? TryGetServiceSddl(string serviceName)
@@ -139,7 +136,7 @@ namespace Seatbelt.Commands.Windows
             //  - HKLM\\SYSTEM\\CurrentControlSet\\Services\\Parameters ! ServiceDll
             //    - Ex: DnsCache on Win10
 
-            string path = null;
+            string? path = null;
 
             try
             {
@@ -149,15 +146,16 @@ namespace Seatbelt.Commands.Windows
             {
             }
 
-            if (path != null) 
+            if (path != null)
                 return path;
-            
+
             try
             {
                 path = RegistryUtil.GetStringValue(RegistryHive.LocalMachine, $"SYSTEM\\CurrentControlSet\\Services\\{serviceName}", "ServiceDll");
             }
             catch
             {
+                // ignored
             }
 
             return path;
@@ -224,7 +222,7 @@ namespace Seatbelt.Commands.Windows
             // in those cases we'll try and get the value from the registry. The converse is
             // also true - sometimes we can't acccess a registry key, but result["PathName"]
             // is populated
-            string serviceCommand = null;
+            string? serviceCommand;
             if (result["PathName"] != null)
             {
                 serviceCommand = ((string)result["PathName"]).Trim();
@@ -244,21 +242,38 @@ namespace Seatbelt.Commands.Windows
 
     internal class ServicesDTO : CommandDTOBase
     {
-        public string Name { get; set; }
-        public string DisplayName { get; set; }
-        public string Description { get; set; }
-        public string User { get; set; }
-        public string State { get; set; }
-        public string StartMode { get; set; }
-        public string ServiceCommand { get; set; }
-        public string BinaryPath { get; set; }
-        public string BinaryPathSDDL { get; set; }
-        public string ServiceDll { get; set; }
-        public string ServiceSDDL { get; set; }
-        public string CompanyName { get; set; }
+        public ServicesDTO(string? name, string? displayName, string? description, string? user, string? state, string? startMode, string? serviceCommand, string? binaryPath, string? binaryPathSddl, string? serviceDll, string? serviceSddl, string? companyName, string? fileDescription, string? version, bool? isDotNet)
+        {
+            Name = name;
+            DisplayName = displayName;
+            Description = description;
+            User = user;
+            State = state;
+            StartMode = startMode;
+            ServiceCommand = serviceCommand;
+            BinaryPath = binaryPath;
+            BinaryPathSDDL = binaryPathSddl;
+            ServiceDll = serviceDll;
+            ServiceSDDL = serviceSddl;
+            CompanyName = companyName;
+            FileDescription = fileDescription;
+            Version = version;
+            IsDotNet = isDotNet;
+        }
+        public string? Name { get; set; }
+        public string? DisplayName { get; set; }
+        public string? Description { get; set; }
+        public string? User { get; set; }
+        public string? State { get; set; }
+        public string? StartMode { get; set; }
+        public string? ServiceCommand { get; set; }
+        public string? BinaryPath { get; set; }
+        public string? BinaryPathSDDL { get; set; }
+        public string? ServiceDll { get; set; }
+        public string? ServiceSDDL { get; set; }
+        public string? CompanyName { get; set; }
         public string? FileDescription { get; set; }
         public string? Version { get; set; }
         public bool? IsDotNet { get; set; }
     }
 }
-#nullable enable

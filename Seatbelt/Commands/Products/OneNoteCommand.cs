@@ -12,7 +12,7 @@ namespace Seatbelt.Commands.Products
     internal class OneNoteCommand : CommandBase
     {
         public override string Command => "OneNote";
-        public override string Description => "List cached OneNote files";
+        public override string Description => "List OneNote backup files";
         public override CommandGroup[] Group => new[] { CommandGroup.User };
         public override bool SupportRemote => false;
 
@@ -38,7 +38,7 @@ namespace Seatbelt.Commands.Products
                     continue;
                 }
 
-                var userOneNoteBasePath = $"{dir}\\AppData\\Local\\Microsoft\\OneNote\\16.0\\Back-up\\";
+                var userOneNoteBasePath = $"{dir}\\AppData\\Local\\Microsoft\\OneNote";
                 var resultFiles = new List<String>();
 
                 if (Directory.Exists(userOneNoteBasePath))

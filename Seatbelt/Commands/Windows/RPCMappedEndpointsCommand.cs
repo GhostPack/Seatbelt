@@ -16,6 +16,8 @@ namespace Seatbelt.Commands.Windows
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
         public override bool SupportRemote => false;
 
+        private const uint RPC_X_NO_MORE_ENTRIES = 1772;
+
         public RPCMappedEndpointsCommand(Runtime runtime) : base(runtime)
         {
         }
@@ -27,8 +29,7 @@ namespace Seatbelt.Commands.Windows
             uint retCode; // RPC_S_OK      
             uint status; // RPC_S_OK      
 
-            var bindingHandle = IntPtr.Zero;
-            var inquiryContext = IntPtr.Zero;
+
             var ifId = new RPC_IF_ID();
             string host = null;
 
@@ -38,115 +39,72 @@ namespace Seatbelt.Commands.Windows
                 host = args[0];
             }
 
-            try
+            // built the RPC binding string we're going to use
+            retCode = RpcStringBindingCompose(null, "ncacn_ip_tcp", host, null, null, out var stringBinding);
+            if (retCode != 0)
             {
-                // built the RPC binding string we're going to use
-                retCode = RpcStringBindingCompose(null, "ncacn_ip_tcp", host, null, null, out var stringBinding);
-                if (retCode != 0)
-                {
-                    WriteError($"Bad return value from RpcStringBindingCompose : {retCode}");
-                    yield break;
-                }
-
-                // create the actual RPC binding (from the binding string)
-                retCode = RpcBindingFromStringBinding(stringBinding, out bindingHandle);
-                if (retCode != 0)
-                {
-                    WriteError($"Bad return value from RpcBindingFromStringBinding : {retCode}");
-                    yield break;
-                }
-
-                // create an inquiry context for viewing the elements in an endpoint map
-                retCode = RpcMgmtEpEltInqBegin(bindingHandle, 0, 0, 0, 0, out inquiryContext);
-                if (retCode != 0)
-                {
-                    WriteError($"Bad return value from RpcMgmtEpEltInqBegin : {retCode}");
-                    yield break;
-                }
-
-                var prev = new Guid();
-                var result = new RPCMappedEndpointsDTO();
-                result.Elements = new List<string>();
-
-                do
-                {
-                    // iterate through all of the elements in the RPC endpoint map
-                    status = RpcMgmtEpEltInqNext(inquiryContext, ref ifId, out var elementBindingHandle, 0, out var elementAnnotation);
-
-                    if (status == 0)
-                    {
-                        if (ifId.Uuid != prev)
-                        {
-                            if (prev != new Guid())
-                            {
-
-                                var result2 = new RPCMappedEndpointsDTO();
-                                result2 = result;
-                                result = new RPCMappedEndpointsDTO();
-                                result.Elements = new List<string>();
-
-                                yield return result2;
-                            }
-
-                            var annotation = Marshal.PtrToStringAuto(elementAnnotation);
-                            result.UUID = ifId.Uuid;
-                            result.Annotation = annotation;
-
-                            if (!String.IsNullOrEmpty(annotation))
-                            {
-                                RpcStringFree(ref elementAnnotation);
-                            }
-
-                            prev = ifId.Uuid;
-                        }
-                        if (elementBindingHandle != IntPtr.Zero)
-                        {
-                            var stringBinding2 = IntPtr.Zero;
-                            status = RpcBindingToStringBinding(elementBindingHandle, out stringBinding2);
-
-                            if (status == 0)
-                            {
-                                var stringBindingStr = Marshal.PtrToStringAuto(stringBinding2);
-                                result.Elements.Add(stringBindingStr);
-
-                                RpcStringFree(ref stringBinding2);
-                                RpcBindingFree(ref elementBindingHandle);
-                            }
-                            else
-                            {
-                                // throw new Exception("[X] RpcBindingToStringBinding: " + retCode);
-                            }
-                        }
-                    }
-                }
-                while (status == 0);
-
-                yield return result;
+                WriteError($"Bad return value from RpcStringBindingCompose : {retCode}");
+                yield break;
             }
-            finally
+
+            // create the actual RPC binding (from the binding string)
+            retCode = RpcBindingFromStringBinding(stringBinding, out var bindingHandle);
+            if (retCode != 0)
             {
-                retCode = RpcMgmtEpEltInqDone(ref inquiryContext);
-                if (retCode != 0)
+                WriteError($"Bad return value from RpcBindingFromStringBinding : {retCode}");
+                yield break;
+            }
+
+            // create an inquiry context for viewing the elements in an endpoint map
+            retCode = RpcMgmtEpEltInqBegin(bindingHandle, 0, 0, 0, 0, out var inquiryContext);
+            if (retCode != 0)
+            {
+                WriteError($"Bad return value from RpcMgmtEpEltInqBegin : {retCode}");
+                yield break;
+            }
+
+            do
+            {
+                // iterate through all of the elements in the RPC endpoint map
+                status = RpcMgmtEpEltInqNext(inquiryContext, ref ifId, out var elementBinding, 0, out var elementAnnotation);
+
+                if (status == RPC_X_NO_MORE_ENTRIES)
                 {
-                    WriteError($"Bad return value from RpcMgmtEpEltInqDone : {retCode}");
+                    break;
+                }
+                else if (status != 0)
+                {
+                    Console.WriteLine($"RpcMgmtEpEltInqNext failed. Error code: {status}");
+                    break;
                 }
 
-                retCode = RpcBindingFree(ref bindingHandle);
-                if (retCode != 0)
-                {
-                    WriteError($"Bad return value from RpcBindingFree : {retCode}");
-                }
+                string annotation = elementAnnotation.ToString();
+                string binding = elementBinding.ToString();
+
+                yield return new RPCMappedEndpointsDTO(
+                    ifId.Uuid,
+                    annotation,
+                    binding,
+                    new Version(ifId.VersMajor, ifId.VersMinor)
+                );
             }
+            while (status == 0);
         }
     }
 
-    internal class RPCMappedEndpointsDTO : CommandDTOBase
+    public class RPCMappedEndpointsDTO : CommandDTOBase
     {
-        public Guid UUID { get; set; }
-
+        public RPCMappedEndpointsDTO(Guid interfaceId, string annotation, string bindingString, Version version)
+        {
+            InterfaceId = interfaceId;
+            Annotation = annotation;
+            BindingString = bindingString;
+            Version = version;
+        }
+        public Guid InterfaceId { get; set; }
         public string Annotation { get; set; }
-
-        public List<string> Elements { get; set; }
+        public string BindingString { get; set; }
+        public Version Version { get; internal set; }
     }
 
     [CommandOutputType(typeof(RPCMappedEndpointsDTO))]
@@ -160,19 +118,7 @@ namespace Seatbelt.Commands.Windows
         {
             var dto = (RPCMappedEndpointsDTO)result;
 
-            if (!String.IsNullOrEmpty(dto.Annotation))
-            {
-                WriteLine(" UUID: {0} ({1})", dto.UUID, dto.Annotation);
-            }
-            else
-            {
-                WriteLine(" UUID: {0}", dto.UUID);
-            }
-
-            foreach (var element in dto.Elements)
-            {
-                WriteLine("     {0}", element);
-            }
+            WriteLine($"  {dto.InterfaceId} v{dto.Version} ({dto.Annotation}): {dto.BindingString}");
         }
     }
 }

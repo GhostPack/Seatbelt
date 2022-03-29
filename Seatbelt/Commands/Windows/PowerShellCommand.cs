@@ -168,8 +168,8 @@ namespace Seatbelt.Commands.Windows
         public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
         {
             var dto = (PowerShellDTO)result;
-            var lowestVersion = dto.InstalledVersions.Min(v => (new Version(v)));
-            var highestVersion = dto.InstalledVersions.Max(v => (new Version(v)));
+            var lowestVersion = dto.InstalledVersions.Min(v => GetVersionFromString(v));
+            var highestVersion = dto.InstalledVersions.Max(v => GetVersionFromString(v));
 
             WriteLine("\n  Installed CLR Versions");
             foreach (var v in dto.InstalledCLRVersions)
@@ -181,7 +181,7 @@ namespace Seatbelt.Commands.Windows
             foreach (var v in dto.InstalledVersions)
             {
                 WriteLine("      " + v);
-                if((v == "2.0") && !dto.InstalledCLRVersions.Contains("2.0.50727"))
+                if ((v == "2.0") && !dto.InstalledCLRVersions.Contains("2.0.50727"))
                 {
                     WriteLine("        [!] Version 2.0.50727 of the CLR is not installed - PowerShell v2.0 won't be able to run.");
                 }
@@ -240,6 +240,13 @@ namespace Seatbelt.Commands.Windows
             {
                 WriteLine("        [!] You can do a PowerShell version downgrade to bypass AMSI.");
             }
+        }
+
+        private Version GetVersionFromString(string v)
+        {
+            // PS core can have strings like "7.2.0-rc.1"
+            var versionStr = v.Split('-')[0];
+            return new Version(versionStr);
         }
     }
 }

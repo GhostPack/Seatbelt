@@ -260,7 +260,7 @@ namespace Seatbelt.Commands.Windows
                     WriteLine("  UserSID               : {0}", dto.UserSID);
                     WriteLine("  AuthenticationPackage : {0}", dto.AuthenticationPackage);
                     WriteLine("  LogonType             : {0}", dto.LogonType);
-                    WriteLine("  LogonType             : {0}", dto.LogonTime);
+                    WriteLine("  LogonTime             : {0}", dto.LogonTime);
                     WriteLine("  LogonServer           : {0}", dto.LogonServer);
                     WriteLine("  LogonServerDNSDomain  : {0}", dto.LogonServerDnsDomain);
                     WriteLine("  UserPrincipalName     : {0}", dto.UserPrincipalName);

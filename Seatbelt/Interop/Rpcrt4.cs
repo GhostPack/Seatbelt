@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32.SafeHandles;
+using System;
 using System.Runtime.InteropServices;
 
 namespace Seatbelt.Interop
@@ -15,53 +16,48 @@ namespace Seatbelt.Interop
             string NetworkAddr,
             string Endpoint,
             string Options,
-            out IntPtr StringBinding);
+            out SafeRpcStringHandle StringBinding);
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Auto)]
         public static extern uint RpcBindingFromStringBinding(
-            IntPtr StringBinding,
-            out IntPtr Binding);
+            SafeRpcStringHandle StringBinding,
+            out SafeRpcBindingHandle Binding);
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Auto)]
-        public static extern uint RpcBindingToStringBinding(
-            IntPtr Binding,
-            out IntPtr StringBinding);
+        public static extern int RpcBindingToStringBinding(IntPtr Binding, out SafeRpcStringHandle StringBinding);
 
 
         // REGION: enumeration
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Auto)]
         public static extern uint RpcMgmtEpEltInqBegin(
-            IntPtr EpBinding,
+            SafeRpcBindingHandle EpBinding,
             int InquiryType, // 0x00000000 = RPC_C_EP_ALL_ELTS
             int IfId, // going to be 0/NULL, so we don't care about "ref RPC_IF_ID IfId"
             int VersOption,
             int ObjectUuid, // going to be 0/NULL, so we don't care about "ref RPC_IF_ID IfId"
-            out IntPtr InquiryContext);
+            out SafeRpcInquiryHandle InquiryContext);
 
-        [DllImport("rpcrt4.dll", CharSet = CharSet.Auto)]
+        [DllImport("rpcrt4.dll", CharSet = CharSet.Unicode)]
         public static extern uint RpcMgmtEpEltInqNext(
-            IntPtr InquiryContext,
+            SafeRpcInquiryHandle InquiryContext,
             ref RPC_IF_ID IfId,
-            out IntPtr Binding,
+            out SafeRpcBindingHandle Binding,
             int ObjectUuid, // going to be 0/NULL, so we don't care about "ref RPC_IF_ID IfId"
-            out IntPtr Annotation
+            out SafeRpcStringHandle Annotation
         );
 
 
         // REGION: cleanup
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Auto)]
-        public static extern uint RpcStringFree(
-            ref IntPtr String);
+        public static extern uint RpcStringFree(ref IntPtr String);
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Auto)]
-        public static extern uint RpcMgmtEpEltInqDone(
-            ref IntPtr InquiryContext);
+        public static extern uint RpcMgmtEpEltInqDone(ref IntPtr InquiryContext);
 
         [DllImport("rpcrt4.dll", CharSet = CharSet.Auto)]
-        public static extern uint RpcBindingFree(
-            ref IntPtr Binding);
+        public static extern uint RpcBindingFree(ref IntPtr Binding);
 
 
         // REGION: structures
@@ -71,6 +67,84 @@ namespace Seatbelt.Interop
             public Guid Uuid;
             public ushort VersMajor;
             public ushort VersMinor;
+        }
+
+        // REGION: classes
+
+
+        // From https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools/blob/c02ed8ba04324e54a0a188ab9877ee6aa372dfac/NtApiDotNet/Win32/SafeHandles/SafeRpcInquiryHandle.cs
+        public class SafeRpcInquiryHandle : SafeHandleZeroOrMinusOneIsInvalid
+        {
+            public SafeRpcInquiryHandle() : base(true)
+            {
+            }
+
+            protected override bool ReleaseHandle()
+            {
+                return Rpcrt4.RpcMgmtEpEltInqDone(ref handle) == 0;
+            }
+        }
+
+        // From https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools/blob/c02ed8ba04324e54a0a188ab9877ee6aa372dfac/NtApiDotNet/Win32/SafeHandles/SafeRpcStringHandle.cs
+        public class SafeRpcStringHandle : SafeHandleZeroOrMinusOneIsInvalid
+        {
+            public SafeRpcStringHandle() : base(true)
+            {
+            }
+
+            public SafeRpcStringHandle(IntPtr handle, bool owns_handle) : base(owns_handle)
+            {
+                SetHandle(handle);
+            }
+
+            protected override bool ReleaseHandle()
+            {
+                return Rpcrt4.RpcStringFree(ref handle) == 0;
+            }
+
+            public override string ToString()
+            {
+                if (!IsInvalid && !IsClosed)
+                {
+                    return Marshal.PtrToStringUni(handle);
+                }
+                return string.Empty;
+            }
+        }
+
+        // From https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools/blob/c02ed8ba04324e54a0a188ab9877ee6aa372dfac/NtApiDotNet/Win32/SafeHandles/SafeRpcBindingHandle.cs
+        public class SafeRpcBindingHandle : SafeHandleZeroOrMinusOneIsInvalid
+        {
+            public SafeRpcBindingHandle() : base(true)
+            {
+            }
+
+            public SafeRpcBindingHandle(IntPtr handle, bool owns_handle) : base(owns_handle)
+            {
+                SetHandle(handle);
+            }
+
+            protected override bool ReleaseHandle()
+            {
+                return Rpcrt4.RpcBindingFree(ref handle) == 0;
+            }
+
+            public override string ToString()
+            {
+                if (!IsInvalid && !IsClosed)
+                {
+                    if (Rpcrt4.RpcBindingToStringBinding(handle, out SafeRpcStringHandle str) == 0)
+                    {
+                        using (str)
+                        {
+                            return str.ToString();
+                        }
+                    }
+                }
+                return string.Empty;
+            }
+
+            public static SafeRpcBindingHandle Null => new SafeRpcBindingHandle(IntPtr.Zero, false);
         }
     }
 }

@@ -54,16 +54,16 @@ namespace Seatbelt.Commands.Browser
 
                         try
                         {
-                            using (var r = new StreamReader(userChromiumHistoryPath))
+                            using var fs = new FileStream(userChromiumHistoryPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                            using var r = new StreamReader(fs);
+
+                            string line;
+                            while ((line = r.ReadLine()) != null)
                             {
-                                string line;
-                                while ((line = r.ReadLine()) != null)
+                                var m = historyRegex.Match(line);
+                                if (m.Success)
                                 {
-                                    var m = historyRegex.Match(line);
-                                    if (m.Success)
-                                    {
-                                        URLs.Add($"{m.Groups[0].ToString().Trim()}");
-                                    }
+                                    URLs.Add($"{m.Groups[0].ToString().Trim()}");
                                 }
                             }
                         }

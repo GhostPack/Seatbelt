@@ -51,5 +51,21 @@ namespace Seatbelt.Interop
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
             public string cAlternateFileName;
         }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern IntPtr CreateFile(
+         [MarshalAs(UnmanagedType.LPTStr)] string filename,
+         [MarshalAs(UnmanagedType.U4)] System.IO.FileAccess access,
+         [MarshalAs(UnmanagedType.U4)] System.IO.FileShare share,
+         IntPtr securityAttributes,
+         [MarshalAs(UnmanagedType.U4)] System.IO.FileMode creationDisposition,
+         [MarshalAs(UnmanagedType.U4)] System.IO.FileAttributes flagsAndAttributes,
+         IntPtr templateFile);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool GetNamedPipeServerProcessId(
+           IntPtr hPipe,
+           out int ClientProcessId);
+
     }
 }

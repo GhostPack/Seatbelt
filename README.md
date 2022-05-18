@@ -159,7 +159,8 @@ Available commands (+ means remote usage is supported):
 
 Seatbelt has the following command groups: All, User, System, Slack, Chromium, Remote, Misc
 
-    You can invoke command groups with "Seatbelt.exe <group>"
+    You can invoke command groups with         "Seatbelt.exe <group>"
+    Or command groups except specific commands "Seatbelt.exe <group> -Command"
 
    "Seatbelt.exe -group=all" runs all commands
 
@@ -226,6 +227,7 @@ Examples:
     'Seatbelt.exe <Command> -full' will return complete results for a command without any filtering.
     'Seatbelt.exe "<Command> [argument]"' will pass an argument to a command that supports it (note the quotes).
     'Seatbelt.exe -group=all' will run ALL enumeration checks, can be combined with "-full".
+    'Seatbelt.exe -group=all -AuditPolicies' will run all enumeration checks EXCEPT AuditPolicies, can be combined with "-full".
     'Seatbelt.exe <Command> -computername=COMPUTER.DOMAIN.COM [-username=DOMAIN\USER -password=PASSWORD]' will run an applicable check remotely
     'Seatbelt.exe -group=remote -computername=COMPUTER.DOMAIN.COM [-username=DOMAIN\USER -password=PASSWORD]' will run remote specific checks
     'Seatbelt.exe -group=system -outputfile="C:\Temp\out.txt"' will run system checks and output to a .txt file.

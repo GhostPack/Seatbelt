@@ -4,6 +4,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2022-05-18
+
+### Added
+
+* Added the following commands:
+    * SecureBoot - Secure Boot configuration
+    * OneNote - List cached OneNote files (@tijme)
+    * WifiProfile - WIFI profile enumeration including passwords if possible (@guervild)
+    * WMI - Runs a specified WMI query
+    * OptionalFeatures - List Optional Features/Roles (via WMI)
+    * CertificateThumbprints - Finds thumbprints for all certificate store certs on the system
+    * Certificates - Finds user and machine certificate files
+    * KeePass - Finds KeePass configuration files
+    * Dsregcmd - Tenant information - replacement for Dsregcmd /status (@leftp)
+    * CloudSyncProvider - Configured Office 365 endpoints (tenants and teamsites) which are synchronised by OneDrive (@stufus)
+    * OracleSQLDeveloper - Finds Oracle SQLDeveloper connections.xml files
+* Added "type" to NetworkShares command
+* Added ability to specify regex for PowerShell scraping commands
+* Added ability to specify regex for ProcessCreationEvents and SysmonEvents commands
+* Added support for getting directory information through the fileinfo command
+* Additional error handling in various places
+* Added hardware ID + client directory to RDPSessions
+* Added ParentProcessID to Processes command
+* (Optional) Command versioning
+* Added filtering to Services command
+* Added ability to exclude specific commands from command groups (@mgeeky)
+* Process information (if possible) to NamedPipes command (@Wra7h)
+
+### Changed
+
+* @dtmsecurity's rdpsession improvements
+* Upgraded to C# 9 support
+* ARPTable refactor
+* Misc cleanup/refactoring
+* Updated license
+
+### Fixed
+
+* Corrected support for PowerShell Core versions in associated commands
+* Corrected MemoryStream output method
+* Split sysmon output across several lines
+* Removed console output from arp command
+* PSSessionSettings bugs
+* Vault pointer size fix
+* Office version handling
+* More nullable type issues
+* Fix for ChromeHistory if file is opened already
+
 
 ## [1.1.1] - 2020-11-06
 

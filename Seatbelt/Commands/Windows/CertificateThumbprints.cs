@@ -9,7 +9,7 @@ namespace Seatbelt.Commands
     internal class CertificateThumbprintCommand : CommandBase
     {
         public override string Command => "CertificateThumbprints";
-        public override string Description => "Finds thumbprints for all certificate store certs on the systen";
+        public override string Description => "Finds thumbprints for all certificate store certs on the system";
         public override CommandGroup[] Group => new[] { CommandGroup.User, CommandGroup.System };
         public override bool SupportRemote => false;
 

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -83,6 +83,7 @@
     <Compile Include="Commands\Misc\LOLBAS.cs" />
     <Compile Include="Commands\Products\OneNoteCommand.cs" />
     <Compile Include="Commands\Windows\SecureBootCommand.cs" />
+    <Compile Include="Commands\Windows\WifiProfileCommand.cs" />
     <Compile Include="Commands\Windows\WMICommand.cs" />
     <Compile Include="Commands\Products\FileZillaCommand.cs" />
     <Compile Include="Commands\Products\KeePass.cs" />
@@ -101,6 +102,7 @@
     <Compile Include="Interop\SecBufferDesc.cs" />
     <Compile Include="Commands\Windows\PowerShellHistory.cs" />
     <Compile Include="Commands\Windows\RDPSessionsCommand.cs" />
+    <Compile Include="Interop\Wlanapi.cs" />
     <Compile Include="Output\Sinks\JsonStringOutputSink.cs" />
     <Compile Include="SeatbeltArgumentParser.cs" />
     <Compile Include="Commands\Browser\ChromiumBookmarksCommand.cs" />

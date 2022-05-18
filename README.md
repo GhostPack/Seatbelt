@@ -34,8 +34,8 @@ Seatbelt is licensed under the BSD 3-Clause license.
 ```
 
 
-                        %&&@@@&&                                                                                  
-                        &&&&&&&%%%,                       #&&@@@@@@%%%%%%###############%                         
+                        %&&@@@&&
+                        &&&&&&&%%%,                       #&&@@@@@@%%%%%%###############%
                         &%&   %&%%                        &////(((&%%%%%#%################//((((###%%%%%%%%%%%%%%%
 %%%%%%%%%%%######%%%#%%####%  &%%**#                      @////(((&%%%%%%######################(((((((((((((((((((
 #%#%%%%%%%#######%#%%#######  %&%,,,,,,,,,,,,,,,,         @////(((&%%%%%#%#####################(((((((((((((((((((
@@ -43,10 +43,10 @@ Seatbelt is licensed under the BSD 3-Clause license.
 #####%%%####################  &%%......  ...   ..         @////(((&%%%%%%%###############%######((#(#(####((((((((
 #######%##########%#########  %%%......  ...   ..         @////(((&%%%%%#########################(#(#######((#####
 ###%##%%####################  &%%...............          @////(((&%%%%%%%%##############%#######(#########((#####
-#####%######################  %%%..                       @////(((&%%%%%%%################                        
-                        &%&   %%%%%      Seatbelt         %////(((&%%%%%%%%#############*                         
-                        &%%&&&%%%%%        v1.1.1         ,(((&%%%%%%%%%%%%%%%%%,                                 
-                         #%%%%##,                                                                                 
+#####%######################  %%%..                       @////(((&%%%%%%%################
+                        &%&   %%%%%      Seatbelt         %////(((&%%%%%%%%#############*
+                        &%%&&&%%%%%        v1.2.0         ,(((&%%%%%%%%%%%%%%%%%,
+                         #%%%%##,
 
 
 Available commands (+ means remote usage is supported):
@@ -58,6 +58,8 @@ Available commands (+ means remote usage is supported):
       AuditPolicies          - Enumerates classic and advanced audit policy settings
     + AuditPolicyRegistry    - Audit settings via the registry
     + AutoRuns               - Auto run executables/scripts/programs
+      Certificates           - Finds user and machine personal certificate files
+      CertificateThumbprints - Finds thumbprints for all certificate store certs on the systen
     + ChromiumBookmarks      - Parses any found Chrome/Edge/Brave/Opera bookmark files
     + ChromiumHistory        - Parses any found Chrome/Edge/Brave/Opera history files
     + ChromiumPresence       - Checks if interesting Chrome/Edge/Brave/Opera files exist
@@ -65,10 +67,11 @@ Available commands (+ means remote usage is supported):
     + CloudSyncProviders     - All configured Office 365 endpoints (tenants and teamsites) which are synchronised by OneDrive.
       CredEnum               - Enumerates the current user's saved credentials using CredEnumerate()
     + CredGuard              - CredentialGuard configuration
-      dir                    - Lists files/folders. By default, lists users' downloads, documents, and desktop folders (arguments == [directory] [depth] [regex] [boolIgnoreErrors]
+      dir                    - Lists files/folders. By default, lists users' downloads, documents, and desktop folders (arguments == [directory] [maxDepth] [regex] [boolIgnoreErrors]
     + DNSCache               - DNS cache entries (via WMI)
     + DotNet                 - DotNet versions
     + DpapiMasterKeys        - List DPAPI master keys
+      Dsregcmd               - Return Tenant information - Replacement for Dsregcmd /status
       EnvironmentPath        - Current environment %PATH$ folders and SDDL information
     + EnvironmentVariables   - Current environment variables
     + ExplicitLogonEvents    - Explicit Logon events (Event ID 4648) from the security event log. Default of 7 days, argument == last X days.
@@ -87,7 +90,7 @@ Available commands (+ means remote usage is supported):
       InterestingFiles       - "Interesting" files matching various patterns in the user's folder. Note: takes non-trivial time.
     + InterestingProcesses   - "Interesting" processes - defensive products and admin tools
       InternetSettings       - Internet settings including proxy configs and zones configuration
-      KeePass                - Finds KeePass configuration files
+    + KeePass                - Finds KeePass configuration files
     + LAPS                   - LAPS settings, if installed
     + LastShutdown           - Returns the DateTime of the last system shutdown (via the registry).
       LocalGPOs              - Local Group Policy settings applied to the machine/local users
@@ -101,11 +104,13 @@ Available commands (+ means remote usage is supported):
       McAfeeConfigs          - Finds McAfee configuration files
       McAfeeSiteList         - Decrypt any found McAfee SiteList.xml configuration files.
       MicrosoftUpdates       - All Microsoft updates (via COM)
-      NamedPipes             - Named pipe names and any readable ACL information.
+      NamedPipes             - Named pipe names, any readable ACL information and associated process information.
     + NetworkProfiles        - Windows network profiles
     + NetworkShares          - Network shares exposed by the machine (via WMI)
     + NTLMSettings           - NTLM authentication settings
       OfficeMRUs             - Office most recently used file list (last 7 days)
+      OneNote                - List OneNote backup files
+    + OptionalFeatures       - List Optional Features/Roles (via WMI)
       OracleSQLDeveloper     - Finds Oracle SQLDeveloper connections.xml files
     + OSInfo                 - Basic OS info (i.e. architecture, OS version, etc.)
     + OutlookDownloads       - List files downloaded by Outlook
@@ -145,12 +150,14 @@ Available commands (+ means remote usage is supported):
     + UAC                    - UAC system policies via the registry
       UdpConnections         - Current UDP connections and associated processes and services
       UserRightAssignments   - Configured User Right Assignments (e.g. SeDenyNetworkLogonRight, SeShutdownPrivilege, etc.) argument == computername to enumerate
+      WifiProfile            - Enumerates the saved Wifi profiles and extract the ssid, authentication type, cleartext key/passphrase (when possible)
     + WindowsAutoLogon       - Registry autologon information
       WindowsCredentialFiles - Windows credential DPAPI blobs
     + WindowsDefender        - Windows Defender settings (including exclusion locations)
     + WindowsEventForwarding - Windows Event Forwarding (WEF) settings via the registry
     + WindowsFirewall        - Non-standard firewall rules, "-full" dumps all (arguments == allow/deny/tcp/udp/in/out/domain/private/public)
       WindowsVault           - Credentials saved in the Windows Vault (i.e. logins from Internet Explorer and Edge).
+    + WMI                    - Runs a specified WMI query
       WMIEventConsumer       - Lists WMI Event Consumers
       WMIEventFilter         - Lists WMI Event Filters
       WMIFilterBinding       - Lists WMI Filter to Consumer Bindings
@@ -160,16 +167,19 @@ Available commands (+ means remote usage is supported):
 Seatbelt has the following command groups: All, User, System, Slack, Chromium, Remote, Misc
 
     You can invoke command groups with         "Seatbelt.exe <group>"
+
+
     Or command groups except specific commands "Seatbelt.exe <group> -Command"
 
    "Seatbelt.exe -group=all" runs all commands
 
    "Seatbelt.exe -group=user" runs the following commands:
 
-        ChromiumPresence, CloudCredentials, CloudSyncProviders, CredEnum, dir,
-        DpapiMasterKeys, ExplorerMRUs, ExplorerRunCommands, FileZilla,
-        FirefoxPresence, IdleTime, IEFavorites, IETabs,
-        IEUrls, KeePass, MappedDrives, OfficeMRUs,
+        Certificates, CertificateThumbprints, ChromiumPresence, CloudCredentials, CloudSyncProviders,
+        CredEnum, dir, DpapiMasterKeys, Dsregcmd,
+        ExplorerMRUs, ExplorerRunCommands, FileZilla, FirefoxPresence,
+        IdleTime, IEFavorites, IETabs, IEUrls,
+        KeePass, MappedDrives, OfficeMRUs, OneNote,
         OracleSQLDeveloper, PowerShellHistory, PuttyHostKeys, PuttySessions,
         RDCManFiles, RDPSavedConnections, SecPackageCreds, SlackDownloads,
         SlackPresence, SlackWorkspaces, SuperPutty, TokenGroups,
@@ -178,18 +188,19 @@ Seatbelt has the following command groups: All, User, System, Slack, Chromium, R
    "Seatbelt.exe -group=system" runs the following commands:
 
         AMSIProviders, AntiVirus, AppLocker, ARPTable, AuditPolicies,
-        AuditPolicyRegistry, AutoRuns, CredGuard, DNSCache,
-        DotNet, EnvironmentPath, EnvironmentVariables, Hotfixes,
-        InterestingProcesses, InternetSettings, LAPS, LastShutdown,
-        LocalGPOs, LocalGroups, LocalUsers, LogonSessions,
-        LSASettings, McAfeeConfigs, NamedPipes, NetworkProfiles,
-        NetworkShares, NTLMSettings, OSInfo, PoweredOnEvents,
-        PowerShell, Processes, PSSessionSettings, RDPSessions,
-        RDPsettings, SCCM, Services, Sysmon,
-        TcpConnections, TokenPrivileges, UAC, UdpConnections,
-        UserRightAssignments, WindowsAutoLogon, WindowsDefender, WindowsEventForwarding,
-        WindowsFirewall, WMIEventConsumer, WMIEventFilter, WMIFilterBinding,
-        WSUS
+        AuditPolicyRegistry, AutoRuns, Certificates, CertificateThumbprints,
+        CredGuard, DNSCache, DotNet, EnvironmentPath,
+        EnvironmentVariables, Hotfixes, InterestingProcesses, InternetSettings,
+        LAPS, LastShutdown, LocalGPOs, LocalGroups,
+        LocalUsers, LogonSessions, LSASettings, McAfeeConfigs,
+        NamedPipes, NetworkProfiles, NetworkShares, NTLMSettings,
+        OptionalFeatures, OSInfo, PoweredOnEvents, PowerShell,
+        Processes, PSSessionSettings, RDPSessions, RDPsettings,
+        SCCM, Services, Sysmon, TcpConnections,
+        TokenPrivileges, UAC, UdpConnections, UserRightAssignments,
+        WifiProfile, WindowsAutoLogon, WindowsDefender, WindowsEventForwarding,
+        WindowsFirewall, WMI, WMIEventConsumer, WMIEventFilter,
+        WMIFilterBinding, WSUS
 
    "Seatbelt.exe -group=slack" runs the following commands:
 
@@ -207,10 +218,10 @@ Seatbelt has the following command groups: All, User, System, Slack, Chromium, R
         InterestingProcesses, KeePass, LastShutdown, LocalGroups,
         LocalUsers, LogonEvents, LogonSessions, LSASettings,
         MappedDrives, NetworkProfiles, NetworkShares, NTLMSettings,
-        OSInfo, PoweredOnEvents, PowerShell, ProcessOwners,
-        PSSessionSettings, PuttyHostKeys, PuttySessions, RDPSavedConnections,
-        RDPSessions, RDPsettings, Sysmon, WindowsDefender,
-        WindowsEventForwarding, WindowsFirewall
+        OptionalFeatures, OSInfo, PoweredOnEvents, PowerShell,
+        ProcessOwners, PSSessionSettings, PuttyHostKeys, PuttySessions,
+        RDPSavedConnections, RDPSessions, RDPsettings, Sysmon,
+        WindowsDefender, WindowsEventForwarding, WindowsFirewall
 
    "Seatbelt.exe -group=misc" runs the following commands:
 
@@ -262,6 +273,8 @@ Executed with: `Seatbelt.exe -group=system`
 | AuditPolicies | Enumerates classic and advanced audit policy settings |
 | AuditPolicyRegistry | Audit settings via the registry |
 | AutoRuns | Auto run executables/scripts/programs |
+| Certificates | User and machine personal certificate files |
+| CertificateThumbprints | Thumbprints for all certificate store certs on the system |
 | CredGuard | CredentialGuard configuration |
 | DNSCache | DNS cache entries (via WMI) |
 | DotNet | DotNet versions |
@@ -282,6 +295,7 @@ Executed with: `Seatbelt.exe -group=system`
 | NetworkProfiles | Windows network profiles |
 | NetworkShares |  Network shares exposed by the machine (via WMI) |
 | NTLMSettings | NTLM authentication settings |
+| OptionalFeatures | TODO |
 | OSInfo | Basic OS info (i.e. architecture, OS version, etc.) |
 | PoweredOnEvents | Reboot and sleep schedule based on the System event log EIDs 1, 12, 13, 42, and 6008. Default of 7 days, argument == last X days. |
 | PowerShell | PowerShell versions and security settings |
@@ -297,6 +311,7 @@ Executed with: `Seatbelt.exe -group=system`
 | UAC | UAC system policies via the registry |
 | UdpConnections | Current UDP connections and associated processes and services |
 | UserRightAssignments | Configured User Right Assignments (e.g. SeDenyNetworkLogonRight, SeShutdownPrivilege, etc.) argument == computername to enumerate |
+| WifiProfile | TODO |
 | WindowsAutoLogon | Registry autologon information |
 | WindowsDefender | Windows Defender settings (including exclusion locations) |
 | WindowsEventForwarding | Windows Event Forwarding (WEF) settings via the registry |
@@ -315,11 +330,15 @@ Executed with: `Seatbelt.exe -group=user`
 
 | Command | Description |
 | ----------- | ----------- |
-| ChromePresence | Checks if interesting Google Chrome files exist |
+| Certificates | User and machine personal certificate files |
+| CertificateThumbprints | Thumbprints for all certificate store certs on the system |
+| ChromiumPresence | Checks if interesting Chrome/Edge/Brave/Opera files exist |
 | CloudCredentials | AWS/Google/Azure cloud credential files |
+| CloudSyncProviders | TODO |
 | CredEnum | Enumerates the current user's saved credentials using CredEnumerate() |
 | dir | Lists files/folders. By default, lists users' downloads, documents, and desktop folders (arguments == \<directory\> \<depth\> \<regex\> |
 | DpapiMasterKeys | List DPAPI master keys |
+| Dsregcmd | TODO |
 | ExplorerMRUs | Explorer most recently used files (last 7 days, argument == last X days) |
 | ExplorerRunCommands | Recent Explorer "run" commands |
 | FileZilla | FileZilla configuration files |
@@ -328,8 +347,11 @@ Executed with: `Seatbelt.exe -group=user`
 | IEFavorites | Internet Explorer favorites |
 | IETabs | Open Internet Explorer tabs |
 | IEUrls| Internet Explorer typed URLs (last 7 days, argument == last X days) |
+| KeePass | TODO |
 | MappedDrives | Users' mapped drives (via WMI) |
 | OfficeMRUs | Office most recently used file list (last 7 days) |
+| OneNote | TODO |
+| OracleSQLDeveloper | TODO |
 | PowerShellHistory | Iterates through every local user and attempts to read their PowerShell console history if successful will print it  |
 | PuttyHostKeys | Saved Putty SSH host keys |
 | PuttySessions | Saved Putty configuration (interesting fields) and SSH host keys |
@@ -353,15 +375,15 @@ Executed with: `Seatbelt.exe -group=misc`
 
 | Command | Description |
 | ----------- | ----------- |
-| ChromeBookmarks | Parses any found Chrome bookmark files |
-| ChromeHistory | Parses any found Chrome history files |
+| ChromiumBookmarks | Parses any found Chrome/Edge/Brave/Opera bookmark files |
+| ChromiumHistory | Parses any found Chrome/Edge/Brave/Opera history files |
 | ExplicitLogonEvents | Explicit Logon events (Event ID 4648) from the security event log. Default of 7 days, argument == last X days. |
 | FileInfo | Information about a file (version information, timestamps, basic PE info, etc. argument(s) == file path(s) |
 | FirefoxHistory | Parses any found FireFox history files |
-| HuntLolbas     | Locates Living Off The Land Binaries and Scripts (LOLBAS) on the system. Note: takes non-trivial time. |
 | InstalledProducts | Installed products via the registry |
 | InterestingFiles | "Interesting" files matching various patterns in the user's folder. Note: takes non-trivial time. |
 | LogonEvents | Logon events (Event ID 4624) from the security event log. Default of 10 days, argument == last X days. |
+| LOLBAS | Locates Living Off The Land Binaries and Scripts (LOLBAS) on the system. Note: takes non-trivial time. |
 | McAfeeSiteList | Decrypt any found McAfee SiteList.xml configuration files. |
 | MicrosoftUpdates | All Microsoft updates (via COM) |
 | OutlookDownloads | List files downloaded by Outlook |
@@ -385,8 +407,8 @@ Executed with: `Seatbelt.exe -group=GROUPNAME`
 | Alias | Description |
 | ----------- | ----------- |
 | Slack | Runs modules that start with "Slack*" |
-| Chrome | Runs modules that start with "Chrome*" |
-| Remote | Runs the following modules (for use against a remote system): AMSIProviders, AntiVirus, DotNet, ExplorerRunCommands, Hotfixes, InterestingProcesses, LastShutdown, LogonSessions, LSASettings, MappedDrives, NetworkProfiles, NetworkShares, NTLMSettings, PowerShell, ProcessOwners, PuttyHostKeys, PuttySessions, RDPSavedConnections, RDPSessions, RDPsettings, Sysmon, WindowsDefender, WindowsEventForwarding, WindowsFirewall |
+| Chromium | Runs modules that start with "Chromium*" |
+| Remote | Runs the following modules (for use against a remote system): AMSIProviders, AntiVirus, AuditPolicyRegistry, ChromiumPresence, CloudCredentials, DNSCache, DotNet, DpapiMasterKeys, EnvironmentVariables, ExplicitLogonEvents, ExplorerRunCommands, FileZilla, Hotfixes, InterestingProcesses, KeePass, LastShutdown, LocalGroups, LocalUsers, LogonEvents, LogonSessions, LSASettings, MappedDrives, NetworkProfiles, NetworkShares, NTLMSettings, OptionalFeatures, OSInfo, PoweredOnEvents, PowerShell, ProcessOwners, PSSessionSettings, PuttyHostKeys, PuttySessions, RDPSavedConnections, RDPSessions, RDPsettings, Sysmon, WindowsDefender, WindowsEventForwarding, WindowsFirewall |
 
 
 ## Command Arguments

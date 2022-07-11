@@ -85,6 +85,11 @@ namespace Seatbelt.Commands.Windows
                 {
                     WriteLine("    [*] RDP Restricted Admin Mode is enabled! You can use pass-the-hash to access RDP on this system.");
                 }
+
+                if (dto.Key.Equals("TokenLeakDetectDelaySecs", System.StringComparison.InvariantCultureIgnoreCase))
+                {
+                    WriteLine($"    [*] TokenLeakDetectDelaySecs is set to '{dto.Value}' - logon sessions will be cleared after this number of seconds!");
+                }
             }
         }
     }

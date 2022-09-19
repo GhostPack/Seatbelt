@@ -13,7 +13,7 @@ namespace Seatbelt.Interop
         public static extern int NtQueryInformationProcess(
         IntPtr processHandle,
         PROCESSINFOCLASS processInformationClass,
-        ref _PsProtection processInformation,
+        ref PsProtection processInformation,
         int processInformationLength,
         out int returnLength);
     }
@@ -26,7 +26,7 @@ namespace Seatbelt.Interop
         ProcessProtectionInformation = 0x3D,
     }
     [StructLayout(LayoutKind.Sequential)]
-    public struct _PsProtection
+    public struct PsProtection
     {
         public PsProtectedType Type;
         public PsProtectedSigner Signer;

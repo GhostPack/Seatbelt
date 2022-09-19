@@ -97,7 +97,7 @@ namespace Seatbelt.Commands.Windows
                 string? version = null;
                 int? ProtectionLevelinfo = null;
 
-                if (!SecurityUtil.IsHighIntegrity())
+                if (!SecurityUtil.IsHighIntegrity() || proc.Process.Id == 0)
                 {
                     ProtectionLevelinfo = null;
                 }

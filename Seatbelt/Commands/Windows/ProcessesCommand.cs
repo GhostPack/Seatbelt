@@ -40,7 +40,40 @@ namespace Seatbelt.Commands.Windows
         public ProcessesCommand(Runtime runtime) : base(runtime)
         {
         }
-
+        private string GetProcessProtectionInfo(int ProcessId)
+        {
+            string? ValueString = null;
+            string? pplValue = null;
+            string? pplValueHex = null;
+            ProtectionValueName protectionLevel = ProtectionValueName.PsProtectedTypeNone;
+            string? protectionValueName = null;
+            IntPtr ProcessHandle = Interop.Kernel32.OpenProcess(Interop.Kernel32.ProcessAccess.QueryLimitedInformation, false, ProcessId);
+            if (ProcessHandle == null)
+            {
+                WriteError($" [!] Could not get a handle to ProcessId " + ProcessId);
+            }
+            _PsProtection ppl = new _PsProtection();
+            int returnlength;
+            int status = Interop.Ntdll.NtQueryInformationProcess(ProcessHandle, PROCESSINFOCLASS.ProcessProtectionInformation, ref ppl, Marshal.SizeOf(ppl), out returnlength);
+            if (status != 0)
+            {
+                WriteError($" [!] Could not get Process Protection Info for ProcessId " + ProcessId);
+                pplValueHex = null;
+                protectionValueName = null;
+                var handleResult = Interop.Kernel32.CloseHandle(ProcessHandle);
+            }
+            else
+            {
+                int pplValueString = ((byte)ppl.Type | (byte)ppl.Audit | ((int)ppl.Signer) << 4);
+                pplValue = pplValueString.ToString("X");
+                protectionLevel = (ProtectionValueName)Enum.Parse(typeof(ProtectionValueName), pplValue, true);
+                protectionValueName = protectionLevel.ToString();
+                pplValueHex = "(0x" + pplValue + ")";
+                var handleResult = Interop.Kernel32.CloseHandle(ProcessHandle);
+            }
+            ValueString = protectionValueName + pplValueHex;
+            return ValueString;
+        }
         public override IEnumerable<CommandDTOBase?> Execute(string[] args)
         {
             // lists currently running processes that don't have "Microsoft Corporation" as the company name in their file info
@@ -73,38 +106,11 @@ namespace Seatbelt.Commands.Windows
                 string? companyName = null;
                 string? description = null;
                 string? version = null;
+                string? ProtectionLevelinfo = null;
 
-                // Beginning of Process Protection Level Checks
-                string? pplValue = null;
-                string? pplValueHex = null;
-                ProtectionValueName protectionLevel = ProtectionValueName.PsProtectedTypeNone;
-                string? protectionValueName = null;
-                IntPtr ProcessHandle = Interop.Kernel32.OpenProcess(Interop.Kernel32.ProcessAccess.QueryLimitedInformation, false, proc.Process.Id);
-                if (ProcessHandle == null)
-                {
-                    System.Console.WriteLine("Couldn't get handle to Process ID - " + proc.Process.Id);
-                }
-                _PsProtection ppl = new _PsProtection();
-                int returnlength;
-                int status = Interop.Ntdll.NtQueryInformationProcess(ProcessHandle, PROCESSINFOCLASS.ProcessProtectionInformation, ref ppl, Marshal.SizeOf(ppl), out returnlength);
-                if (status != 0)
-                {
-                    System.Console.WriteLine("Couldn't get Process Protection Info for Process ID - " + proc.Process.Id);
-                    pplValueHex = null;
-                    protectionValueName = null;
-                    var handleResult = Interop.Kernel32.CloseHandle(ProcessHandle);
-                }
-                else
-                {
-                    int pplValueString = ((byte)ppl.Type | (byte)ppl.Audit | ((int)ppl.Signer) << 4);
-                    pplValue = pplValueString.ToString("X");
-                    protectionLevel = (ProtectionValueName)Enum.Parse(typeof(ProtectionValueName), pplValue, true);
-                    protectionValueName = protectionLevel.ToString();
-                    pplValueHex = "0x" + pplValue;
-                    var handleResult = Interop.Kernel32.CloseHandle(ProcessHandle);
-                }
-                //End of Process Protection Checks
-               
+                ProtectionLevelinfo = GetProcessProtectionInfo(proc.Process.Id);
+                
+
                 if (proc.Path != null)
                 {
                     
@@ -167,8 +173,7 @@ namespace Seatbelt.Commands.Windows
                     proc.CommandLine,
                     isDotNet,
                     processModules,
-                    pplValueHex,
-                    protectionValueName
+                    ProtectionLevelinfo
                 );
             }
         }
@@ -176,7 +181,7 @@ namespace Seatbelt.Commands.Windows
 
     internal class ProcessesDTO : CommandDTOBase
     {
-        public ProcessesDTO(string processName, int processId, int parentProcessId, string? companyName, string? description, string? version, string? path, string commandLine, bool? isDotNet, List<Module> modules, string? pplValueHex, string? protectionValueName)
+        public ProcessesDTO(string processName, int processId, int parentProcessId, string? companyName, string? description, string? version, string? path, string commandLine, bool? isDotNet, List<Module> modules, string? ProtectionLevelinfo)
         {
             ProcessName = processName;
             ProcessId = processId;
@@ -188,8 +193,7 @@ namespace Seatbelt.Commands.Windows
             CommandLine = commandLine;
             IsDotNet = isDotNet;
             Modules = modules;
-            PPLValueHex = pplValueHex;
-            PPLValueName = protectionValueName;
+            ProcessProtectionLevelinfo = ProtectionLevelinfo;
         }
         public string ProcessName { get; set; }
         public string? CompanyName { get; set; }
@@ -201,8 +205,7 @@ namespace Seatbelt.Commands.Windows
         public string CommandLine { get; set; }
         public bool? IsDotNet { get; set; }
         public List<Module> Modules { get; set; }
-        public string? PPLValueHex { get; set; }
-        public string? PPLValueName { get; set; }
+        public string? ProcessProtectionLevelinfo { get; set; }
     }
 
     [CommandOutputType(typeof(ProcessesDTO))]
@@ -225,8 +228,7 @@ namespace Seatbelt.Commands.Windows
             WriteLine(" {0,-40} : {1}", "Path", dto.Path);
             WriteLine(" {0,-40} : {1}", "CommandLine", dto.CommandLine);
             WriteLine(" {0,-40} : {1}", "IsDotNet", dto.IsDotNet);
-            WriteLine(" {0,-40} : {1}", "PPLValueHex",dto.PPLValueHex);
-            WriteLine(" {0,-40} : {1}", "PPLValueName", dto.PPLValueName);
+            WriteLine(" {0,-40} : {1}", "ProcessProtectionInformation", dto.ProcessProtectionLevelinfo);
 
             if (dto.Modules.Count != 0)
             {

@@ -98,6 +98,7 @@
     <Compile Include="Commands\Windows\HotfixesCommand.cs" />
     <Compile Include="Commands\Windows\MicrosoftUpdatesCommand.cs" />
     <Compile Include="Commands\Windows\SecurityPackagesCredentialsCommand.cs" />
+    <Compile Include="Interop\Ntdll.cs" />
     <Compile Include="Interop\SecBuffer.cs" />
     <Compile Include="Interop\SecBufferDesc.cs" />
     <Compile Include="Commands\Windows\PowerShellHistory.cs" />

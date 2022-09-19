@@ -7,7 +7,9 @@ using System.Text.RegularExpressions;
 using Seatbelt.Output.TextWriters;
 using Seatbelt.Output.Formatters;
 using Seatbelt.Util;
-
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using Seatbelt.Interop;
 
 namespace Seatbelt.Commands.Windows
 {
@@ -64,7 +66,7 @@ namespace Seatbelt.Commands.Windows
                     Path = (string)mo["ExecutablePath"],
                     CommandLine = (string)mo["CommandLine"],
                 };
-
+            
             foreach (var proc in query)
             {
                 var isDotNet = false;
@@ -72,8 +74,40 @@ namespace Seatbelt.Commands.Windows
                 string? description = null;
                 string? version = null;
 
+                // Beginning of Process Protection Level Checks
+                string? pplValue = null;
+                string? pplValueHex = null;
+                ProtectionValueName protectionLevel = ProtectionValueName.PsProtectedTypeNone;
+                string? protectionValueName = null;
+                IntPtr ProcessHandle = Interop.Kernel32.OpenProcess(Interop.Kernel32.ProcessAccess.QueryLimitedInformation, false, proc.Process.Id);
+                if (ProcessHandle == null)
+                {
+                    System.Console.WriteLine("Couldn't get handle to Process ID - " + proc.Process.Id);
+                }
+                _PsProtection ppl = new _PsProtection();
+                int returnlength;
+                int status = Interop.Ntdll.NtQueryInformationProcess(ProcessHandle, PROCESSINFOCLASS.ProcessProtectionInformation, ref ppl, Marshal.SizeOf(ppl), out returnlength);
+                if (status != 0)
+                {
+                    System.Console.WriteLine("Couldn't get Process Protection Info for Process ID - " + proc.Process.Id);
+                    pplValueHex = null;
+                    protectionValueName = null;
+                    var handleResult = Interop.Kernel32.CloseHandle(ProcessHandle);
+                }
+                else
+                {
+                    int pplValueString = ((byte)ppl.Type | (byte)ppl.Audit | ((int)ppl.Signer) << 4);
+                    pplValue = pplValueString.ToString("X");
+                    protectionLevel = (ProtectionValueName)Enum.Parse(typeof(ProtectionValueName), pplValue, true);
+                    protectionValueName = protectionLevel.ToString();
+                    pplValueHex = "0x" + pplValue;
+                    var handleResult = Interop.Kernel32.CloseHandle(ProcessHandle);
+                }
+                //End of Process Protection Checks
+               
                 if (proc.Path != null)
                 {
+                    
                     isDotNet = FileUtil.IsDotNetAssembly(proc.Path);
 
                     try
@@ -132,7 +166,9 @@ namespace Seatbelt.Commands.Windows
                     proc.Path,
                     proc.CommandLine,
                     isDotNet,
-                    processModules
+                    processModules,
+                    pplValueHex,
+                    protectionValueName
                 );
             }
         }
@@ -140,7 +176,7 @@ namespace Seatbelt.Commands.Windows
 
     internal class ProcessesDTO : CommandDTOBase
     {
-        public ProcessesDTO(string processName, int processId, int parentProcessId, string? companyName, string? description, string? version, string? path, string commandLine, bool? isDotNet, List<Module> modules)
+        public ProcessesDTO(string processName, int processId, int parentProcessId, string? companyName, string? description, string? version, string? path, string commandLine, bool? isDotNet, List<Module> modules, string? pplValueHex, string? protectionValueName)
         {
             ProcessName = processName;
             ProcessId = processId;
@@ -152,6 +188,8 @@ namespace Seatbelt.Commands.Windows
             CommandLine = commandLine;
             IsDotNet = isDotNet;
             Modules = modules;
+            PPLValueHex = pplValueHex;
+            PPLValueName = protectionValueName;
         }
         public string ProcessName { get; set; }
         public string? CompanyName { get; set; }
@@ -163,6 +201,8 @@ namespace Seatbelt.Commands.Windows
         public string CommandLine { get; set; }
         public bool? IsDotNet { get; set; }
         public List<Module> Modules { get; set; }
+        public string? PPLValueHex { get; set; }
+        public string? PPLValueName { get; set; }
     }
 
     [CommandOutputType(typeof(ProcessesDTO))]
@@ -185,6 +225,8 @@ namespace Seatbelt.Commands.Windows
             WriteLine(" {0,-40} : {1}", "Path", dto.Path);
             WriteLine(" {0,-40} : {1}", "CommandLine", dto.CommandLine);
             WriteLine(" {0,-40} : {1}", "IsDotNet", dto.IsDotNet);
+            WriteLine(" {0,-40} : {1}", "PPLValueHex",dto.PPLValueHex);
+            WriteLine(" {0,-40} : {1}", "PPLValueName", dto.PPLValueName);
 
             if (dto.Modules.Count != 0)
             {

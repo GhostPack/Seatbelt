@@ -10,6 +10,7 @@ using Seatbelt.Output.Sinks;
 using System.Management;
 using Microsoft.Win32;
 using System.Diagnostics.Eventing.Reader;
+using System.Security.Cryptography;
 
 namespace Seatbelt
 {
@@ -20,27 +21,29 @@ namespace Seatbelt
         private IEnumerable<string> Commands { get; set; }
         private IEnumerable<string> CommandGroups { get; set; }
         public bool FilterResults { get; }
+        public bool RandomizeOrder { get; }
         public string ComputerName { get; }  // for remote connections
         private string UserName { get; }     // for remote connections
         private string Password { get; }     // for remote connections
         private ManagementClass wmiRegProv { get; }
 
-        public Runtime(IOutputSink outputSink, IEnumerable<string> commands, IEnumerable<string> commandGroups, bool filter)
-            : this(outputSink, commands, commandGroups, filter, "", "", "")
+        public Runtime(IOutputSink outputSink, IEnumerable<string> commands, IEnumerable<string> commandGroups, bool filter, bool randomizeOrder)
+            : this(outputSink, commands, commandGroups, filter, randomizeOrder, "", "", "")
         {
         }
 
-        public Runtime(IOutputSink outputSink, IEnumerable<string> commands, IEnumerable<string> commandGroups, bool filter, string computerName)
-            : this(outputSink, commands, commandGroups, filter, computerName, "", "")
+        public Runtime(IOutputSink outputSink, IEnumerable<string> commands, IEnumerable<string> commandGroups, bool filter, bool randomizeOrder, string computerName)
+            : this(outputSink, commands, commandGroups, filter, randomizeOrder, computerName, "", "")
         {
         }
 
-        public Runtime(IOutputSink outputSink, IEnumerable<string> commands, IEnumerable<string> commandGroups, bool filter, string computerName, string userName, string password)
+        public Runtime(IOutputSink outputSink, IEnumerable<string> commands, IEnumerable<string> commandGroups, bool filter, bool randomizeOrder, string computerName, string userName, string password)
         {
             OutputSink = outputSink;
             Commands = commands;
             CommandGroups = commandGroups;
             FilterResults = filter;
+            RandomizeOrder = randomizeOrder;
             ComputerName = computerName;
             UserName = userName;
             Password = password;
@@ -349,6 +352,14 @@ namespace Seatbelt
 
             var commandsFiltered = toExecute.Where(c => !toExclude.Contains(c)).ToList();
 
+            if (RandomizeOrder)
+            {
+                OutputSink.WriteHost("[*] Order of the group's commands will be randomize\n");
+
+                RNGCryptoServiceProvider random = new RNGCryptoServiceProvider();
+                commandsFiltered = commandsFiltered.OrderBy(x => Next(random)).ToList();
+            }
+
             commandsFiltered.ForEach(c =>
             {
                 ExecuteCommand(c, new string[] { });
@@ -407,6 +418,14 @@ namespace Seatbelt
                 OutputSink.WriteError($"  [!] Terminating exception running command '{command.Command}': " + e);
             }
         }
+
+        static int Next(RNGCryptoServiceProvider random)
+        {
+            byte[] randomInt = new byte[4];
+            random.GetBytes(randomInt);
+            return Convert.ToInt32(randomInt[0]);
+        }
+
     }
 }
 #nullable enable

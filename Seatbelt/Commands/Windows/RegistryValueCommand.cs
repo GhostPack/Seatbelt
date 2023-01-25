@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using Seatbelt.Output.Formatters;
 using Seatbelt.Output.TextWriters;
 using Seatbelt.Util;
@@ -16,9 +16,6 @@ namespace Seatbelt.Commands.Windows
         public override string Description => @"Registry key values (HKLM\Software by default) argument == [Path] [intDepth] [Regex] [boolIgnoreErrors]";
         public override CommandGroup[] Group => new[] { CommandGroup.Misc };
         public override bool SupportRemote => false; // TODO remote, but will take some work
-
-        //private string _rootKey;
-        //private string _rootParentKey;
 
         public RegistryValueCommand(Runtime runtime) : base(runtime)
         {
@@ -108,6 +105,17 @@ namespace Seatbelt.Commands.Windows
                 .Replace("HKEY_CLASSES_ROOT", "HKCR")
                 .Replace("HKEY_USERS", "HKU");
 
+            var sddl = "";
+            if (!Runtime.FilterResults)
+            {
+                try
+                {
+                    var accessControl = key.GetAccessControl();
+                    sddl = accessControl.GetSecurityDescriptorSddlForm(System.Security.AccessControl.AccessControlSections.Access | System.Security.AccessControl.AccessControlSections.Owner);
+                }
+                catch { }
+            }
+
             // 1) Handle key values
             // Get the default value since GetValueNames doesn't always return it
             var defaultValue = key.GetValue("");
@@ -117,7 +125,8 @@ namespace Seatbelt.Commands.Windows
                     outputKeyPath,
                     "(default)",
                     defaultValue,
-                    RegistryValueKind.String
+                    RegistryValueKind.String,
+                    sddl
                 );
             }
 
@@ -136,7 +145,8 @@ namespace Seatbelt.Commands.Windows
                         outputKeyPath,
                         valueName,
                         value,
-                        valueKind
+                        valueKind,
+                        sddl
                     );
                 }
             }
@@ -170,17 +180,19 @@ namespace Seatbelt.Commands.Windows
 
     public class RegistryValueDTO : CommandDTOBase
     {
-        public RegistryValueDTO(string key, string valueName, object value, object valueKind)
+        public RegistryValueDTO(string key, string valueName, object value, object valueKind, string sddl)
         {
             Key = key;
             ValueName = valueName;
             Value = value;
             ValueKind = valueKind;
+            SDDL = sddl;
         }
         public string Key { get; }
         public string ValueName { get; }
         public object Value { get; }
         public object ValueKind { get; }
+        public object SDDL { get; }
     }
 
     [CommandOutputType(typeof(RegistryValueDTO))]
@@ -189,8 +201,6 @@ namespace Seatbelt.Commands.Windows
         public RegistryValueTextFormatter(ITextWriter writer) : base(writer)
         {
         }
-
-        //WriteLine("Registry Values");
 
         public override void FormatResult(CommandBase? command, CommandDTOBase result, bool filterResults)
         {
@@ -204,11 +214,26 @@ namespace Seatbelt.Commands.Windows
             if ((int)dto.ValueKind == (int)RegistryValueKind.MultiString)
             {
                 var values = (string[])dto.Value;
-                WriteLine($"{dto.Key} ! {dto.ValueName} :\n{String.Join("\n", values)}");
+
+                if (String.IsNullOrEmpty((string)dto.SDDL))
+                {
+                    WriteLine($"{dto.Key} ! {dto.ValueName} :\n{String.Join("\n", values)}");
+                }
+                else
+                {
+                    WriteLine($"{dto.Key} ! {dto.ValueName} :\n{String.Join("\n", values)}\n  {dto.SDDL}");
+                }
             }
             else
             {
-                WriteLine($"{dto.Key} ! {dto.ValueName} : {dto.Value}");
+                if (String.IsNullOrEmpty((string)dto.SDDL))
+                {
+                    WriteLine($"{dto.Key} ! {dto.ValueName} : {dto.Value}");
+                }
+                else
+                {
+                    WriteLine($"{dto.Key} ! {dto.ValueName} : {dto.Value}\n  {dto.SDDL}");
+                }
             }
         }
     }

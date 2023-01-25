@@ -108,8 +108,12 @@ namespace Seatbelt.Commands.Windows
             var sddl = "";
             if (!Runtime.FilterResults)
             {
-                var accessControl = key.GetAccessControl();
-                sddl = accessControl.GetSecurityDescriptorSddlForm(System.Security.AccessControl.AccessControlSections.Access | System.Security.AccessControl.AccessControlSections.Owner);
+                try
+                {
+                    var accessControl = key.GetAccessControl();
+                    sddl = accessControl.GetSecurityDescriptorSddlForm(System.Security.AccessControl.AccessControlSections.Access | System.Security.AccessControl.AccessControlSections.Owner);
+                }
+                catch { }
             }
 
             // 1) Handle key values

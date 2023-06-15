@@ -44,6 +44,7 @@ namespace Seatbelt.Commands.Windows
                 var sddl = "";
                 int iProcessId = 0;
                 string svProcessName = "";
+                string svProcessPath = "";
                 System.IntPtr hPipe = System.IntPtr.Zero;
                 bool bvRet = false;
 
@@ -72,7 +73,9 @@ namespace Seatbelt.Commands.Windows
                         //If GetNamedPipeServerProcessId was successful, get the process name for the returned ProcessID
                         if (bvRet)
                         {
-                            svProcessName = System.Diagnostics.Process.GetProcessById(iProcessId).ProcessName;
+                            var svProcess = System.Diagnostics.Process.GetProcessById(iProcessId);
+                            svProcessName = svProcess.ProcessName;
+                            svProcessPath = svProcess.MainModule.FileName;
                         }
                         else
                         {
@@ -105,31 +108,16 @@ namespace Seatbelt.Commands.Windows
                     sddl = "ERROR";
                 }
 
-                if (!System.String.IsNullOrEmpty(sddl) && !sddl.Equals("ERROR"))
+                yield return new NamedPipesDTO()
                 {
-                    yield return new NamedPipesDTO()
-                    {
-                        Name = namedPipe,
-                        Sddl = sddl,
-                        //SecurityDescriptor = new RawSecurityDescriptor(sddl)
+                    Name = namedPipe,
+                    Sddl = sddl,
+                    //SecurityDescriptor = null
 
-                        OwningProcessName = svProcessName,
-                        OwningProcessPID = iProcessId
-
-                    };
-                }
-                else
-                {
-                    yield return new NamedPipesDTO()
-                    {
-                        Name = namedPipe,
-                        Sddl = sddl,
-                        //SecurityDescriptor = null
-
-                        OwningProcessName = svProcessName,
-                        OwningProcessPID = iProcessId
-                    };
-                }
+                    ServerProcessName = svProcessName,
+                    ServerProcessPID = iProcessId,
+                    ServerProcessPath = svProcessPath
+                };
             }
         }
     }
@@ -140,9 +128,11 @@ namespace Seatbelt.Commands.Windows
 
         public string Sddl { get; set; }
 
-        public string OwningProcessName { get; set; }
+        public string ServerProcessName { get; set; }
 
-        public int OwningProcessPID { get; set; }
+        public int ServerProcessPID { get; set; }
+
+        public string ServerProcessPath { get; set; }
 
         // public RawSecurityDescriptor SecurityDescriptor { get; set; }
     }
@@ -158,7 +148,16 @@ namespace Seatbelt.Commands.Windows
         {
             var dto = (NamedPipesDTO)result;
 
-            WriteLine("{0},{1},{2}", dto.OwningProcessPID.ToString(), dto.OwningProcessName, dto.Name);
+            WriteLine("\n{0}", dto.Name);
+            WriteLine("    Server Process Id   : {0}", dto.ServerProcessPID.ToString());
+            if (!string.IsNullOrEmpty(dto.ServerProcessPath))
+            {
+                WriteLine("    Server Process Name : {0}", dto.ServerProcessName);
+            }
+            if (!string.IsNullOrEmpty(dto.ServerProcessPath))
+            {
+                WriteLine("    Server Process Path : {0}", dto.ServerProcessPath);
+            }
             if (!dto.Sddl.Equals("ERROR"))
             {
                 //WriteLine("    Owner   : {0}", dto.SecurityDescriptor.Owner);
@@ -167,7 +166,7 @@ namespace Seatbelt.Commands.Windows
                 //    WriteLine("        {0} :", rule.SecurityIdentifier);
                 //    WriteLine("              {0} : {1}", rule.AceType, (GenericAceMask)rule.AccessMask);
                 //}
-                WriteLine("    SDDL         : {0}", dto.Sddl);
+                WriteLine("    Pipe SDDL           : {0}", dto.Sddl);
             }
         }
     }

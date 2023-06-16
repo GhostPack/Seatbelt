@@ -27,7 +27,8 @@ namespace Seatbelt.Commands.Windows
             uint tableBufferSize = 0;
             var tableBuffer = IntPtr.Zero;
             var rowPtr = IntPtr.Zero;
-            var processes = new Dictionary<string, string>();
+            var processNames = new Dictionary<string, string>();
+            var processCommandLines = new Dictionary<string, string>();
 
             WriteHost("  Local Address          PID    Service                 ProcessName");
 
@@ -40,13 +41,10 @@ namespace Seatbelt.Commands.Windows
 
                 foreach (ManagementObject Process in retObjectCollection)
                 {
+                    processNames.Add(Process["ProcessId"].ToString(), Process["Name"].ToString());
                     if (Process["CommandLine"] != null)
                     {
-                        processes.Add(Process["ProcessId"].ToString(), Process["CommandLine"].ToString());
-                    }
-                    else
-                    {
-                        processes.Add(Process["ProcessId"].ToString(), Process["Name"].ToString());
+                        processCommandLines.Add(Process["ProcessId"].ToString(), Process["CommandLine"].ToString());
                     }
                 }
 
@@ -69,7 +67,7 @@ namespace Seatbelt.Commands.Windows
                     yield break;
                 }
 
-                //// get the number of entries in the table
+                // get the number of entries in the table
                 var ownerModuleTable = (MIB_UDPTABLE_OWNER_MODULE)Marshal.PtrToStructure(tableBuffer, typeof(MIB_UDPTABLE_OWNER_MODULE));
                 rowPtr = (IntPtr)(tableBuffer.ToInt64() + Marshal.OffsetOf(typeof(MIB_UDPTABLE_OWNER_MODULE), "Table").ToInt64());
                 var UdpRows = new MIB_UDPROW_OWNER_MODULE[ownerModuleTable.NumEntries];
@@ -85,10 +83,17 @@ namespace Seatbelt.Commands.Windows
 
                 foreach (var entry in UdpRows)
                 {
-                    var processName = "";
+                    string? processName = null;
                     try
                     {
-                        processName = processes[entry.OwningPid.ToString()];
+                        processName = processNames[entry.OwningPid.ToString()];
+                    }
+                    catch { }
+
+                    string? processCommandLine = null;
+                    try
+                    {
+                        processCommandLine = processCommandLines[entry.OwningPid.ToString()];
                     }
                     catch { }
 
@@ -98,8 +103,9 @@ namespace Seatbelt.Commands.Windows
                         entry.LocalAddress.ToString(),
                         entry.LocalPort,
                         entry.OwningPid,
-                        serviceName,
-                        processName
+                        processName,
+                        processCommandLine,
+                        serviceName
                     );
                 }
             }
@@ -116,19 +122,21 @@ namespace Seatbelt.Commands.Windows
 
     internal class UdpConnectionsDTO : CommandDTOBase
     {
-        public UdpConnectionsDTO(string localAddress, ushort localPort, uint processId, string? service, string processName)
+        public UdpConnectionsDTO(string localAddress, ushort localPort, uint processId, string? processName, string? processCommandLine, string? service)
         {
             LocalAddress = localAddress;
             LocalPort = localPort;
             ProcessId = processId;
-            Service = service;
             ProcessName = processName;
+            ProcessCommandLine = processCommandLine;
+            ServiceName = service;
         }
         public string LocalAddress { get; set; }
         public ushort LocalPort { get; set; }
         public uint ProcessId { get; set; }
-        public string? Service { get; set; }
-        public string ProcessName { get; set; }
+        public string? ProcessName { get; }
+        public string? ProcessCommandLine { get; }
+        public string? ServiceName { get; }
     }
 
     [CommandOutputType(typeof(UdpConnectionsDTO))]
@@ -143,7 +151,14 @@ namespace Seatbelt.Commands.Windows
             if (result != null)
             {
                 var dto = (UdpConnectionsDTO)result;
-                WriteLine("  {0,-23}{1,-7}{2,-23} {3}", dto.LocalAddress + ":" + dto.LocalPort, dto.ProcessId, dto.Service, dto.ProcessName);
+                if (dto.ProcessCommandLine != null)
+                {
+                    WriteLine("  {0,-23}{1,-7}{2,-23} {3}", dto.LocalAddress + ":" + dto.LocalPort, dto.ProcessId, dto.ServiceName, dto.ProcessCommandLine);
+                }
+                else
+                {
+                    WriteLine("  {0,-23}{1,-7}{2,-23} {3}", dto.LocalAddress + ":" + dto.LocalPort, dto.ProcessId, dto.ServiceName, dto.ProcessName);
+                }
             }
         }
     }

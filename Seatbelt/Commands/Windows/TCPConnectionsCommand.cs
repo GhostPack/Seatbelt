@@ -14,7 +14,7 @@ namespace Seatbelt.Commands.Windows
     {
         public override string Command => "TcpConnections";
         public override string Description => "Current TCP connections and their associated processes and services";
-        public override CommandGroup[] Group => new[] {CommandGroup.System};
+        public override CommandGroup[] Group => new[] { CommandGroup.System };
         public override bool SupportRemote => false;
 
         public TcpConnectionsCommand(Runtime runtime) : base(runtime)
@@ -27,7 +27,8 @@ namespace Seatbelt.Commands.Windows
             uint tableBufferSize = 0;
             var tableBuffer = IntPtr.Zero;
             var rowPtr = IntPtr.Zero;
-            var processes = new Dictionary<string, string>();
+            var processNames = new Dictionary<string, string>();
+            var processCommandLines = new Dictionary<string, string>();
 
             WriteHost("  Local Address          Foreign Address        State      PID   Service         ProcessName");
 
@@ -40,13 +41,10 @@ namespace Seatbelt.Commands.Windows
 
                 foreach (ManagementObject Process in retObjectCollection)
                 {
+                    processNames.Add(Process["ProcessId"].ToString(), Process["Name"].ToString());
                     if (Process["CommandLine"] != null)
                     {
-                        processes.Add(Process["ProcessId"].ToString(), Process["CommandLine"].ToString());
-                    }
-                    else
-                    {
-                        processes.Add(Process["ProcessId"].ToString(), Process["Name"].ToString());
+                        processCommandLines.Add(Process["ProcessId"].ToString(), Process["CommandLine"].ToString());
                     }
                 }
 
@@ -87,7 +85,14 @@ namespace Seatbelt.Commands.Windows
                     string? processName = null;
                     try
                     {
-                        processName = processes[entry.OwningPid.ToString()];
+                        processName = processNames[entry.OwningPid.ToString()];
+                    }
+                    catch { }
+
+                    string? processCommandLine = null;
+                    try
+                    {
+                        processCommandLine = processCommandLines[entry.OwningPid.ToString()];
                     }
                     catch { }
 
@@ -101,8 +106,9 @@ namespace Seatbelt.Commands.Windows
                         entry.RemotePort,
                         entry.State,
                         entry.OwningPid,
-                        serviceName,
-                        processName
+                        processName,
+                        processCommandLine,
+                        serviceName
                     );
                 }
             }
@@ -118,7 +124,7 @@ namespace Seatbelt.Commands.Windows
 
     internal class TcpConnectionsDTO : CommandDTOBase
     {
-        public TcpConnectionsDTO(string localAddress, ushort localPort, string remoteAddress, ushort remotePort, MIB_TCP_STATE state, uint processId, string? service, string? command)
+        public TcpConnectionsDTO(string localAddress, ushort localPort, string remoteAddress, ushort remotePort, MIB_TCP_STATE state, uint processId, string? processName, string? processCommandLine, string? service)
         {
             LocalAddress = localAddress;
             LocalPort = localPort;
@@ -126,8 +132,9 @@ namespace Seatbelt.Commands.Windows
             RemotePort = remotePort;
             State = state;
             ProcessId = processId;
-            Service = service;
-            Command = command;  
+            ProcessName = processName;
+            ProcessCommandLine = processCommandLine;
+            ServiceName = service;
         }
 
         public string LocalAddress { get; }
@@ -136,8 +143,9 @@ namespace Seatbelt.Commands.Windows
         public ushort RemotePort { get; }
         public MIB_TCP_STATE State { get; }
         public uint ProcessId { get; }
-        public string? Service { get; }
-        public string? Command { get; }
+        public string? ProcessName { get; }
+        public string? ProcessCommandLine { get; }
+        public string? ServiceName { get; }
     }
 
     [CommandOutputType(typeof(TcpConnectionsDTO))]
@@ -152,7 +160,14 @@ namespace Seatbelt.Commands.Windows
             if (result != null)
             {
                 var dto = (TcpConnectionsDTO)result;
-                WriteLine("  {0,-23}{1,-23}{2,-11}{3,-6}{4,-15} {5}", dto.LocalAddress + ":" + dto.LocalPort, dto.RemoteAddress + ":" + dto.RemotePort, dto.State, dto.ProcessId, dto.Service, dto.Command);
+                if (dto.ProcessCommandLine != null)
+                {
+                    WriteLine("  {0,-23}{1,-23}{2,-11}{3,-6}{4,-15} {5}", dto.LocalAddress + ":" + dto.LocalPort, dto.RemoteAddress + ":" + dto.RemotePort, dto.State, dto.ProcessId, dto.ServiceName, dto.ProcessCommandLine);
+                }
+                else
+                {
+                    WriteLine("  {0,-23}{1,-23}{2,-11}{3,-6}{4,-15} {5}", dto.LocalAddress + ":" + dto.LocalPort, dto.RemoteAddress + ":" + dto.RemotePort, dto.State, dto.ProcessId, dto.ServiceName, dto.ProcessName);
+                }
             }
         }
     }

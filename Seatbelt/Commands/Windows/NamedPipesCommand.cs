@@ -5,7 +5,8 @@ using Seatbelt.Output.Formatters;
 using System.Security.AccessControl;
 using static Seatbelt.Interop.Kernel32;
 using System.IO;
-
+using Seatbelt.Interop;
+using System;
 
 namespace Seatbelt.Commands.Windows
 {
@@ -43,44 +44,56 @@ namespace Seatbelt.Commands.Windows
                 string? svProcessPath = null;
                 int? svProcessId = null;
                 string? svProcessName = null;
+                int? svSessionId = null;
+                IntPtr hPipe = IntPtr.Zero;
 
                 // Try to identify ProcessID and ProcessName
                 try
                 {
-                    //Get a handle to the pipe
-                    System.IntPtr hPipe = CreateFile(
-                        $"\\\\.\\pipe\\{namedPipe}", // The name of the file or device to be created or opened.
-                        FileAccess.Read, // The requested access to the file or device.
-                        FileShare.None, // The requested sharing mode of the file or device.
-                        System.IntPtr.Zero, // Optional. A pointer to a SECURITY_ATTRIBUTES structure.
-                        FileMode.Open, // An action to take on a file or device that exists or does not exist.
-                        FileAttributes.Normal, // The file or device attributes and flags.
-                        System.IntPtr.Zero);
+                    hPipe = CreateFile(
+                        $"\\\\.\\pipe\\{namedPipe}",
+                        FileAccess.Read,
+                        FileShare.None,
+                        IntPtr.Zero,
+                        FileMode.Open,
+                        FileAttributes.Normal,
+                        IntPtr.Zero);
 
 
-                    if (hPipe.ToInt64() != -1) //verify CreateFile did not return "INVALID_HANDLE_VALUE"
+                    if (hPipe.ToInt64() != Win32Error.InvalidHandle)
                     {
-                        //Retrieve the ProcessID registered for the pipe.
                         bool bvRet = GetNamedPipeServerProcessId(
-                            hPipe, // A handle to an instance of a named pipe.
-                            out int iProcessId);
+                            hPipe,
+                            out int pipeServerPid);
 
-                        //If GetNamedPipeServerProcessId was successful, get the process name for the returned ProcessID
                         if (bvRet)
                         {
-                            var svProcess = System.Diagnostics.Process.GetProcessById(iProcessId);
+                            var svProcess = System.Diagnostics.Process.GetProcessById(pipeServerPid);
 
-                            svProcessId = iProcessId;
+                            svProcessId = pipeServerPid;
                             svProcessName = svProcess.ProcessName;
                             svProcessPath = svProcess.MainModule.FileName;
                         }
 
-                        //Close the pipe handle
-                        CloseHandle(hPipe);
+                        bvRet = GetNamedPipeServerSessionId(
+                            hPipe,
+                            out int pipeServerSessionId);
+
+                        if (bvRet)
+                        {
+                            svSessionId = pipeServerSessionId;
+                        }
                     }
                 }
                 catch
                 {
+                }
+                finally
+                {
+                    if (hPipe != IntPtr.Zero && hPipe.ToInt64() != Win32Error.InvalidHandle)
+                    {
+                        CloseHandle(hPipe);
+                    }
                 }
 
                 string? sddl = GetSddl("\\\\.\\pipe\\{0}");
@@ -92,7 +105,8 @@ namespace Seatbelt.Commands.Windows
                     Sddl = sddl,
                     ServerProcessName = svProcessName,
                     ServerProcessPID = svProcessId,
-                    ServerProcessPath = svProcessPath
+                    ServerProcessPath = svProcessPath,
+                    ServerSessionId = svSessionId,
                 };
             }
         }
@@ -115,16 +129,11 @@ namespace Seatbelt.Commands.Windows
     internal class NamedPipesDTO : CommandDTOBase
     {
         public string Name { get; set; }
-
         public string? Sddl { get; set; }
-
         public string? ServerProcessName { get; set; }
-
         public int? ServerProcessPID { get; set; }
-
         public string? ServerProcessPath { get; set; }
-
-        // public RawSecurityDescriptor SecurityDescriptor { get; set; }
+        public int? ServerSessionId { get; internal set; }
     }
 
     [CommandOutputType(typeof(NamedPipesDTO))]
@@ -142,22 +151,27 @@ namespace Seatbelt.Commands.Windows
 
             if (dto.ServerProcessPID != null)
             {
-                WriteLine("    Server Process Id   : {0}", dto.ServerProcessPID.ToString());
+                WriteLine($"    Server Process Id   : '{dto.ServerProcessPID}'");
             }
 
             if (!string.IsNullOrEmpty(dto.ServerProcessPath))
             {
-                WriteLine("    Server Process Name : {0}", dto.ServerProcessName);
+                WriteLine($"    Server Process Name : {dto.ServerProcessName}");
             }
 
             if (!string.IsNullOrEmpty(dto.ServerProcessPath))
             {
-                WriteLine("    Server Process Path : {0}", dto.ServerProcessPath);
+                WriteLine($"    Server Process Path : {dto.ServerProcessPath}");
             }
 
             if (!string.IsNullOrEmpty(dto.Sddl))
             {
-                WriteLine("    Pipe SDDL           : {0}", dto.Sddl);
+                WriteLine($"    Pipe SDDL           : {dto.Sddl}");
+            }
+
+            if (dto.ServerSessionId != null)
+            {
+                WriteLine($"    Server Session Id   : {dto.ServerSessionId}");
             }
         }
     }

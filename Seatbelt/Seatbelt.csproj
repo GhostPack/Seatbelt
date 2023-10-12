@@ -111,7 +111,7 @@
     <Compile Include="Commands\Browser\ChromiumHistoryCommand.cs" />
     <Compile Include="Commands\Browser\FirefoxHistoryCommand.cs" />
     <Compile Include="Commands\Browser\InternetExplorerFavoritesCommand.cs" />
-    <Compile Include="Commands\Browser\InternetExplorerTypedUrlsCommand.cs" />
+    <Compile Include="Commands\Browser\InternetExplorerTypedURLsCommand.cs" />
     <Compile Include="Commands\HostDTO.cs" />
     <Compile Include="Commands\ErrorDTO.cs" />
     <Compile Include="Commands\CommandOutputTypeAttribute.cs" />
@@ -147,7 +147,7 @@
     <Compile Include="Commands\Windows\IdleTimeCommand.cs" />
     <Compile Include="Commands\Windows\AntiVirusCommand.cs" />
     <Compile Include="Commands\Windows\AppLockerCommand.cs" />
-    <Compile Include="Commands\Windows\ArpTableCommand.cs" />
+    <Compile Include="Commands\Windows\ARPTableCommand.cs" />
     <Compile Include="Commands\CommandDTOBase.cs" />
     <Compile Include="Commands\Windows\PrintersCommand.cs" />
     <Compile Include="Commands\Windows\LastShutdownCommand.cs" />
@@ -196,10 +196,10 @@
     <Compile Include="Commands\Windows\ExplorerRunCommandCommand.cs" />
     <Compile Include="Commands\Windows\RDPSavedConnectionCommand.cs" />
     <Compile Include="Commands\Products\SysmonCommand.cs" />
-    <Compile Include="Commands\Windows\TcpConnectionsCommand.cs" />
+    <Compile Include="Commands\Windows\TCPConnectionsCommand.cs" />
     <Compile Include="Commands\Windows\TokenPrivilegesCommand.cs" />
     <Compile Include="Commands\Windows\UserAccountControlCommand.cs" />
-    <Compile Include="Commands\Windows\UdpConnectionsCommand.cs" />
+    <Compile Include="Commands\Windows\UDPConnectionsCommand.cs" />
     <Compile Include="Commands\Misc\DirectoryListCommand.cs" />
     <Compile Include="Commands\Windows\WindowsDefenderCommand.cs" />
     <Compile Include="Commands\Windows\WindowsEventForwardingCommand.cs" />
@@ -207,7 +207,7 @@
     <Compile Include="Commands\Windows\WindowsFirewallCommand.cs" />
     <Compile Include="Commands\Windows\WindowsVaultCommand.cs" />
     <Compile Include="Commands\Windows\WMIEventConsumerCommand.cs" />
-    <Compile Include="Commands\Windows\WmiEventFilterCommand.cs" />
+    <Compile Include="Commands\Windows\WMIEventFilterCommand.cs" />
     <Compile Include="Commands\Windows\WMIFilterToConsumerBindingCommand.cs" />
     <Compile Include="Interop\Rpcrt4.cs" />
     <Compile Include="Output\Sinks\JsonFileOutputSink.cs" />

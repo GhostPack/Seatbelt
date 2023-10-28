@@ -6,6 +6,7 @@ namespace Seatbelt.Output.TextWriters
     internal class ConsoleTextWriter : ITextWriter
     {
         public ConsoleTextWriter() => Console.OutputEncoding = Encoding.UTF8;
+
         public void Write(string str)
             => Console.Write(str);
 

@@ -4,6 +4,7 @@
     // Only list error codes that are actually used in our code
     internal class Win32Error
     {
+        public const int InvalidHandle        = -1;
         public const int Success              = 0;
         public const int NERR_Success         = 0;
         public const int AccessDenied         = 0x0000005;

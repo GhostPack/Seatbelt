@@ -136,7 +136,7 @@
     <Compile Include="Commands\Windows\CredentialGuardCommand.cs" />
     <Compile Include="Commands\Windows\CredEnumCommand.cs" />
     <Compile Include="Commands\Windows\DotNetCommand.cs" />
-    <Compile Include="Commands\Windows\DsRegCmd.cs" />
+    <Compile Include="Commands\Windows\AzureADCmd.cs" />
     <Compile Include="Commands\Windows\EnvironmentPathCommand.cs" />
     <Compile Include="Commands\Windows\EventLogs\ExplicitLogonEvents\ExplicitLogonEventsCommandDTO.cs" />
     <Compile Include="Commands\Windows\EventLogs\ExplicitLogonEvents\ExplicitLogonEventsTextFormatter.cs" />

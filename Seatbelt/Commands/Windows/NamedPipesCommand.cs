@@ -66,14 +66,18 @@ namespace Seatbelt.Commands.Windows
                             hPipe,
                             out int pipeServerPid);
 
-                        if (bvRet)
+                        try
                         {
-                            var svProcess = System.Diagnostics.Process.GetProcessById(pipeServerPid);
+                            if (bvRet)
+                            {
+                                var svProcess = System.Diagnostics.Process.GetProcessById(pipeServerPid);
 
-                            svProcessId = pipeServerPid;
-                            svProcessName = svProcess.ProcessName;
-                            svProcessPath = svProcess.MainModule.FileName;
+                                svProcessId = pipeServerPid;
+                                svProcessName = svProcess.ProcessName;
+                                svProcessPath = svProcess.MainModule.FileName;
+                            }
                         }
+                        catch { }
 
                         bvRet = GetNamedPipeServerSessionId(
                             hPipe,
@@ -151,7 +155,12 @@ namespace Seatbelt.Commands.Windows
 
             if (dto.ServerProcessPID != null)
             {
-                WriteLine($"    Server Process Id   : '{dto.ServerProcessPID}'");
+                WriteLine($"    Server Process Id   : {dto.ServerProcessPID}");
+            }
+
+            if (dto.ServerSessionId != null)
+            {
+                WriteLine($"    Server Session Id   : {dto.ServerSessionId}");
             }
 
             if (!string.IsNullOrEmpty(dto.ServerProcessPath))
@@ -167,11 +176,6 @@ namespace Seatbelt.Commands.Windows
             if (!string.IsNullOrEmpty(dto.Sddl))
             {
                 WriteLine($"    Pipe SDDL           : {dto.Sddl}");
-            }
-
-            if (dto.ServerSessionId != null)
-            {
-                WriteLine($"    Server Session Id   : {dto.ServerSessionId}");
             }
         }
     }

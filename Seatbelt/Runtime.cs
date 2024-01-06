@@ -1,4 +1,4 @@
-﻿#nullable disable
+#nullable disable
 using Seatbelt.Commands;
 using Seatbelt.Interop;
 using Seatbelt.Util;
@@ -10,6 +10,7 @@ using Seatbelt.Output.Sinks;
 using System.Management;
 using Microsoft.Win32;
 using System.Diagnostics.Eventing.Reader;
+using System.Threading;
 using System.Security.Cryptography;
 
 namespace Seatbelt
@@ -21,28 +22,30 @@ namespace Seatbelt
         private IEnumerable<string> Commands { get; set; }
         private IEnumerable<string> CommandGroups { get; set; }
         public bool FilterResults { get; }
+        public string DelayCommands { get; }
         public bool RandomizeOrder { get; }
         public string ComputerName { get; }  // for remote connections
         private string UserName { get; }     // for remote connections
         private string Password { get; }     // for remote connections
         private ManagementClass wmiRegProv { get; }
 
-        public Runtime(IOutputSink outputSink, IEnumerable<string> commands, IEnumerable<string> commandGroups, bool filter, bool randomizeOrder)
-            : this(outputSink, commands, commandGroups, filter, randomizeOrder, "", "", "")
+        public Runtime(IOutputSink outputSink, IEnumerable<string> commands, IEnumerable<string> commandGroups, bool filter, string delayCommands, bool randomizeOrder)
+            : this(outputSink, commands, commandGroups, filter, randomizeOrder, delayCommands, "", "", "")
         {
         }
 
-        public Runtime(IOutputSink outputSink, IEnumerable<string> commands, IEnumerable<string> commandGroups, bool filter, bool randomizeOrder, string computerName)
-            : this(outputSink, commands, commandGroups, filter, randomizeOrder, computerName, "", "")
+        public Runtime(IOutputSink outputSink, IEnumerable<string> commands, IEnumerable<string> commandGroups, bool filter, string delayCommands, bool randomizeOrder, string computerName)
+            : this(outputSink, commands, commandGroups, filter, randomizeOrder, delayCommands, computerName, "", "")
         {
         }
 
-        public Runtime(IOutputSink outputSink, IEnumerable<string> commands, IEnumerable<string> commandGroups, bool filter, bool randomizeOrder, string computerName, string userName, string password)
+        public Runtime(IOutputSink outputSink, IEnumerable<string> commands, IEnumerable<string> commandGroups, bool filter, bool randomizeOrder, string delayCommands, string computerName, string userName, string password)
         {
             OutputSink = outputSink;
             Commands = commands;
             CommandGroups = commandGroups;
             FilterResults = filter;
+            DelayCommands = delayCommands;
             RandomizeOrder = randomizeOrder;
             ComputerName = computerName;
             UserName = userName;
@@ -308,7 +311,7 @@ namespace Seatbelt
 
         private bool ProcessGroup(string command)
         {
-            var commandGroupStrings = Enum.GetNames(typeof(CommandGroup)).ToList().Select(g=> g.ToLower());
+            var commandGroupStrings = Enum.GetNames(typeof(CommandGroup)).ToList().Select(g => g.ToLower());
 
             if (!commandGroupStrings.Contains(command.ToLower()))
                 return false;
@@ -316,9 +319,9 @@ namespace Seatbelt
             List<CommandBase> toExecute;
             List<CommandBase> toExclude = new List<CommandBase>();
 
-            foreach (var remainingCommand in Commands) 
+            foreach (var remainingCommand in Commands)
             {
-                if(remainingCommand.StartsWith("-"))
+                if (remainingCommand.StartsWith("-"))
                 {
                     var foundCommand = AllCommands.FirstOrDefault(c => c.Command.Equals(remainingCommand.Substring(1), StringComparison.InvariantCultureIgnoreCase));
                     if (foundCommand != null)
@@ -397,6 +400,11 @@ namespace Seatbelt
         {
             try
             {
+                if (!string.IsNullOrEmpty(DelayCommands))
+                {
+                    Thread.Sleep(Int32.Parse(DelayCommands));
+                }
+
                 OutputSink.WriteOutput(new HostDTO($"====== {command.Command} ======\n"));
                 var results = command.Execute(commandArgs);
                 if (results != null)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -101,6 +101,7 @@ namespace Seatbelt.Commands.Windows
                     (string)result["StartName"],
                     (string)result["State"],
                     (string)result["StartMode"],
+                    (string)result["ServiceType"],
                     serviceCommand,
                     binaryPath,
                     binaryPathSddl,
@@ -242,7 +243,7 @@ namespace Seatbelt.Commands.Windows
 
     internal class ServicesDTO : CommandDTOBase
     {
-        public ServicesDTO(string? name, string? displayName, string? description, string? user, string? state, string? startMode, string? serviceCommand, string? binaryPath, string? binaryPathSddl, string? serviceDll, string? serviceSddl, string? companyName, string? fileDescription, string? version, bool? isDotNet)
+        public ServicesDTO(string? name, string? displayName, string? description, string? user, string? state, string? startMode, string? type, string? serviceCommand, string? binaryPath, string? binaryPathSddl, string? serviceDll, string? serviceSddl, string? companyName, string? fileDescription, string? version, bool? isDotNet)
         {
             Name = name;
             DisplayName = displayName;
@@ -250,6 +251,7 @@ namespace Seatbelt.Commands.Windows
             User = user;
             State = state;
             StartMode = startMode;
+            Type = type;
             ServiceCommand = serviceCommand;
             BinaryPath = binaryPath;
             BinaryPathSDDL = binaryPathSddl;
@@ -266,6 +268,7 @@ namespace Seatbelt.Commands.Windows
         public string? User { get; set; }
         public string? State { get; set; }
         public string? StartMode { get; set; }
+        public string? Type { get; set; }
         public string? ServiceCommand { get; set; }
         public string? BinaryPath { get; set; }
         public string? BinaryPathSDDL { get; set; }

@@ -5,7 +5,8 @@ using Seatbelt.Output.Formatters;
 using System.Security.AccessControl;
 using static Seatbelt.Interop.Kernel32;
 using System.IO;
-
+using Seatbelt.Interop;
+using System;
 
 namespace Seatbelt.Commands.Windows
 {
@@ -40,96 +41,91 @@ namespace Seatbelt.Commands.Windows
 
             foreach (var namedPipe in namedPipes)
             {
-                FileSecurity security;
-                var sddl = "";
-                int iProcessId = 0;
-                string svProcessName = "";
-                System.IntPtr hPipe = System.IntPtr.Zero;
-                bool bvRet = false;
+                string? svProcessPath = null;
+                int? svProcessId = null;
+                string? svProcessName = null;
+                int? svSessionId = null;
+                IntPtr hPipe = IntPtr.Zero;
 
                 // Try to identify ProcessID and ProcessName
                 try
                 {
-                    //Get a handle to the pipe
                     hPipe = CreateFile(
-                        System.String.Format("\\\\.\\pipe\\{0}", namedPipe), // The name of the file or device to be created or opened.
-                        FileAccess.Read, // The requested access to the file or device.
-                        FileShare.None, // The requested sharing mode of the file or device.
-                        System.IntPtr.Zero, // Optional. A pointer to a SECURITY_ATTRIBUTES structure.
-                        FileMode.Open, // An action to take on a file or device that exists or does not exist.
-                        FileAttributes.Normal, // The file or device attributes and flags.
-                        System.IntPtr.Zero); // Optional. A valid handle to a template file with the GENERIC_READ access right.
+                        $"\\\\.\\pipe\\{namedPipe}",
+                        FileAccess.Read,
+                        FileShare.None,
+                        IntPtr.Zero,
+                        FileMode.Open,
+                        FileAttributes.Normal,
+                        IntPtr.Zero);
 
 
-                    if (hPipe.ToInt64() != -1) //verify CreateFile did not return "INVALID_HANDLE_VALUE"
-                    { 
+                    if (hPipe.ToInt64() != Win32Error.InvalidHandle)
+                    {
+                        bool bvRet = GetNamedPipeServerProcessId(
+                            hPipe,
+                            out int pipeServerPid);
 
-                        //Retrieve the ProcessID registered for the pipe.
-                        bvRet = GetNamedPipeServerProcessId(
-                            hPipe, // A handle to an instance of a named pipe.
-                            out iProcessId); // The process identifier.
+                        try
+                        {
+                            if (bvRet)
+                            {
+                                var svProcess = System.Diagnostics.Process.GetProcessById(pipeServerPid);
 
-                        //If GetNamedPipeServerProcessId was successful, get the process name for the returned ProcessID
+                                svProcessId = pipeServerPid;
+                                svProcessName = svProcess.ProcessName;
+                                svProcessPath = svProcess.MainModule.FileName;
+                            }
+                        }
+                        catch { }
+
+                        bvRet = GetNamedPipeServerSessionId(
+                            hPipe,
+                            out int pipeServerSessionId);
+
                         if (bvRet)
                         {
-                            svProcessName = System.Diagnostics.Process.GetProcessById(iProcessId).ProcessName;
+                            svSessionId = pipeServerSessionId;
                         }
-                        else
-                        {
-                            //GetNamedPipeServerProcessId was unsuccessful
-                            svProcessName = "Unk";
-                        }
-
-                        //Close the pipe handle
+                    }
+                }
+                catch
+                {
+                }
+                finally
+                {
+                    if (hPipe != IntPtr.Zero && hPipe.ToInt64() != Win32Error.InvalidHandle)
+                    {
                         CloseHandle(hPipe);
                     }
-                    else
-                    {
-                        //CreateFile returned "INVALID_HANDLE_VALUE" or 0xffffffff.
-                        svProcessName = "Unk";
-                    }
-                }
-                catch
-                {
-                    //Catch the exception. ProcessName is set to Unk.
-                    svProcessName = "Unk";
                 }
 
-                try
-                {
-                    security = File.GetAccessControl(System.String.Format("\\\\.\\pipe\\{0}", namedPipe));
-                    sddl = security.GetSecurityDescriptorSddlForm(AccessControlSections.All);
-                }
-                catch
-                {
-                    sddl = "ERROR";
-                }
+                string? sddl = GetSddl("\\\\.\\pipe\\{0}");
 
-                if (!System.String.IsNullOrEmpty(sddl) && !sddl.Equals("ERROR"))
+
+                yield return new NamedPipesDTO()
                 {
-                    yield return new NamedPipesDTO()
-                    {
-                        Name = namedPipe,
-                        Sddl = sddl,
-                        //SecurityDescriptor = new RawSecurityDescriptor(sddl)
+                    Name = namedPipe,
+                    Sddl = sddl,
+                    ServerProcessName = svProcessName,
+                    ServerProcessPID = svProcessId,
+                    ServerProcessPath = svProcessPath,
+                    ServerSessionId = svSessionId,
+                };
+            }
+        }
 
-                        OwningProcessName = svProcessName,
-                        OwningProcessPID = iProcessId
-
-                    };
-                }
-                else
-                {
-                    yield return new NamedPipesDTO()
-                    {
-                        Name = namedPipe,
-                        Sddl = sddl,
-                        //SecurityDescriptor = null
-
-                        OwningProcessName = svProcessName,
-                        OwningProcessPID = iProcessId
-                    };
-                }
+        private string? GetSddl(string namedPipe)
+        {
+            try
+            {
+                var security = File.GetAccessControl($"\\\\.\\pipe\\{namedPipe}");
+                var sddl = security.GetSecurityDescriptorSddlForm(AccessControlSections.All);
+                return sddl;
+            }
+            catch
+            {
+                return null;
             }
         }
     }
@@ -137,14 +133,11 @@ namespace Seatbelt.Commands.Windows
     internal class NamedPipesDTO : CommandDTOBase
     {
         public string Name { get; set; }
-
-        public string Sddl { get; set; }
-
-        public string OwningProcessName { get; set; }
-
-        public int OwningProcessPID { get; set; }
-
-        // public RawSecurityDescriptor SecurityDescriptor { get; set; }
+        public string? Sddl { get; set; }
+        public string? ServerProcessName { get; set; }
+        public int? ServerProcessPID { get; set; }
+        public string? ServerProcessPath { get; set; }
+        public int? ServerSessionId { get; internal set; }
     }
 
     [CommandOutputType(typeof(NamedPipesDTO))]
@@ -158,16 +151,31 @@ namespace Seatbelt.Commands.Windows
         {
             var dto = (NamedPipesDTO)result;
 
-            WriteLine("{0},{1},{2}", dto.OwningProcessPID.ToString(), dto.OwningProcessName, dto.Name);
-            if (!dto.Sddl.Equals("ERROR"))
+            WriteLine("\n{0}", dto.Name);
+
+            if (dto.ServerProcessPID != null)
             {
-                //WriteLine("    Owner   : {0}", dto.SecurityDescriptor.Owner);
-                //foreach (CommonAce rule in dto.SecurityDescriptor.DiscretionaryAcl)
-                //{
-                //    WriteLine("        {0} :", rule.SecurityIdentifier);
-                //    WriteLine("              {0} : {1}", rule.AceType, (GenericAceMask)rule.AccessMask);
-                //}
-                WriteLine("    SDDL         : {0}", dto.Sddl);
+                WriteLine($"    Server Process Id   : {dto.ServerProcessPID}");
+            }
+
+            if (dto.ServerSessionId != null)
+            {
+                WriteLine($"    Server Session Id   : {dto.ServerSessionId}");
+            }
+
+            if (!string.IsNullOrEmpty(dto.ServerProcessPath))
+            {
+                WriteLine($"    Server Process Name : {dto.ServerProcessName}");
+            }
+
+            if (!string.IsNullOrEmpty(dto.ServerProcessPath))
+            {
+                WriteLine($"    Server Process Path : {dto.ServerProcessPath}");
+            }
+
+            if (!string.IsNullOrEmpty(dto.Sddl))
+            {
+                WriteLine($"    Pipe SDDL           : {dto.Sddl}");
             }
         }
     }

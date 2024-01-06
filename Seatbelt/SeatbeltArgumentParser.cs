@@ -20,6 +20,7 @@ namespace Seatbelt
             {
                 var quietMode = ParseAndRemoveSwitchArgument("-q");
                 var filterResults = !ParseAndRemoveSwitchArgument("-Full");
+                var randomizeOrder = ParseAndRemoveSwitchArgument("-RandomizeOrder");
 
                 var commandGroups = ParseAndRemoveKeyValueArgument("-Group");
                 var outputFile = ParseAndRemoveKeyValueArgument("-OutputFile");
@@ -35,6 +36,7 @@ namespace Seatbelt
                     outputFile,
                     filterResults,
                     quietMode,
+                    randomizeOrder,
                     delayCommands,
                     computerName,
                     userName,

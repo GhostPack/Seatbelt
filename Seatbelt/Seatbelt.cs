@@ -27,6 +27,7 @@ namespace Seatbelt
                 Options.Commands,
                 Options.CommandGroups,
                 Options.FilterResults,
+                Options.RandomizeOrder,
                 Options.DelayCommands,
                 Options.ComputerName,
                 Options.UserName,

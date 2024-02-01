@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Text;
+using Seatbelt.Interop;
 
 namespace Seatbelt.Output.TextWriters
 {
     internal class ConsoleTextWriter : ITextWriter
     {
-        public ConsoleTextWriter() => Console.OutputEncoding = Encoding.UTF8;
+        public ConsoleTextWriter()
+        {
+            if(IsConsolePresent()) Console.OutputEncoding = Encoding.UTF8;
+        }
 
         public void Write(string str)
             => Console.Write(str);
@@ -20,6 +24,11 @@ namespace Seatbelt.Output.TextWriters
 
         public void Dispose()
         {
+        }
+
+        bool IsConsolePresent()
+        {
+            return Kernel32.GetConsoleWindow() != IntPtr.Zero;
         }
     }
 }

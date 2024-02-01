@@ -35,6 +35,7 @@ namespace Seatbelt
                     commandGroups == null ? new List<string>() : commandGroups.Split(',').Select(g => g.Trim()).ToList(),
                     outputFile,
                     filterResults,
+                    randomizeOrder,
                     quietMode,
                     randomizeOrder,
                     delayCommands,

@@ -1,4 +1,4 @@
-﻿#nullable disable
+#nullable disable
 using Seatbelt.Commands;
 using Seatbelt.Interop;
 using Seatbelt.Util;

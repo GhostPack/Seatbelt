@@ -1,4 +1,4 @@
-﻿using Seatbelt.Commands;
+using Seatbelt.Commands;
 using Seatbelt.Output.Sinks;
 using Seatbelt.Output.TextWriters;
 using System;

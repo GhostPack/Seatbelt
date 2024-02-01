@@ -8,8 +8,7 @@ namespace Seatbelt.Output.TextWriters
     {
         public ConsoleTextWriter()
         {
-            if(IsConsolePresent())
-                Console.OutputEncoding = Encoding.UTF8;
+            if(IsConsolePresent()) Console.OutputEncoding = Encoding.UTF8;
         }
 
         public void Write(string str)

@@ -13,7 +13,7 @@ namespace Seatbelt
 
         private readonly IOutputSink _outputSink;
         private readonly Runtime _runtime;
-        private const string Version = "1.2.1";
+        private const string Version = "1.2.2";
         private SeatbeltOptions Options { get; set; }
 
         public Seatbelt(string[] args)

@@ -37,7 +37,6 @@ namespace Seatbelt
                     filterResults,
                     randomizeOrder,
                     quietMode,
-                    randomizeOrder,
                     delayCommands,
                     computerName,
                     userName,

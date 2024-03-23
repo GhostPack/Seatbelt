@@ -71,7 +71,7 @@ namespace Seatbelt.Commands.Windows
                 switch (dto.ConsentPromptBehaviorAdmin)
                 {
                     case 0:
-                        WriteLine($"  {0,-30} : {1} - No prompting", "ConsentPromptBehaviorAdmin", dto.ConsentPromptBehaviorAdmin);
+                        WriteLine("  {0,-30} : {1} - No prompting", "ConsentPromptBehaviorAdmin", dto.ConsentPromptBehaviorAdmin);
                         break;
                     case 1:
                         WriteLine("  {0,-30} : {1} - PromptOnSecureDesktop", "ConsentPromptBehaviorAdmin", dto.ConsentPromptBehaviorAdmin);

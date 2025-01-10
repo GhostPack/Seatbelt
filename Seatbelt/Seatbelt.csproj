@@ -80,7 +80,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\CommandGroup.cs" />
-    <Compile Include="Commands\Misc\LOLBAS.cs" />
     <Compile Include="Commands\Products\MTPuTTYCommand.cs" />
     <Compile Include="Commands\Products\OneNoteCommand.cs" />
     <Compile Include="Commands\Windows\SecureBootCommand.cs" />
